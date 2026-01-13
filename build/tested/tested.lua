@@ -1,33 +1,5 @@
-local Assertion = {}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local Tested = {}
-
-
-
-
-
-
-
-
+local tested_type = require("tested.tested_types")
+local Tested, Assertion = tested_type.Tested, tested_type.Assertion
 
 local tested = { tests = {}, run_only_tests = false }
 
@@ -77,4 +49,4 @@ function tested.assert(assertion)
 
 end
 
-return { tested = tested, Tested = Tested, Assertion = Assertion }
+return tested

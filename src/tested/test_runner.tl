@@ -1,5 +1,5 @@
-local _tested = require("tested.tested")
-local Tested, Assertion = _tested.Tested, _tested.Assertion
+local tested_types = require("tested.tested_types")
+local Tested, Assertion = tested_types.Tested, tested_types.Assertion
 
 local record TestRunnerOptions
     randomize: boolean

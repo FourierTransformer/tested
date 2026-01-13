@@ -1,6 +1,15 @@
-local argparse = require("libs.argparse")
+local argparse = require("argparse")
+local lfs = require("lfs")
+local tl = require("tl")
+tl.loader()
 local test_runner = require("tested.test_runner").TestRunner
 local display_results = require("tested.display_results")
+local Tested = require("tested.tested_types").Tested
+
+
+
+
+
 
 
 
@@ -32,15 +41,59 @@ end
 local function set_defaults(args)
    if #args.paths == 0 then args.paths = { "tests" } end
    local show_all = false
-   for _, v in ipairs(args.display) do if v == "all" then show_all = true; break end end
+   for _, display_option in ipairs(args.display) do if display_option == "all" then show_all = true; break end end
    if show_all then args.display = { "skip", "pass", "fail", "exception", "unknown", "timeout" } end
+   if not args.paths then args.paths = { "./tests" } end
+end
+
+local function validate_args(args)
+   for _, path in ipairs(args.paths) do
+      local _, err = lfs.attributes(path)
+      if err then error("The directory '" .. path .. "' does not appear to exist. Unable to run tests") end
+      assert(lfs.attributes(path).mode == "directory", "tested requires the paths passed in to be a directory")
+   end
+end
+
+
+local function find_lua_and_tl_files(path)
+   local found_files = { lua = {}, tl = {} }
+   for file in lfs.dir(path) do
+      local _, _, tl_file = file:find("^([^%.].-%.tl)$")
+      local _, _, lua_file = file:find("^([^%.].-%.lua)$")
+      if tl_file or lua_file then
+         local f = path .. '/' .. file
+         local attr = lfs.attributes(f)
+         if attr and attr.mode == "file" then
+            if tl_file then table.insert(found_files.tl, f) end
+            if lua_file then table.insert(found_files.lua, f) end
+         end
+      end
+   end
+   return found_files
+end
+
+local function get_test_files(paths)
+   local all_files = { lua = {}, tl = {} }
+   for _, path in ipairs(paths) do
+      print("Searching " .. path)
+      local found_files = find_lua_and_tl_files(path)
+      for _, lua_file in ipairs(found_files.lua) do table.insert(all_files.lua, lua_file) end
+      for _, tl_file in ipairs(found_files.tl) do table.insert(all_files.tl, tl_file) end
+   end
+   return all_files
 end
 
 local function main()
    local args = parse_args()
    set_defaults(args)
-
-
+   validate_args(args)
+   local test_files = get_test_files(args.paths)
+   for _, file in ipairs(test_files.tl) do
+      local module_name = file:gsub(".tl$", ""):gsub("/", ".")
+      local test_module = require(module_name)
+      local output = test_runner.run(test_module)
+      display_results(output)
+   end
 end
 
 main()
