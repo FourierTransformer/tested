@@ -1,8 +1,7 @@
-local _test_runner = require("tested.test_runner")
-local TestOutput, TestResult = _test_runner.TestOutput, _test_runner.TestResult
+local type types = require("tested.types")
 
 
-local symbol_map: {TestResult: string} = {
+local symbol_map: {types.TestResult: string} = {
     PASS = " ✓",
     FAIL = " ✗",
     SKIP = " ⊘",
@@ -12,7 +11,7 @@ local symbol_map: {TestResult: string} = {
     UNKNOWN = " ?",
 }
 
-local function display_results(test_results: {TestOutput}, display: {TestResult: boolean})
+local function display_results(test_results: {types.TestOutput}, display: {types.TestResult: boolean})
     local passed = 0
     local failed = 0
     local skipped = 0

@@ -1,5 +1,4 @@
-local _test_runner = require("tested.test_runner")
-local TestOutput, TestResult = _test_runner.TestOutput, _test_runner.TestResult
+
 
 
 local symbol_map = {

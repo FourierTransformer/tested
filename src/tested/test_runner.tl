@@ -1,38 +1,11 @@
-local tested_types = require("tested.tested_types")
-local Tested, Assertion = tested_types.Tested, tested_types.Assertion
+local type types = require("tested.types")
 
-local record TestRunnerOptions
+local interface TestRunnerOptions
     randomize: boolean
 end
 
 local record TestRunner
-    run: function(tested: Tested, options?: TestRunnerOptions): {TestOutput}
-end
-
-local enum TestResult
-    "PASS"
-    "FAIL"
-    "SKIP"
-    "CONDITIONAL_SKIP"
-    "EXCEPTION"
-    "TIMEOUT"
-    "UNKNOWN"
-end
-
-local record AssertionResult
-    filename: string
-    line_number: integer
-    result: TestResult
-    given: string
-    should: string
-    error_message: string
-end
-
-local record TestOutput
-    name: string
-    result: TestResult
-    message: string
-    assertion_results: {AssertionResult}
+    run: function(tested: types.Tested, options?: TestRunnerOptions): {types.TestOutput}
 end
 
 local function fisher_yates_shuffle(t: {any})
@@ -42,7 +15,7 @@ local function fisher_yates_shuffle(t: {any})
     end
 end
 
-function TestRunner.run(tested: Tested, options?: TestRunnerOptions): {TestOutput}
+function TestRunner.run(tested: types.Tested, options?: TestRunnerOptions): {types.TestOutput}
     if options and options.randomize then
         math.randomseed(os.time())
         fisher_yates_shuffle(tested.tests)
@@ -52,7 +25,7 @@ function TestRunner.run(tested: Tested, options?: TestRunnerOptions): {TestOutpu
         print("Only running tests with 'tested.only'")
     end
 
-    local test_results: {TestOutput} = {}
+    local test_results: {types.TestOutput} = {}
 
 
     for i, test in ipairs(tested.tests) do
@@ -78,12 +51,12 @@ function TestRunner.run(tested: Tested, options?: TestRunnerOptions): {TestOutpu
 
             -- wrap the original assert so we can do some handling here
             local original_assert = tested.assert
-            tested.assert = function<T>(assertion: Assertion<T>): boolean, string
+            tested.assert = function<T>(assertion: types.Assertion<T>): boolean, string
                 local ok, err = original_assert(assertion)
 
                 total_assertions = total_assertions + 1
 
-                local assertion_result: AssertionResult = {}
+                local assertion_result: types.AssertionResult = {}
                 local file_info = debug.getinfo(2, "l")
                 assertion_result.filename = filename
                 assertion_result.line_number = file_info.currentline
@@ -126,4 +99,4 @@ function TestRunner.run(tested: Tested, options?: TestRunnerOptions): {TestOutpu
     return test_results
 end
 
-return {TestRunner=TestRunner, TestResult=TestResult, TestOutput=TestOutput}
+return TestRunner

@@ -1,37 +1,10 @@
-local tested_types = require("tested.tested_types")
-local Tested, Assertion = tested_types.Tested, tested_types.Assertion
+
 
 
 
 
 
 local TestRunner = {}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local TestOutput = {}
-
-
-
 
 
 
@@ -126,4 +99,4 @@ function TestRunner.run(tested, options)
    return test_results
 end
 
-return { TestRunner = TestRunner, TestResult = TestResult, TestOutput = TestOutput }
+return TestRunner

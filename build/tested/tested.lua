@@ -1,5 +1,4 @@
-local tested_type = require("tested.tested_types")
-local Tested, Assertion = tested_type.Tested, tested_type.Assertion
+
 
 local tested = { tests = {}, run_only_tests = false }
 

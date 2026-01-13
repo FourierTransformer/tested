@@ -1,7 +1,6 @@
-local tested_type = require("tested.tested_types")
-local Tested, Assertion = tested_type.Tested, tested_type.Assertion
+local type types = require("tested.types")
 
-local tested: Tested = { tests = {}, run_only_tests = false }
+local tested: types.Tested = { tests = {}, run_only_tests = false }
 
 function tested.test(name: string, fn: function())
     table.insert(tested.tests, {name=name, fn=fn, kind="test"})
@@ -24,7 +23,7 @@ function tested.conditional_test(name: string, condition: boolean, fn: function(
     end
 end
 
-function tested.assert<T>(assertion: Assertion<T>): boolean, string
+function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
     local expected_type = type(assertion.expected)
     local actual_type = type(assertion.actual)
     

@@ -3,11 +3,9 @@ local lfs = require("lfs")
 local tl = require("tl")
 tl.loader() -- register the tl loader so we can rip
 
-local _test_runner = require("tested.test_runner")
-local test_runner, TestResult = _test_runner.TestRunner, _test_runner.TestResult
+local test_runner = require("tested.test_runner")
 local display_results = require("tested.display_results")
-local tested_types = require("tested.tested_types")
-local Tested = tested_types.Tested
+local type types = require("tested.types")
 
 
 local enum DisplayOptions
@@ -20,7 +18,7 @@ local enum DisplayOptions
     "timeout"
 end
 
-local cli_to_display: {DisplayOptions:TestResult} = {
+local cli_to_display: {DisplayOptions:types.TestResult} = {
     ["skip"] = "SKIP",
     ["pass"] = "PASS",
     ["fail"] = "FAIL",
@@ -90,7 +88,7 @@ local function get_test_modules(paths: {string}): {string}
     return all_modules
 end
 
-local function display_types(options: {DisplayOptions}): {TestResult: boolean}
+local function display_types(options: {DisplayOptions}): {types.TestResult: boolean}
     local to_display = {}
     for _, cli_option in ipairs(options) do
         to_display[cli_to_display[cli_option]] = true
@@ -108,7 +106,7 @@ local function main()
     validate_args(args)
     local test_modules = get_test_modules(args.paths)
     for _, module in ipairs(test_modules) do
-        local test_module = require(module) as Tested
+        local test_module = require(module) as types.Tested
         assert(type(test_module) == "table", "It does not appear that the test module '" .. module .."' returns the 'tested' module at the end")
         local output = test_runner.run(test_module)
         display_results(output, display_types(args.display))

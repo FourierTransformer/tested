@@ -3,11 +3,9 @@ local lfs = require("lfs")
 local tl = require("tl")
 tl.loader()
 
-local _test_runner = require("tested.test_runner")
-local test_runner, TestResult = _test_runner.TestRunner, _test_runner.TestResult
+local test_runner = require("tested.test_runner")
 local display_results = require("tested.display_results")
-local tested_types = require("tested.tested_types")
-local Tested = tested_types.Tested
+
 
 
 
