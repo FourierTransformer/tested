@@ -22,11 +22,6 @@ local record CLIOptions
     paths: {string}
 end
 
-local record TestFiles
-    lua: {string}
-    tl: {string}
-end
-
 local function parse_args(): CLIOptions
     local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://github.com/FourierTransformer/tested")
     parser:flag("-v --version"):description("Show version information"):action(function() print("tested v0.0.0") os.exit(0) end)
@@ -54,43 +49,41 @@ local function validate_args(args: CLIOptions)
     end
 end
 
+local function find_lua_and_tl_modules(path: string): {string}
+    local modules = {}
 
-local function find_lua_and_tl_files(path: string): TestFiles
-    local found_files = {lua = {}, tl = {}}
     for file in lfs.dir(path) do
-        local _, _, tl_file = file:find("^([^%.].-%.tl)$")
-        local _, _, lua_file = file:find("^([^%.].-%.lua)$")
-        if tl_file or lua_file  then
+        local _, _, tl_module = file:find("^([^%.].-)%.tl$")
+        local _, _, lua_module = file:find("^([^%.].-)%.lua$")
+        if tl_module or lua_module  then
             local f = path..'/'..file
             local attr = lfs.attributes(f)
             if attr and attr.mode == "file" then
-                if tl_file then table.insert(found_files.tl, f) end
-                if lua_file then table.insert(found_files.lua, f) end
+                if tl_module then table.insert(modules, path .. "." .. tl_module) end
+                if lua_module then table.insert(modules, path .. "." .. lua_module) end
             end
         end
     end
-    return found_files
+    return modules
 end
 
-local function get_test_files(paths: {string}): TestFiles
-    local all_files: TestFiles = {lua = {}, tl = {}}
+local function get_test_files(paths: {string}): {string}
+    local all_modules = {}
     for _, path in ipairs(paths) do
         print("Searching " .. path)
-        local found_files = find_lua_and_tl_files(path)
-        for _, lua_file in ipairs(found_files.lua) do table.insert(all_files.lua, lua_file) end
-        for _, tl_file in ipairs(found_files.tl) do table.insert(all_files.tl, tl_file) end
+        local found_modules = find_lua_and_tl_modules(path)
+        for _, module in ipairs(found_modules) do table.insert(all_modules, module) end
     end
-    return all_files
+    return all_modules
 end
 
 local function main()
     local args = parse_args()
     set_defaults(args)
     validate_args(args)
-    local test_files = get_test_files(args.paths)
-    for _, file in ipairs(test_files.tl) do
-        local module_name = file:gsub(".tl$", ""):gsub("/", ".")
-        local test_module = require(module_name) as Tested
+    local test_modules = get_test_files(args.paths)
+    for _, module in ipairs(test_modules) do
+        local test_module = require(module) as Tested
         local output = test_runner.run(test_module)
         display_results(output)
     end
