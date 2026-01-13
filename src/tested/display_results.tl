@@ -12,7 +12,7 @@ local symbol_map: {TestResult: string} = {
     UNKNOWN = " ?",
 }
 
-local function display_results(test_results: {TestOutput})
+local function display_results(test_results: {TestOutput}, display: {TestResult: boolean})
     local passed = 0
     local failed = 0
     local skipped = 0

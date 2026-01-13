@@ -12,7 +12,7 @@ local symbol_map = {
    UNKNOWN = " ?",
 }
 
-local function display_results(test_results)
+local function display_results(test_results, display)
    local passed = 0
    local failed = 0
    local skipped = 0

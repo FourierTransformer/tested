@@ -2,9 +2,13 @@ local argparse = require("argparse")
 local lfs = require("lfs")
 local tl = require("tl")
 tl.loader() -- register the tl loader so we can rip
-local test_runner = require("tested.test_runner").TestRunner
+
+local _test_runner = require("tested.test_runner")
+local test_runner, TestResult = _test_runner.TestRunner, _test_runner.TestResult
 local display_results = require("tested.display_results")
-local Tested = require("tested.tested_types").Tested
+local tested_types = require("tested.tested_types")
+local Tested = tested_types.Tested
+
 
 local enum DisplayOptions
     "all"
@@ -15,6 +19,15 @@ local enum DisplayOptions
     "unknown"
     "timeout"
 end
+
+local cli_to_display: {DisplayOptions:TestResult} = {
+    ["skip"] = "SKIP",
+    ["pass"] = "PASS",
+    ["fail"] = "FAIL",
+    ["exception"] = "EXCEPTION",
+    ["unknown"] = "UNKNOWN",
+    ["timeout"] = "TIMEOUT"
+}
 
 local record CLIOptions
     randomize: boolean
@@ -67,7 +80,7 @@ local function find_lua_and_tl_modules(path: string): {string}
     return modules
 end
 
-local function get_test_files(paths: {string}): {string}
+local function get_test_modules(paths: {string}): {string}
     local all_modules = {}
     for _, path in ipairs(paths) do
         print("Searching " .. path)
@@ -77,15 +90,28 @@ local function get_test_files(paths: {string}): {string}
     return all_modules
 end
 
+local function display_types(options: {DisplayOptions}): {TestResult: boolean}
+    local to_display = {}
+    for _, cli_option in ipairs(options) do
+        to_display[cli_to_display[cli_option]] = true
+        -- small hack to also show conditional skip
+        if cli_option == "skip" then
+            to_display["CONDITIONAL_SKIP"] = true
+        end
+    end
+    return to_display
+end
+
 local function main()
     local args = parse_args()
     set_defaults(args)
     validate_args(args)
-    local test_modules = get_test_files(args.paths)
+    local test_modules = get_test_modules(args.paths)
     for _, module in ipairs(test_modules) do
         local test_module = require(module) as Tested
+        assert(type(test_module) == "table", "It does not appear that the test module '" .. module .."' returns the 'tested' module at the end")
         local output = test_runner.run(test_module)
-        display_results(output)
+        display_results(output, display_types(args.display))
     end
 end
 
