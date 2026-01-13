@@ -24,7 +24,7 @@ build = {
    type = "builtin",
    modules = {
       ["tested"] = "build/tested/tested.lua",
-      ["tested.types"] = "build/tested/tested_types.lua"
+      ["tested.tested_types"] = "build/tested/tested_types.lua"
       -- many other files need to be added.
    },
    -- install = {

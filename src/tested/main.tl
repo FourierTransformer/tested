@@ -90,8 +90,8 @@ local function main()
     local test_files = get_test_files(args.paths)
     for _, file in ipairs(test_files.tl) do
         local module_name = file:gsub(".tl$", ""):gsub("/", ".")
-        local test_module = require(module_name)
-        local output = test_runner.run(test_module as Tested)
+        local test_module = require(module_name) as Tested
+        local output = test_runner.run(test_module)
         display_results(output)
     end
 end
