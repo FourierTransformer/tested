@@ -1,5 +1,33 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local table = _tl_compat and _tl_compat.table or table; local tested_class = require("src.tested_class")
-local Tested, Assertion = tested_class.Tested, tested_class.Assertion
+local Assertion = {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local Tested = {}
+
+
+
+
+
+
+
+
 
 local tested = { tests = {}, run_only_tests = false }
 
@@ -29,8 +57,8 @@ function tested.assert(assertion)
    local actual_type = type(assertion.actual)
 
    if actual_type ~= expected_type then
-      return false, "Expected value '" .. tostring(assertion.expected) .. "' (as '" ..
-      expected_type .. "'). Actual value '" .. tostring(assertion.actual) .. "' (as '" .. actual_type .. "')"
+      return false, "Expected: '" .. tostring(assertion.expected) .. "' (as '" ..
+      expected_type .. "'). Actual: '" .. tostring(assertion.actual) .. "' (as '" .. actual_type .. "')"
    end
 
 
@@ -44,9 +72,9 @@ function tested.assert(assertion)
       return true, ""
    end
 
-   return false, "Expected value '" .. tostring(assertion.expected) .. "' (as '" ..
-   expected_type .. "'). Actual value '" .. tostring(assertion.actual) .. "' (as '" .. actual_type .. "')"
+   return false, "Expected: " .. tostring(assertion.expected) ..
+   "\nActual: " .. tostring(assertion.actual)
 
 end
 
-return tested
+return { tested = tested, Tested = Tested, Assertion = Assertion }

@@ -1,5 +1,11 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local debug = _tl_compat and _tl_compat.debug or debug; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local os = _tl_compat and _tl_compat.os or os; local pcall = _tl_compat and _tl_compat.pcall or pcall; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table; local tested_class = require("src.tested_class")
-local Tested, _, Assertion = tested_class.Tested, tested_class.Test, tested_class.Assertion
+local _tested = require("tested.tested")
+local Tested, Assertion = _tested.Tested, _tested.Assertion
+
+
+
+
+
+local TestRunner = {}
 
 
 
@@ -22,19 +28,12 @@ local Tested, _, Assertion = tested_class.Tested, tested_class.Test, tested_clas
 
 
 
+local TestOutput = {}
 
 
 
 
 
-
-
-
-
-
-
-
-local test_runner = {}
 
 local function fisher_yates_shuffle(t)
    for i = #t, 2, -1 do
@@ -43,9 +42,8 @@ local function fisher_yates_shuffle(t)
    end
 end
 
-function test_runner.run(tested, options)
-
-   if options and options.shuffle then
+function TestRunner.run(tested, options)
+   if options and options.randomize then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
    end
@@ -70,8 +68,8 @@ function test_runner.run(tested, options)
          test_results[i].message = "Test marked with 'tested.skip'"
 
       elseif test.kind == "conditional_skip" then
-         test_results[i].result = "CNDSKIP"
-         test_results[i].message = "Test condition returned false. Skipping test."
+         test_results[i].result = "CONDITIONAL_SKIP"
+         test_results[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
 
       else
          local assert_failed_count = 0
@@ -105,17 +103,15 @@ function test_runner.run(tested, options)
             return ok, err
          end
 
-         local ok, err = pcall(test.fn), string
-
+         local ok, err = pcall(test.fn)
          if ok == false then
+            test_results[i].result = "EXCEPTION"
+            test_results[i].message = err
 
-            print("exception", err)
 
-         end
-
-         if total_assertions == 0 then
+         elseif total_assertions == 0 then
             test_results[i].result = "UNKNOWN"
-            test_results[i].message = "No assertions were specified in the test"
+            test_results[i].message = "No assertions run during the test"
 
          elseif assert_failed_count == 0 then
             test_results[i].result = "PASS"
@@ -127,21 +123,7 @@ function test_runner.run(tested, options)
          end
       end
    end
-
-
-   for _, test_result in ipairs(test_results) do
-      print(test_result.result, test_result.name, test_result.message)
-      if test_result.result == "FAIL" then
-
-         for _, assertion_result in ipairs(test_result.assertion_results) do
-            if assertion_result.result == "FAIL" then
-               print("  ", assertion_result.result, assertion_result.filename .. ":" .. assertion_result.line_number .. " - In '" .. test_result.name .. "' given '" .. assertion_result.given .. "'. Should be '" .. assertion_result.should .. "'")
-               print("", assertion_result.error_message)
-               print()
-            end
-         end
-      end
-   end
+   return test_results
 end
 
-return test_runner
+return { TestRunner = TestRunner, TestResult = TestResult, TestOutput = TestOutput }

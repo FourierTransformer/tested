@@ -1,12 +1,12 @@
-local tested_class = require("src.tested_class")
-local Tested, _, Assertion = tested_class.Tested, tested_class.Test, tested_class.Assertion
+local _tested = require("tested.tested")
+local Tested, Assertion = _tested.Tested, _tested.Assertion
 
 local record TestRunnerOptions
-    shuffle: boolean
+    randomize: boolean
 end
 
 local record TestRunner
-    run: function(tested: Tested, options?: TestRunnerOptions)
+    run: function(tested: Tested, options?: TestRunnerOptions): {TestOutput}
 end
 
 local enum TestResult
@@ -15,6 +15,7 @@ local enum TestResult
     "SKIP"
     "CONDITIONAL_SKIP"
     "EXCEPTION"
+    "TIMEOUT"
     "UNKNOWN"
 end
 
@@ -34,17 +35,6 @@ local record TestOutput
     assertion_results: {AssertionResult}
 end
 
-local symbol_map: {TestResult: string} = {
-    PASS = " ✓",
-    FAIL = " ✗",
-    SKIP = " ⊘",
-    CONDITIONAL_SKIP = " ⊘",
-    EXCEPTION = " !",
-    UNKNOWN = " ?",
-}
-
-local test_runner: TestRunner = {}
-
 local function fisher_yates_shuffle(t: {any})
     for i = #t, 2, -1 do
         local j = math.random(i)
@@ -52,8 +42,8 @@ local function fisher_yates_shuffle(t: {any})
     end
 end
 
-function test_runner.run(tested: Tested, options?: TestRunnerOptions)
-    if options and options.shuffle then
+function TestRunner.run(tested: Tested, options?: TestRunnerOptions): {TestOutput}
+    if options and options.randomize then
         math.randomseed(os.time())
         fisher_yates_shuffle(tested.tests)
     end
@@ -133,50 +123,7 @@ function test_runner.run(tested: Tested, options?: TestRunnerOptions)
             end
         end
     end
-
-
-    local passed = 0
-    local failed = 0
-    local skipped = 0
-    local invalid = 0
-    print("tested v0.0.0 test_file_a.tl\n")
-    print("test_file_a.tl")
-    for _, test_result in ipairs(test_results) do
-        if test_result.result == "PASS" then passed = passed + 1
-        elseif test_result.result == "FAIL" then failed = failed + 1
-        elseif test_result.result == "SKIP" or test_result.result == "CONDITIONAL_SKIP" then skipped = skipped + 1
-        else invalid = invalid + 1
-        end
-
-        if test_result.result == "FAIL" or test_result.result == "EXCEPTION" or test_result.result == "UNKNOWN" then
-            print(symbol_map[test_result.result] .. " " .. test_result.name)
-            if test_result.result == "FAIL" then
-                for _, assertion_result in ipairs(test_result.assertion_results) do
-                    if assertion_result.result == "FAIL" then
-                        print("  " .. symbol_map[assertion_result.result] .. " " .. assertion_result.filename .. ":" .. assertion_result.line_number ..
-                        " - Given: " .. assertion_result.given .. "  Should: " .. assertion_result.should)
-                        print("      " .. assertion_result.error_message:gsub("\n", "\n      "))
-                        print()
-                    end
-                end
-            end
-
-            if test_result.result == "EXCEPTION" or test_result.result == "UNKNOWN" then
-                print("      " .. test_result.message)
-                print()
-            end
-        end
-
-    end
-
-    print()
-    print("Test Summary:")
-    print("  Run: " .. passed .. " passed, " .. failed .. " failed")
-    print("Other: " .. skipped .. " skipped, " .. invalid .. " invalid")
-    if failed == 0 and invalid == 0 then
-        print()
-        print(" ✓ Fully Tested")
-    end
+    return test_results
 end
 
-return test_runner
+return {TestRunner=TestRunner, TestResult=TestResult, TestOutput=TestOutput}
