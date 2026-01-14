@@ -147,6 +147,12 @@ local function main()
 
     display.summary(total_counts, all_fully_tested)
 
+    if all_fully_tested then
+        os.exit()
+    else
+        os.exit(1)
+    end
+
 end
 
 main()
