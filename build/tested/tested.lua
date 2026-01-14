@@ -23,6 +23,30 @@ function tested.conditional_test(name, condition, fn)
    end
 end
 
+local function deep_compare(prefix, expected, actual)
+   for k, v in pairs(expected) do
+      if not actual[k] then
+         print("missing key in actual", prefix .. "." .. tostring(k))
+
+      elseif type(expected[k]) == "table" and type(actual[k] == "table") then
+
+         deep_compare(prefix .. "." .. tostring(k), expected[k], actual[k])
+
+      elseif actual[k] ~= v then
+         print("differences in values", prefix .. "." .. tostring(k), tostring(actual[k]), tostring(v))
+      end
+   end
+
+   for k, _ in pairs(actual) do
+      if not expected[k] then
+
+         print("additional key in actual", prefix .. tostring(k))
+      end
+   end
+end
+
+
+
 function tested.assert(assertion)
    local expected_type = type(assertion.expected)
    local actual_type = type(assertion.actual)
@@ -32,16 +56,22 @@ function tested.assert(assertion)
       expected_type .. "'). Actual: '" .. tostring(assertion.actual) .. "' (as '" .. actual_type .. "')"
    end
 
-
-   if assertion.expected == assertion.actual then
+   if assertion.actual == assertion.expected then
       return true, ""
    end
 
-   if expected_type == "number" and
-      tostring(assertion.expected) == "nan" and
-      tostring(assertion.actual) == "nan" then
-      return true, ""
-   end
+
+
+
+
+
+
+
+
+
+
+
+
 
    return false, "Expected: " .. tostring(assertion.expected) ..
    "\nActual: " .. tostring(assertion.actual)
