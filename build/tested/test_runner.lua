@@ -26,7 +26,11 @@ function TestRunner.run(module_name, tested, options)
    end
 
    local test_results = {
-      counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 }, tests = {}, module_name = module_name, fully_tested = false,
+      counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
+      tests = {},
+      module_name = module_name,
+      fully_tested = false,
+      total_time = 0,
    }
 
 
@@ -81,7 +85,11 @@ function TestRunner.run(module_name, tested, options)
             return ok, err
          end
 
+         local start = os.clock()
          local ok, err = pcall(test.fn)
+         test_results.tests[i].time = os.clock() - start
+         test_results.total_time = test_results.total_time + test_results.tests[i].time
+
          if ok == false then
             test_results.tests[i].result = "EXCEPTION"
             test_results.tests[i].message = err .. "\n" .. debug.traceback()

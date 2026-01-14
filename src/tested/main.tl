@@ -124,6 +124,7 @@ local function main()
     local test_modules = get_test_modules(args.paths)
     display.header(test_modules)
 
+    local total_time: number = 0
     local total_counts: types.TestCounts = {passed=0, failed=0, skipped=0, invalid=0}
     local all_fully_tested = true
 
@@ -143,9 +144,10 @@ local function main()
         total_counts.failed = total_counts.failed + output.counts.failed
         total_counts.skipped = total_counts.skipped + output.counts.skipped
         total_counts.invalid = total_counts.invalid + output.counts.invalid
+        total_time = total_time + output.total_time
     end
 
-    display.summary(total_counts, all_fully_tested)
+    display.summary(total_counts, all_fully_tested, total_time)
 
     if all_fully_tested then
         os.exit()

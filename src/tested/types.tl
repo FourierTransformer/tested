@@ -36,6 +36,14 @@ local record types
         error_message: string
     end
 
+    interface TestOutput
+        name: string
+        result: types.TestResult
+        message: string
+        time: number
+        assertion_results: {AssertionResult}
+    end
+
     interface TestCounts
         passed: integer
         failed: integer
@@ -48,13 +56,7 @@ local record types
         module_name: string
         counts: TestCounts
         fully_tested: boolean
-    end
-
-    interface TestOutput
-        name: string
-        result: types.TestResult
-        message: string
-        assertion_results: {AssertionResult}
+        total_time: number
     end
 
     interface Test
