@@ -41,22 +41,24 @@ function TestRunner.run(module_name, tested, options)
       if tested.run_only_tests and test.kind ~= "only" then
          test_results.tests[i].result = "SKIP"
          test_results.tests[i].message = "Only running 'tested.only' tests"
+         test_results.tests[i].time = 0
          test_results.counts.skipped = test_results.counts.skipped + 1
 
       elseif test.kind == "skip" then
          test_results.tests[i].result = "SKIP"
          test_results.tests[i].message = "Test marked with 'tested.skip'"
+         test_results.tests[i].time = 0
          test_results.counts.skipped = test_results.counts.skipped + 1
 
       elseif test.kind == "conditional_skip" then
          test_results.tests[i].result = "CONDITIONAL_SKIP"
          test_results.tests[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
+         test_results.tests[i].time = 0
          test_results.counts.skipped = test_results.counts.skipped + 1
 
       else
          local assert_failed_count = 0
          local total_assertions = 0
-         local filename = debug.getinfo(2, "S").short_src
 
 
          local original_assert = tested.assert
@@ -66,8 +68,8 @@ function TestRunner.run(module_name, tested, options)
             total_assertions = total_assertions + 1
 
             local assertion_result = {}
-            local file_info = debug.getinfo(2, "l")
-            assertion_result.filename = filename
+            local file_info = debug.getinfo(2, "Sl")
+            assertion_result.filename = file_info.short_src
             assertion_result.line_number = file_info.currentline
 
             assertion_result.given = assertion.given
@@ -89,6 +91,7 @@ function TestRunner.run(module_name, tested, options)
          local ok, err = pcall(test.fn)
          test_results.tests[i].time = os.clock() - start
          test_results.total_time = test_results.total_time + test_results.tests[i].time
+         tested.assert = original_assert
 
          if ok == false then
             test_results.tests[i].result = "EXCEPTION"

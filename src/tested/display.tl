@@ -32,9 +32,10 @@ function display.results(tested_result: types.TestedOutput, test_types_to_displa
             
             if test_result.result == "FAIL" or test_result.result == "PASS" then
                 for _, assertion_result in ipairs(test_result.assertion_results) do
-                    if assertion_result.result == "FAIL" or test_result.result == "PASS" then
+                    if (assertion_result.result == "FAIL" and test_types_to_display["FAIL"]) or assertion_result.result == "PASS" and test_types_to_display["PASS"] then
                         print("  " .. symbol_map[assertion_result.result] .. " " .. assertion_result.filename .. ":" .. assertion_result.line_number ..
                         " - Given: " .. assertion_result.given .. "  Should: " .. assertion_result.should)
+                        
                         if assertion_result.result == "FAIL" then
                             print("      " .. assertion_result.error_message:gsub("\n", "\n      "))
                         end
