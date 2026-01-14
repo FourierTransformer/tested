@@ -5,7 +5,7 @@ local interface TestRunnerOptions
 end
 
 local record TestRunner
-    run: function(tested: types.Tested, options?: TestRunnerOptions): {types.TestOutput}
+    run: function(module_name: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
 end
 
 local function fisher_yates_shuffle(t: {any})
@@ -15,7 +15,7 @@ local function fisher_yates_shuffle(t: {any})
     end
 end
 
-function TestRunner.run(tested: types.Tested, options?: TestRunnerOptions): {types.TestOutput}
+function TestRunner.run(module_name: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
     if options and options.randomize then
         math.randomseed(os.time())
         fisher_yates_shuffle(tested.tests)
@@ -25,24 +25,29 @@ function TestRunner.run(tested: types.Tested, options?: TestRunnerOptions): {typ
         print("Only running tests with 'tested.only'")
     end
 
-    local test_results: {types.TestOutput} = {}
+    local test_results: types.TestedOutput = {
+        counts={passed=0, failed=0, skipped=0, invalid=0}, tests={}, module_name=module_name, fully_tested=false
+    }
 
 
     for i, test in ipairs(tested.tests) do
 
-        test_results[i] = {assertion_results = {}, name = test.name}
+        test_results.tests[i] = {assertion_results = {}, name = test.name}
 
         if tested.run_only_tests and test.kind ~= "only" then
-            test_results[i].result = "SKIP"
-            test_results[i].message = "Only running 'tested.only' tests"
+            test_results.tests[i].result = "SKIP"
+            test_results.tests[i].message = "Only running 'tested.only' tests"
+            test_results.counts.skipped = test_results.counts.skipped + 1
 
         elseif test.kind == "skip" then
-            test_results[i].result = "SKIP"
-            test_results[i].message = "Test marked with 'tested.skip'"
+            test_results.tests[i].result = "SKIP"
+            test_results.tests[i].message = "Test marked with 'tested.skip'"
+            test_results.counts.skipped = test_results.counts.skipped + 1
 
         elseif test.kind == "conditional_skip" then
-            test_results[i].result = "CONDITIONAL_SKIP"
-            test_results[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
+            test_results.tests[i].result = "CONDITIONAL_SKIP"
+            test_results.tests[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
+            test_results.counts.skipped = test_results.counts.skipped + 1
 
         else
             local assert_failed_count = 0
@@ -71,30 +76,36 @@ function TestRunner.run(tested: types.Tested, options?: TestRunnerOptions): {typ
                 else
                     assertion_result.result = "PASS"
                 end
-                table.insert(test_results[i].assertion_results, assertion_result)
+                table.insert(test_results.tests[i].assertion_results, assertion_result)
 
                 return ok, err
             end
 
             local ok, err = pcall(test.fn) as (boolean, string)
             if ok == false then
-                test_results[i].result = "EXCEPTION"
-                test_results[i].message = err
-                -- probably save off debug.traceback() somewhere!
+                test_results.tests[i].result = "EXCEPTION"
+                test_results.tests[i].message = err .. "\n" .. debug.traceback()
+                test_results.counts.invalid = test_results.counts.invalid + 1
 
             elseif total_assertions == 0 then
-                test_results[i].result = "UNKNOWN"
-                test_results[i].message = "No assertions run during the test"
+                test_results.tests[i].result = "UNKNOWN"
+                test_results.tests[i].message = "No assertions run during the test"
+                test_results.counts.invalid = test_results.counts.invalid + 1
 
             elseif assert_failed_count == 0 then 
-                test_results[i].result = "PASS"
-                test_results[i].message = "All assertions have passed"
+                test_results.tests[i].result = "PASS"
+                test_results.tests[i].message = "All assertions have passed"
+                test_results.counts.passed = test_results.counts.passed + 1
 
             else
-                test_results[i].result = "FAIL"
-                test_results[i].message = assert_failed_count .. " assertions have failed"
+                test_results.tests[i].result = "FAIL"
+                test_results.tests[i].message = assert_failed_count .. " assertions have failed"
+                test_results.counts.failed = test_results.counts.failed + 1
             end
         end
+    end
+    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
+        test_results.fully_tested = true
     end
     return test_results
 end

@@ -4,7 +4,9 @@ local tl = require("tl")
 tl.loader()
 
 local test_runner = require("tested.test_runner")
-local display_results = require("tested.display_results")
+local display = require("tested.display")
+
+
 
 
 
@@ -37,7 +39,7 @@ local function parse_args()
    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://github.com/FourierTransformer/tested")
    parser:flag("-v --version"):description("Show version information"):action(function() print("tested v0.0.0"); os.exit(0) end)
    parser:flag("-r --randomize"):description("Randomize the order of the tests (default: not-set)"):default(false)
-   parser:option("-d --display"):description("What test results to display (default: '-d fail -d exception -d unknown'"):choices({ "all", "skip", "pass", "fail", "exception", "unknown", "timeout" }):default({ "fail", "exception", "unknown", "timeout" })
+   parser:option("-d --display"):description("What test results to display (default: '-d fail -d exception -d unknown'"):choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout" }):count("*")
    parser:argument("paths", "Path(s) to directories containing test files to run (default: 'tests')"):args("*")
 
    local args = parser:parse()
@@ -45,6 +47,9 @@ local function parse_args()
 end
 
 local function set_defaults(args)
+   if #args.display == 0 then
+      args.display = { "fail", "exception", "unknown", "timeout" }
+   end
    if #args.paths == 0 then args.paths = { "tests" } end
    local show_all = false
    for _, display_option in ipairs(args.display) do if display_option == "all" then show_all = true; break end end
@@ -81,7 +86,6 @@ end
 local function get_test_modules(paths)
    local all_modules = {}
    for _, path in ipairs(paths) do
-      print("Searching " .. path)
       local found_modules = find_lua_and_tl_modules(path)
       for _, module in ipairs(found_modules) do table.insert(all_modules, module) end
    end
@@ -91,10 +95,22 @@ end
 local function display_types(options)
    local to_display = {}
    for _, cli_option in ipairs(options) do
-      to_display[cli_to_display[cli_option]] = true
-
-      if cli_option == "skip" then
-         to_display["CONDITIONAL_SKIP"] = true
+      if cli_to_display[cli_option] then
+         to_display[cli_to_display[cli_option]] = true
+         if cli_option == "skip" then
+            to_display["CONDITIONAL_SKIP"] = true
+         end
+      else
+         if cli_option == "invalid" then
+            to_display["EXCEPTION"] = true
+            to_display["UNKNOWN"] = true
+            to_display["TIMEOUT"] = true
+         elseif cli_option == "valid" then
+            to_display["PASS"] = true
+            to_display["SKIP"] = true
+            to_display["CONDITIONAL_SKIP"] = true
+            to_display["FAIL"] = true
+         end
       end
    end
    return to_display
@@ -104,13 +120,33 @@ local function main()
    local args = parse_args()
    set_defaults(args)
    validate_args(args)
+
    local test_modules = get_test_modules(args.paths)
+   display.header(test_modules)
+
+   local total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 }
+   local all_fully_tested = true
+
    for _, module in ipairs(test_modules) do
+
+
+
+      package.loaded["tested.tested"] = nil
       local test_module = require(module)
-      assert(type(test_module) == "table", "It does not appear that the test module '" .. module .. "' returns the 'tested' module at the end")
-      local output = test_runner.run(test_module)
-      display_results(output, display_types(args.display))
+      assert(type(test_module) == "table", "It does not appear that the test module '" .. module .. "' returns the 'tested' module")
+
+      local output = test_runner.run(module, test_module, { randomize = args.randomize })
+      display.results(output, display_types(args.display))
+
+      if output.fully_tested == false then all_fully_tested = false end
+      total_counts.passed = total_counts.passed + output.counts.passed
+      total_counts.failed = total_counts.failed + output.counts.failed
+      total_counts.skipped = total_counts.skipped + output.counts.skipped
+      total_counts.invalid = total_counts.invalid + output.counts.invalid
    end
+
+   display.summary(total_counts, all_fully_tested)
+
 end
 
 main()

@@ -36,6 +36,20 @@ local record types
         error_message: string
     end
 
+    interface TestCounts
+        passed: integer
+        failed: integer
+        skipped: integer
+        invalid: integer
+    end
+
+    interface TestedOutput
+        tests: {TestOutput}
+        module_name: string
+        counts: TestCounts
+        fully_tested: boolean
+    end
+
     interface TestOutput
         name: string
         result: types.TestResult
