@@ -125,16 +125,23 @@ function TestRunner.run_tests(test_modules, options)
 
    local output = {
       total_time = 0,
-      all_fully_tested = false,
+      all_fully_tested = true,
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
    }
 
-   local pre_test_loaded_packages = {}
+   local i = 0
 
-   for i, module in ipairs(test_modules) do
+   return function()
+      i = i + 1
+      if i > #test_modules then
+         return nil, output
+      end
+
+      local module = test_modules[i]
 
 
+      local pre_test_loaded_packages = {}
       for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
       local test_module = require(module)
@@ -159,9 +166,9 @@ function TestRunner.run_tests(test_modules, options)
       output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
-   end
 
-   return output
+      return test_output, output
+   end
 
 end
 

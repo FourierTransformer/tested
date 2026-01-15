@@ -124,12 +124,15 @@ local function main()
    local test_modules = get_test_modules(args.paths)
    display.header(test_modules)
 
-   local output = test_runner.run_tests(test_modules, { randomize = args.randomize })
-   for _, test_result in ipairs(output.module_results) do display.results(test_result, display_types(args.display)) end
+   local runner_output
+   for test_result, output in test_runner.run_tests(test_modules, { randomize = args.randomize }) do
+      display.results(test_result, display_types(args.display))
+      runner_output = output
+   end
 
-   display.summary(output.total_counts, output.all_fully_tested, output.total_time)
+   display.summary(runner_output.total_counts, runner_output.all_fully_tested, runner_output.total_time)
 
-   if output.all_fully_tested then
+   if runner_output.all_fully_tested then
       os.exit()
    else
       os.exit(1)
