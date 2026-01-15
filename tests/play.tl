@@ -1,4 +1,4 @@
-local tested = require("tested.tested")
+local tested = require("tested")
 
 local function sum(a: number, b: number): number
     return a + b

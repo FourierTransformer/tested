@@ -122,6 +122,7 @@ local function main()
    validate_args(args)
 
    local test_modules = get_test_modules(args.paths)
+   assert(#test_modules > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
    display.header(test_modules)
 
    local runner_output

@@ -9,8 +9,7 @@ source = {
 }
 
 description = {
-   summary = "A language server for the Teal language",
-   detailed = "A language server for the Teal language",
+   summary = "A Unit Testing Framework for the Teal and Lua",
    homepage = "https://github.com/FourierTransformer/tested",
    license = "MIT"
 }
@@ -18,18 +17,34 @@ description = {
 dependencies = {
    "luafilesystem",
    "argparse",
+   "tl==0.24.8" -- could maybe include tl?
 }
 
 build = {
    type = "builtin",
    modules = {
-      ["tested"] = "build/tested/tested.lua",
-      ["tested.tested_types"] = "build/tested/tested_types.lua"
-      -- many other files need to be added.
+      tested = "build/tested.lua",
+
+      ["tested.assert_table"] = "build/tested/assert_table.lua",
+      ["tested.display"] = "build/tested/display.lua",
+      ["tested.inspect"] = "build/tested/inspect.lua",
+      ["tested.main"] = "build/tested/main.lua",
+      ["tested.test_runner"] = "build/tested/test_runner.lua",
+      ["tested.types"] = "build/tested/types.lua",
    },
-   -- install = {
-   --   bin = {
-   --     'tested' = 'src/bin/tested'
-   --   }
-   -- }
+   install = {
+      bin = {
+         'src/bin/tested'
+      },
+      lua = {
+         "src/tested.tl",
+
+         ["tested.assert_table"] = "src/tested/assert_table.tl",
+         ["tested.display"] = "src/tested/display.tl",
+         ["tested.inspect"] = "src/tested/inspect.tl",
+         ["tested.main"] = "src/tested/main.tl",
+         ["tested.test_runner"] = "src/tested/test_runner.tl",
+         ["tested.types"] = "src/tested/types.tl",
+      }
+   }
 }

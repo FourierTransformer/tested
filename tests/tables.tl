@@ -1,4 +1,4 @@
-local tested = require("tested.tested")
+local tested = require("tested")
 
 local t1 = {
   name = 'Alice',
