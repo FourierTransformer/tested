@@ -59,6 +59,13 @@ local record types
         total_time: number
     end
 
+    interface TestRunnerOutput
+        module_results: {TestedOutput}
+        total_counts: TestCounts
+        total_time: number
+        all_fully_tested: boolean
+    end
+
     interface Test
         kind: TestType
         name: string

@@ -1,0 +1,346 @@
+-- Basically stock inspect from kikito
+-- Minor Changes:
+-- - Updated to build with latest teal
+-- - Removes metatable, have to call via `inspect.inspect`
+-- - Adds getKeys and countCycles to `inspect` since it's used in diffing
+
+local record inspect
+   _VERSION: string
+   _URL: string
+   _DESCRIPTION: string
+   _LICENSE: string
+   KEY: table
+   METATABLE: table
+
+   type ProcessFunction = function(any, {any}): any
+
+   record Options
+      depth: integer
+      newline: string
+      indent: string
+      process: ProcessFunction
+   end
+
+   metamethod __call: function()
+
+   -- additions for table diffing
+   getKeys: function(t: table): {any}, integer, integer
+   countCycles: function(x: any, cycles: {any:integer}): nil
+end
+
+inspect._VERSION = 'inspect.lua 3.1.0'
+inspect._URL     = 'http://github.com/kikito/inspect.lua'
+inspect._DESCRIPTION = 'human-readable representations of tables'
+inspect._LICENSE = [[
+  MIT LICENSE
+
+  Copyright (c) 2022 Enrique García Cota
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the
+  "Software"), to deal in the Software without restriction, including
+  without limitation the rights to use, copy, modify, merge, publish,
+  distribute, sublicense, and/or sell copies of the Software, and to
+  permit persons to whom the Software is furnished to do so, subject to
+  the following conditions:
+
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+]]
+inspect.KEY       = setmetatable({}, {__tostring = function(): string return 'inspect.KEY' end})
+inspect.METATABLE = setmetatable({}, {__tostring = function(): string return 'inspect.METATABLE' end})
+
+local tostring = tostring
+local rep = string.rep
+local match = string.match
+local char = string.char
+local gsub = string.gsub
+local fmt = string.format
+
+local function rawpairs(t: table): function, table, nil
+   return next as function, t, nil
+end
+
+-- Apostrophizes the string if it has quotes, but not aphostrophes
+-- Otherwise, it returns a regular quoted string
+local function smartQuote(str: string): string
+   if match(str, '"') and not match(str, "'") then
+      return "'" .. str .. "'"
+   end
+   return '"' .. gsub(str, '"', '\\"') .. '"'
+end
+
+-- \a => '\\a', \0 => '\\0', 31 => '\31'
+local shortControlCharEscapes: {string:string} = {
+   ["\a"] = "\\a",  ["\b"] = "\\b", ["\f"] = "\\f", ["\n"] = "\\n",
+   ["\r"] = "\\r",  ["\t"] = "\\t", ["\v"] = "\\v", ["\127"] = "\\127",
+}
+local longControlCharEscapes: {string:string} = {["\127"]="\127"} -- \a => nil, \0 => \000, 31 => \031
+for i=0, 31 do
+   local ch: string = char(i)
+   if not shortControlCharEscapes[ch] then
+      shortControlCharEscapes[ch] = "\\"..i
+      longControlCharEscapes[ch]  = fmt("\\%03d", i)
+   end
+end
+
+local function escape(str: string): string
+   return (gsub(gsub(gsub(str,"\\", "\\\\"),
+      "(%c)%f[0-9]", longControlCharEscapes),
+      "%c", shortControlCharEscapes))
+end
+
+local function isIdentifier(str: any): boolean
+   return str is string and not not str:match("^[_%a][_%a%d]*$")
+end
+
+local flr = math.floor
+local function isSequenceKey(k: any, sequenceLength: integer): boolean
+   return k is number
+      and flr(k) == k
+      and 1 <= (k)
+      and k <= sequenceLength
+end
+
+local defaultTypeOrders: {string:integer} = {
+   ['number']   = 1, ['boolean']  = 2, ['string'] = 3, ['table'] = 4,
+   ['function'] = 5, ['userdata'] = 6, ['thread'] = 7
+}
+
+local function sortKeys(a:any, b:any): boolean
+   local ta, tb: string, string = type(a), type(b)
+
+   -- strings and numbers are sorted numerically/alphabetically
+   if ta == tb and (ta == 'string' or ta == 'number') then
+      return (a as string) < (b as string)
+   end
+
+   local dta: integer = defaultTypeOrders[ta] or 100
+   local dtb: integer = defaultTypeOrders[tb] or 100
+   -- Default types are compared according to defaultTypeOrders
+   -- Custom types are compared alphabetically
+   return dta == dtb and ta < tb or dta < dtb
+end
+
+local function getKeys(t: table): {any}, integer, integer
+   -- seqLen counts the "array-like" keys
+   local seqLen: integer = 1
+   while rawget(t, seqLen) ~= nil do
+     seqLen = seqLen + 1
+   end
+   seqLen = seqLen - 1
+
+   local keys, keysLen: {any}, integer = {}, 0
+   for k in rawpairs(t) do
+      if not isSequenceKey(k, seqLen) then
+         keysLen = keysLen + 1
+         keys[keysLen] = k
+      end
+   end
+   table.sort(keys, sortKeys)
+   return keys, keysLen, seqLen
+end
+
+local function countCycles(x: any, cycles: {any:integer}): nil
+   if x is table then
+      if cycles[x] then
+         cycles[x] = cycles[x] + 1
+      else
+         cycles[x] = 1
+         for k,v in rawpairs(x) do
+            countCycles(k, cycles)
+            countCycles(v, cycles)
+         end
+         countCycles(getmetatable(x), cycles)
+      end
+   end
+end
+
+local function makePath(path: {any}, a: any, b?: any): {any}
+   local newPath: {any} = {}
+   local len: integer = #path
+   for i=1, len do newPath[i] = path[i] end
+
+   newPath[len + 1] = a
+   newPath[len + 2] = b
+
+   return newPath
+end
+
+
+local function processRecursive(process: inspect.ProcessFunction,
+                                item: any,
+                                path: {any},
+                                visited: {any:any}): any
+   if item == nil then return nil end
+   if visited[item] then return visited[item] end
+
+   local processed: any = process(item, path)
+   if processed is table then
+      local processedCopy = {}
+      visited[item] = processedCopy
+      local processedKey: any
+
+      for k,v in rawpairs(processed) do
+         processedKey = processRecursive(process, k, makePath(path, k, inspect.KEY), visited)
+         if processedKey ~= nil then
+            processedCopy[processedKey] = processRecursive(process, v, makePath(path, processedKey), visited)
+         end
+      end
+
+      local mt  = processRecursive(process, getmetatable(processed), makePath(path, inspect.METATABLE), visited)
+      if type(mt) ~= 'table' then mt = nil end -- ignore not nil/table __metatable field
+      setmetatable(processedCopy, mt as metatable<{any:any}>)
+      processed = processedCopy
+   end
+   return processed
+end
+
+local function puts(buf: table, str:string): nil
+   buf.n = buf.n as integer + 1
+   buf[buf.n as integer] = str
+end
+
+-------------------------------------------------------------------
+
+local type Inspector = record
+   buf: table
+   depth: integer
+   level: integer
+   ids: {any:integer}
+   newline: string
+   indent: string
+   cycles: {table: integer}
+   puts: function(string)
+end
+
+local Inspector_mt = {__index = Inspector}
+
+local function tabify(inspector: Inspector)
+   puts(inspector.buf, inspector.newline .. rep(inspector.indent, inspector.level))
+end
+
+function Inspector:getId(v: any): integer
+   local id: integer = self.ids[v]
+   local ids = self.ids
+   if not id then
+      local tv: string = type(v)
+      id = (ids[tv] or 0) + 1
+      ids[v], ids[tv] = id, id
+   end
+   return id
+end
+
+function Inspector:putValue(v: any)
+   local buf = self.buf
+   local tv: string = type(v)
+   if tv == 'string' then
+      puts(buf, smartQuote(escape(v as string)))
+   elseif tv == 'number' or tv == 'boolean' or tv == 'nil' or
+          tv == 'cdata' or tv == 'ctype' then
+      puts(buf, tostring(v as number))
+   elseif tv == 'table' and not self.ids[v] then
+      local t = v as table
+
+      if t == inspect.KEY or t as {any:any} == inspect.METATABLE then
+         puts(buf, tostring(t))
+      elseif self.level >= self.depth then
+         puts(buf, '{...}')
+      else
+         if self.cycles[t] > 1 then puts(buf, fmt('<%d>', self:getId(t))) end
+
+         local keys, keysLen, seqLen = getKeys(t)
+
+         puts(buf, '{')
+         self.level = self.level + 1
+
+         for i = 1, seqLen + keysLen do
+            if i > 1 then puts(buf, ',') end
+            if i <= seqLen then
+               puts(buf, ' ')
+               self:putValue(t[i])
+            else
+               local k = keys[i - seqLen]
+               tabify(self)
+               if isIdentifier(k) then
+                 puts(buf, k as string)
+               else
+                 puts(buf, "[")
+                 self:putValue(k)
+                 puts(buf, "]")
+               end
+               puts(buf, ' = ')
+               self:putValue(t[k])
+            end
+         end
+
+         local mt = getmetatable(t)
+         if type(mt) == 'table' then
+           if seqLen + keysLen > 0 then puts(buf, ',') end
+           tabify(self)
+           puts(buf, '<metatable> = ')
+           self:putValue(mt)
+         end
+
+         self.level = self.level - 1
+
+         if keysLen > 0 or type(mt) == 'table' then -- result is multi-lined. Justify closing }
+           tabify(self)
+         elseif seqLen > 0 then -- array tables have one extra space before closing }
+           puts(buf, ' ')
+         end
+
+         puts(buf, '}')
+       end
+
+   else
+      puts(buf, fmt('<%s %d>', tv, self:getId(v)))
+   end
+end
+
+-------------------------------------------------------------------
+
+
+function inspect.inspect(root: any, options: inspect.Options): string
+   options       = options or {}
+
+   local depth: integer  = options.depth   or (math.huge as integer)
+   local newline: string = options.newline or '\n'
+   local indent: string  = options.indent  or '  '
+   local process: inspect.ProcessFunction = options.process
+
+   if process then
+      root = processRecursive(process, root, {}, {})
+   end
+
+   local cycles = {}
+   countCycles(root, cycles)
+
+   local inspector = setmetatable({
+      buf              = { n = 0 },
+      ids              = {},
+      cycles           = cycles,
+      depth            = depth,
+      level            = 0,
+      newline          = newline,
+      indent           = indent,
+   } as Inspector, Inspector_mt)
+
+   inspector:putValue(root)
+
+   return table.concat(inspector.buf as {string})
+end
+
+-- Minor changes of exporting getKeys and countCycles
+inspect.getKeys = getKeys
+inspect.countCycles = countCycles
+
+return inspect

@@ -11,3 +11,7 @@ This will execute the test files in `tests`:
 ```
 tl run src/tested/main.tl
 ```
+
+## Licences
+Parts of the following are included in the source code:
+- Bundles a slightly modified [inspect.lua](https://github.com/kikito/inspect.lua) for table diffing and viewing - MIT

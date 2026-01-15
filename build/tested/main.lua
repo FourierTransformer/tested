@@ -124,32 +124,12 @@ local function main()
    local test_modules = get_test_modules(args.paths)
    display.header(test_modules)
 
-   local total_time = 0
-   local total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 }
-   local all_fully_tested = true
+   local output = test_runner.run_tests(test_modules, { randomize = args.randomize })
+   for _, test_result in ipairs(output.module_results) do display.results(test_result, display_types(args.display)) end
 
-   for _, module in ipairs(test_modules) do
+   display.summary(output.total_counts, output.all_fully_tested, output.total_time)
 
-
-
-      package.loaded["tested.tested"] = nil
-      local test_module = require(module)
-      assert(type(test_module) == "table", "It does not appear that the test module '" .. module .. "' returns the 'tested' module")
-
-      local output = test_runner.run(module, test_module, { randomize = args.randomize })
-      display.results(output, display_types(args.display))
-
-      if output.fully_tested == false then all_fully_tested = false end
-      total_counts.passed = total_counts.passed + output.counts.passed
-      total_counts.failed = total_counts.failed + output.counts.failed
-      total_counts.skipped = total_counts.skipped + output.counts.skipped
-      total_counts.invalid = total_counts.invalid + output.counts.invalid
-      total_time = total_time + output.total_time
-   end
-
-   display.summary(total_counts, all_fully_tested, total_time)
-
-   if all_fully_tested then
+   if output.all_fully_tested then
       os.exit()
    else
       os.exit(1)
