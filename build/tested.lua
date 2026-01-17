@@ -27,11 +27,12 @@ end
 
 function tested.assert(assertion)
    local errors = {}
-   if assertion.given == nil then table.insert(errors, "'given'") end
-   if assertion.should == nil then table.insert(errors, "'should'") end
    if assertion.expected == nil then table.insert(errors, "'expected'") end
    if assertion.actual == nil then table.insert(errors, "'actual'") end
-   assert(#errors == 0, "The assertion table must include 'given', 'should', 'expected', and 'actual'. Missing: " .. table.concat(errors, ", "))
+   assert(#errors == 0, "The assertion table must include 'expected' and 'actual'. Missing: " .. table.concat(errors, ", "))
+   if assertion.given and type(assertion.given) ~= "string" then table.insert(errors, "In assertion, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "'") end
+   if assertion.should and type(assertion.should) ~= "string" then table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "'") end
+   assert(#errors == 0, table.concat(errors, ". "))
    local expected_type = type(assertion.expected)
    local actual_type = type(assertion.actual)
 

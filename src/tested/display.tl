@@ -26,6 +26,22 @@ local function to_ms(time_s: number): string
     end
 end
 
+local function format_assertion_result(assertion_result: types.AssertionResult): string
+    local output = "  " .. symbol_map[assertion_result.result] .. " " .. assertion_result.filename .. ":" .. assertion_result.line_number
+    -- given and should
+    if assertion_result.given then
+        output = output .. " - Given: " .. assertion_result.given 
+        if assertion_result.should then
+            output = output .. "  Should: " .. assertion_result.should
+        end
+
+    -- just should
+    elseif assertion_result.should then
+        output = output .. " - Should: " .. assertion_result.should
+    end
+    return output
+end
+
 function display.results(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
     print("- " .. tested_result.module_name .. " (" .. to_ms(tested_result.total_time) .. ")")
     for _, test_result in ipairs(tested_result.tests) do
@@ -37,8 +53,7 @@ function display.results(tested_result: types.TestedOutput, test_types_to_displa
             if test_result.result == "FAIL" or test_result.result == "PASS" then
                 for _, assertion_result in ipairs(test_result.assertion_results) do
                     if (assertion_result.result == "FAIL" and test_types_to_display["FAIL"]) or assertion_result.result == "PASS" and test_types_to_display["PASS"] then
-                        print("  " .. symbol_map[assertion_result.result] .. " " .. assertion_result.filename .. ":" .. assertion_result.line_number ..
-                        " - Given: " .. assertion_result.given .. "  Should: " .. assertion_result.should)
+                        print(format_assertion_result(assertion_result))
                         
                         if assertion_result.result == "FAIL" then
                             print("      " .. assertion_result.error_message:gsub("\n", "\n      "))
