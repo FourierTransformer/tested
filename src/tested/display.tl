@@ -19,7 +19,7 @@ function display.header(modules: {string})
 end
 
 local function to_ms(time_s: number): string
-    if time_s < 1000 then
+    if time_s < 1 then
         return string.format("%.3fms", time_s*1000)
     else
         return string.format("%.3fs", time_s)
@@ -42,8 +42,8 @@ function display.results(tested_result: types.TestedOutput, test_types_to_displa
                         
                         if assertion_result.result == "FAIL" then
                             print("      " .. assertion_result.error_message:gsub("\n", "\n      "))
+                            print()
                         end
-                        print()
                     end
                 end
             end

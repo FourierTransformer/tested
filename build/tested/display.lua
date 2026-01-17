@@ -1,4 +1,4 @@
-
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = true, require('compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local string = _tl_compat and _tl_compat.string or string; local table = _tl_compat and _tl_compat.table or table
 
 
 local symbol_map = {
@@ -19,7 +19,7 @@ function display.header(modules)
 end
 
 local function to_ms(time_s)
-   if time_s < 1000 then
+   if time_s < 1 then
       return string.format("%.3fms", time_s * 1000)
    else
       return string.format("%.3fs", time_s)
@@ -42,8 +42,8 @@ function display.results(tested_result, test_types_to_display)
 
                   if assertion_result.result == "FAIL" then
                      print("      " .. assertion_result.error_message:gsub("\n", "\n      "))
+                     print()
                   end
-                  print()
                end
             end
          end
