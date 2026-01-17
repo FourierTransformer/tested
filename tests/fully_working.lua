@@ -9,4 +9,11 @@ tested.test("just works!", function()
 	})
 end)
 
+tested.test("just works without given and should!", function()
+	tested.assert({
+		expected=true,
+		actual=true
+	})
+end)
+
 return tested
