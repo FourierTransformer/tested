@@ -1,7 +1,6 @@
 local argparse = require("argparse")
-local path = require("path")
-local fs = require("path.fs")
-local load_file = require("tested.load_file")
+local lfs = require("lfs")
+local file_loader = require("tested.file_loader")
 
 local test_runner = require("tested.test_runner")
 local type types = require("tested.types")
@@ -34,6 +33,8 @@ local record CLIOptions
     output_format: string
     custom_formatter: string
     paths: {string}
+    test_files: {string}
+    test_directories: {string}
 end
 
 local function parse_args(): CLIOptions
@@ -54,7 +55,7 @@ local function parse_args(): CLIOptions
         :default("terminal")
     parser:option("-f --custom-formatter")
         :description("Custom Formatter to use for output")
-    parser:argument("paths", "Path(s) to directories containing test files to run (default: 'tests')")
+    parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')")
         :args("*")
 
     local args: CLIOptions = parser:parse() as CLIOptions
@@ -62,36 +63,30 @@ local function parse_args(): CLIOptions
 end
 
 local function set_defaults(args: CLIOptions)
-    if #args.display == 0 then
-        args.display = {"fail", "exception", "unknown", "timeout"}
-    end
+    if #args.display == 0 then args.display = {"fail", "exception", "unknown", "timeout"} end
+    -- if not args.paths then args.paths = {"./tests"} end
     if #args.paths == 0 then args.paths = {"tests"} end
+    args.test_files = {}
+    args.test_directories = {}
+    
     local show_all = false
     for _, display_option in ipairs(args.display) do if display_option == "all" then show_all = true break end end
     if show_all then args.display = {"skip", "pass", "fail", "exception", "unknown", "timeout"} end
-    if not args.paths then args.paths = {"./tests"} end
 end
 
 local function validate_args(args: CLIOptions)
-    for _, test_path in ipairs(args.paths) do
-        assert(path.exists(test_path), "The directory '" .. test_path .. "' does not appear to exist. Unable to run tests")
-        assert(path.isdir(test_path), "tested requires the paths passed in to be a directory")
-    end
-end
-
-local function find_lua_and_tl_tests(files: {string}, test_path: string): {string}
-    for file, file_type in fs.glob(test_path .. "/**_test.lua") do
-        if file_type == "file" then table.insert(files, file) end
-    end
-
-    for file, file_type in fs.glob(test_path .. "/**_test.tl") do
-        if file_type == "file" then table.insert(files, file) end
+    for _, path in ipairs(args.paths) do
+        local info, err = lfs.attributes(path)
+        if err then error("The file or directory '" .. path .. "' does not appear to exist. Unable to run tests") end
+        assert(info.mode == "directory" or info.mode == "file", "tested requires the paths passed in to be a directory or file")
+        if info.mode == "directory" then table.insert(args.test_directories, path) end
+        if info.mode == "file" then table.insert(args.test_files, path) end
     end
 end
 
 local function load_result_formatter(args: CLIOptions): types.ResultFormatter
     if args.custom_formatter then
-        local formatter = load_file(args.custom_formatter, "loading a custom formatter") as types.ResultFormatter
+        local formatter = file_loader.load_file(args.custom_formatter, "loading a custom formatter") as types.ResultFormatter
 
         if formatter then
             assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
@@ -106,11 +101,39 @@ local function load_result_formatter(args: CLIOptions): types.ResultFormatter
     end
 end
 
-local function get_test_files(paths: {string}): {string}
+local function find_tests(files: {string}, test_path: string): {string}
+    for file in lfs.dir(test_path) do
+        local _, _, extension = file:find("^[^%.].-_test(%..-)$")
+        if extension then
+            local f = test_path..'/'..file
+            local attr = lfs.attributes(f)
+            if attr then
+                if attr.mode == "file" and file_loader.file_loader[extension] then
+                    table.insert(files, f)
+
+                elseif attr.mode == "directory" then
+                    find_tests(files, f)
+
+                end
+            end
+        end
+    end
+end
+
+local function get_file_extension(str: string): string
+    return str:match("^.+(%..+)$")
+end
+
+local function get_all_test_files(args: CLIOptions): {string}
     local all_files = {}
-    for _, test_path in ipairs(paths) do
+    for _, test_file in ipairs(args.test_files) do
+        if file_loader.file_loader[get_file_extension(test_file)] then
+            table.insert(all_files, test_file)
+        end
+    end
+    for _, test_path in ipairs(args.test_directories) do
         local filenames = {}
-        find_lua_and_tl_tests(filenames, test_path)
+        find_tests(filenames, test_path)
         for _, module in ipairs(filenames) do table.insert(all_files, module) end
     end
     return all_files
@@ -146,9 +169,9 @@ local function main()
     validate_args(args)
     local formatter = load_result_formatter(args)
     
-    local test_files = get_test_files(args.paths)
+    local test_files = get_all_test_files(args)
     assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
-    formatter.header(test_files)
+    formatter.header(args.paths)
 
     local runner_output: types.TestRunnerOutput
     for test_result, output in test_runner.run_tests(test_files, {randomize=args.randomize}) do

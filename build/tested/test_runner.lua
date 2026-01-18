@@ -1,4 +1,4 @@
-local load_file = require("tested.load_file")
+local file_loader = require("tested.file_loader")
 
 
 
@@ -145,7 +145,7 @@ function TestRunner.run_tests(test_files, options)
       local pre_test_loaded_packages = {}
       for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-      local test_module = load_file(test_file)
+      local test_module = file_loader.load_file(test_file)
       assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
 
       local test_output = TestRunner.run(test_file, test_module, options)
