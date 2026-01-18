@@ -1,3 +1,4 @@
+local load_file = require("tested.load_file")
 local type types = require("tested.types")
 
 local interface TestRunnerOptions
@@ -121,7 +122,7 @@ function TestRunner.run(filename: string, tested: types.Tested, options?: TestRu
     return test_results
 end
 
-function TestRunner.run_tests(test_modules: {string}, options?: TestRunnerOptions): function(): (types.TestedOutput, types.TestRunnerOutput)
+function TestRunner.run_tests(test_files: {string}, options?: TestRunnerOptions): function(): (types.TestedOutput, types.TestRunnerOutput)
 
     local output: types.TestRunnerOutput = {
         total_time = 0,
@@ -134,22 +135,22 @@ function TestRunner.run_tests(test_modules: {string}, options?: TestRunnerOption
 
     return function(): (types.TestedOutput, types.TestRunnerOutput)
         i = i + 1
-        if i > #test_modules then
+        if i > #test_files then
             return nil, output
         end
 
-        local module = test_modules[i]
+        local test_file = test_files[i]
 
         -- keep track of packages that already exist.        
         local pre_test_loaded_packages: {string: boolean} = {}
         for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-        local test_module = require(module) as types.Tested
-        assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. module .."' returns the 'tested' module")
+        local test_module = load_file(test_file) as types.Tested
+        assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .."' returns the 'tested' module")
 
-        local test_output = TestRunner.run(module, test_module, options)
+        local test_output = TestRunner.run(test_file, test_module, options)
 
-        -- clear out packages that weren't there before, before running next test module
+        -- clear out packages that weren't there before, before running next test
         for package_name, _ in pairs(package.loaded) do 
             if not pre_test_loaded_packages[package_name] then
                 package.loaded[package_name] = nil

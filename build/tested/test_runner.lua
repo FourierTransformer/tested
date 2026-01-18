@@ -1,3 +1,4 @@
+local load_file = require("tested.load_file")
 
 
 
@@ -121,7 +122,7 @@ function TestRunner.run(filename, tested, options)
    return test_results
 end
 
-function TestRunner.run_tests(test_modules, options)
+function TestRunner.run_tests(test_files, options)
 
    local output = {
       total_time = 0,
@@ -134,20 +135,20 @@ function TestRunner.run_tests(test_modules, options)
 
    return function()
       i = i + 1
-      if i > #test_modules then
+      if i > #test_files then
          return nil, output
       end
 
-      local module = test_modules[i]
+      local test_file = test_files[i]
 
 
       local pre_test_loaded_packages = {}
       for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-      local test_module = require(module)
-      assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. module .. "' returns the 'tested' module")
+      local test_module = load_file(test_file)
+      assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
 
-      local test_output = TestRunner.run(module, test_module, options)
+      local test_output = TestRunner.run(test_file, test_module, options)
 
 
       for package_name, _ in pairs(package.loaded) do

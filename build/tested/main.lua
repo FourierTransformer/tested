@@ -1,7 +1,7 @@
 local argparse = require("argparse")
-local lfs = require("lfs")
-local tl = require("tl")
-tl.loader()
+local path = require("path")
+local fs = require("path.fs")
+local load_file = require("tested.load_file")
 
 local test_runner = require("tested.test_runner")
 
@@ -73,53 +73,25 @@ local function set_defaults(args)
 end
 
 local function validate_args(args)
-   for _, path in ipairs(args.paths) do
-      local _, err = lfs.attributes(path)
-      if err then error("The directory '" .. path .. "' does not appear to exist. Unable to run tests") end
-      assert(lfs.attributes(path).mode == "directory", "tested requires the paths passed in to be a directory")
+   for _, test_path in ipairs(args.paths) do
+      assert(path.exists(test_path), "The directory '" .. test_path .. "' does not appear to exist. Unable to run tests")
+      assert(path.isdir(test_path), "tested requires the paths passed in to be a directory")
    end
 end
 
-local function find_lua_and_tl_tests(path)
-   local modules = {}
-
-   for file in lfs.dir(path) do
-      local _, _, tl_module = file:find("^([^%.].-_test)%.tl$")
-      local _, _, lua_module = file:find("^([^%.].-_test)%.lua$")
-      if tl_module or lua_module then
-         local f = path .. '/' .. file
-         local attr = lfs.attributes(f)
-         if attr and attr.mode == "file" then
-            if tl_module then table.insert(modules, path .. "." .. tl_module) end
-            if lua_module then table.insert(modules, path .. "." .. lua_module) end
-         end
-      end
+local function find_lua_and_tl_tests(files, test_path)
+   for file, file_type in fs.glob(test_path .. "/**_test.lua") do
+      if file_type == "file" then table.insert(files, file) end
    end
-   return modules
+
+   for file, file_type in fs.glob(test_path .. "/**_test.tl") do
+      if file_type == "file" then table.insert(files, file) end
+   end
 end
 
 local function load_result_formatter(args)
    if args.custom_formatter then
-      local file = io.open(args.custom_formatter, "r")
-      if not file then
-         error("Unable to load custom formatter, file not found: " .. args.custom_formatter)
-      end
-
-      local formatter
-      if args.custom_formatter:find("%.tl$") then
-
-         local load_function, errors = tl.load(file:read("*all"), args.custom_formatter)
-         if not load_function then error(errors) end
-         formatter = load_function()
-         file:close()
-
-      elseif args.custom_formatter:find("^[^%.].-%.lua$") then
-         formatter = assert(loadfile(args.custom_formatter))()
-         file:close()
-
-      else
-         error("The custom formatter must point to a Lua (.lua) or Teal (.tl) file. Found: " .. args.custom_formatter)
-      end
+      local formatter = load_file(args.custom_formatter, "loading a custom formatter")
 
       if formatter then
          assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
@@ -136,8 +108,9 @@ end
 
 local function get_test_files(paths)
    local all_files = {}
-   for _, path in ipairs(paths) do
-      local filenames = find_lua_and_tl_tests(path)
+   for _, test_path in ipairs(paths) do
+      local filenames = {}
+      find_lua_and_tl_tests(filenames, test_path)
       for _, module in ipairs(filenames) do table.insert(all_files, module) end
    end
    return all_files
