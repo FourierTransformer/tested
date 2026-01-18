@@ -53,7 +53,7 @@ local record types
 
     interface TestedOutput
         tests: {TestOutput}
-        module_name: string
+        filename: string
         counts: TestCounts
         fully_tested: boolean
         total_time: number
@@ -66,6 +66,16 @@ local record types
         all_fully_tested: boolean
     end
 
+    -- needed for result handling
+    interface ResultFormatter
+        format: string
+        header: function(modules: {string})
+        results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
+        summary: function(counts: types.TestCounts, all_fully_tested: boolean, total_time: number)
+    end
+
+
+    -- needed for tested
     interface Test
         kind: TestType
         name: string

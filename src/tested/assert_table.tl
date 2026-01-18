@@ -1,4 +1,4 @@
-local inspect = require("tested.inspect")
+local inspect = require("libs.inspect")
 
 local enum TableDiff
     "missing_key"
