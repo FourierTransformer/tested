@@ -154,7 +154,6 @@ function TestRunner.run_tests(test_files, options)
       for package_name, _ in pairs(package.loaded) do
          if not pre_test_loaded_packages[package_name] then
             package.loaded[package_name] = nil
-            collectgarbage()
          end
       end
       collectgarbage()
