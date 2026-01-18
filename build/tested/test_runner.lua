@@ -15,7 +15,7 @@ local function fisher_yates_shuffle(t)
    end
 end
 
-function TestRunner.run(module_name, tested, options)
+function TestRunner.run(filename, tested, options)
    if options and options.randomize then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
@@ -28,7 +28,7 @@ function TestRunner.run(module_name, tested, options)
    local test_results = {
       counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       tests = {},
-      module_name = module_name,
+      filename = filename,
       fully_tested = false,
       total_time = 0,
    }

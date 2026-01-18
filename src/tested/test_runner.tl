@@ -5,7 +5,7 @@ local interface TestRunnerOptions
 end
 
 local record TestRunner
-    run: function(module_name: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
+    run: function(filename: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
 end
 
 local function fisher_yates_shuffle(t: {any})
@@ -15,7 +15,7 @@ local function fisher_yates_shuffle(t: {any})
     end
 end
 
-function TestRunner.run(module_name: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
+function TestRunner.run(filename: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
     if options and options.randomize then
         math.randomseed(os.time())
         fisher_yates_shuffle(tested.tests)
@@ -28,7 +28,7 @@ function TestRunner.run(module_name: string, tested: types.Tested, options?: Tes
     local test_results: types.TestedOutput = {
         counts = {passed=0, failed=0, skipped=0, invalid=0}, 
         tests = {}, 
-        module_name = module_name, 
+        filename = filename, 
         fully_tested = false,
         total_time = 0
     }

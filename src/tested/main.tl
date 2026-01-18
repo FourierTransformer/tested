@@ -4,7 +4,6 @@ local tl = require("tl")
 tl.loader() -- register the tl loader so we can rip
 
 local test_runner = require("tested.test_runner")
-local display = require("tested.display")
 local type types = require("tested.types")
 
 
@@ -32,15 +31,31 @@ local cli_to_display: {DisplayOptions:types.TestResult} = {
 local record CLIOptions
     randomize: boolean
     display: {DisplayOptions}
+    output_format: string
+    custom_formatter: string
     paths: {string}
 end
 
 local function parse_args(): CLIOptions
     local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://github.com/FourierTransformer/tested")
-    parser:flag("-v --version"):description("Show version information"):action(function() print("tested v0.0.0") os.exit(0) end)
-    parser:flag("-r --randomize"):description("Randomize the order of the tests (default: not-set)"):default(false)
-    parser:option("-d --display"):description("What test results to display (default: '-d fail -d exception -d unknown'"):choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout"}):count("*")
-    parser:argument("paths", "Path(s) to directories containing test files to run (default: 'tests')"):args("*")
+    parser:flag("-v --version")
+        :description("Show version information")
+        :action(function() print("tested v0.0.0") os.exit(0) end)
+    parser:flag("-r --randomize")
+        :description("Randomize the order of the tests (default: not-set)")
+        :default(false)
+    parser:option("-d --display")
+        :description("What test results to display (default: '-d fail -d exception -d unknown'")
+        :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout"})
+        :count("*")
+    parser:option("-o --output-format")
+        :description("What format to output the results in (default: 'terminal')")
+        :choices({"terminal", "plain"})
+        :default("terminal")
+    parser:option("-f --custom-formatter")
+        :description("Custom Formatter to use for output")
+    parser:argument("paths", "Path(s) to directories containing test files to run (default: 'tests')")
+        :args("*")
 
     local args: CLIOptions = parser:parse() as CLIOptions
     return args
@@ -65,12 +80,12 @@ local function validate_args(args: CLIOptions)
     end
 end
 
-local function find_lua_and_tl_modules(path: string): {string}
+local function find_lua_and_tl_tests(path: string): {string}
     local modules = {}
 
     for file in lfs.dir(path) do
-        local _, _, tl_module = file:find("^([^%.].-)%.tl$")
-        local _, _, lua_module = file:find("^([^%.].-)%.lua$")
+        local _, _, tl_module = file:find("^([^%.].-_test)%.tl$")
+        local _, _, lua_module = file:find("^([^%.].-_test)%.lua$")
         if tl_module or lua_module  then
             local f = path..'/'..file
             local attr = lfs.attributes(f)
@@ -83,13 +98,49 @@ local function find_lua_and_tl_modules(path: string): {string}
     return modules
 end
 
-local function get_test_modules(paths: {string}): {string}
-    local all_modules = {}
-    for _, path in ipairs(paths) do
-        local found_modules = find_lua_and_tl_modules(path)
-        for _, module in ipairs(found_modules) do table.insert(all_modules, module) end
+local function load_result_formatter(args: CLIOptions): types.ResultFormatter
+    if args.custom_formatter then
+        local file = io.open(args.custom_formatter, "r")
+        if not file then
+            error("Unable to load custom formatter, file not found: " .. args.custom_formatter)
+        end
+
+        local formatter: types.ResultFormatter
+        if args.custom_formatter:find("%.tl$") then
+            -- had some troubles wrapping in an assert...
+            local load_function, errors = tl.load(file:read("*all"), args.custom_formatter)
+            if not load_function then error(errors) end
+            formatter = load_function() as types.ResultFormatter
+            file:close()
+
+        elseif args.custom_formatter:find("^[^%.].-%.lua$") then
+            formatter = assert(loadfile(args.custom_formatter))() as types.ResultFormatter
+            file:close()
+
+        else
+            error("The custom formatter must point to a Lua (.lua) or Teal (.tl) file. Found: " .. args.custom_formatter)
+        end
+
+        if formatter then
+            assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
+            assert(formatter.results and type(formatter.results) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'results'.")
+            assert(formatter.summary and type(formatter.summary) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'summary'.")
+            return formatter
+        else
+            error("Unable to load custom formatter from: " .. args.custom_formatter)
+        end
+    else
+        return require("tested.results." .. args.output_format) as types.ResultFormatter
     end
-    return all_modules
+end
+
+local function get_test_files(paths: {string}): {string}
+    local all_files = {}
+    for _, path in ipairs(paths) do
+        local filenames = find_lua_and_tl_tests(path)
+        for _, module in ipairs(filenames) do table.insert(all_files, module) end
+    end
+    return all_files
 end
 
 local function display_types(options: {DisplayOptions}): {types.TestResult: boolean}
@@ -120,18 +171,19 @@ local function main()
     local args = parse_args()
     set_defaults(args)
     validate_args(args)
+    local formatter = load_result_formatter(args)
     
-    local test_modules = get_test_modules(args.paths)
-    assert(#test_modules > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
-    display.header(test_modules)
+    local test_files = get_test_files(args.paths)
+    assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
+    formatter.header(test_files)
 
     local runner_output: types.TestRunnerOutput
-    for test_result, output in test_runner.run_tests(test_modules, {randomize=args.randomize}) do
-        display.results(test_result, display_types(args.display))
+    for test_result, output in test_runner.run_tests(test_files, {randomize=args.randomize}) do
+        formatter.results(test_result, display_types(args.display))
         runner_output = output
     end
 
-    display.summary(runner_output.total_counts, runner_output.all_fully_tested, runner_output.total_time)
+    formatter.summary(runner_output.total_counts, runner_output.all_fully_tested, runner_output.total_time)
 
     if runner_output.all_fully_tested then
         os.exit()

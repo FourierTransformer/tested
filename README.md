@@ -141,3 +141,4 @@ Maybe others, but I think with those couple we would be good.
 ## Licences
 Parts of the following are included in the source code:
 - Bundles a slightly modified [inspect.lua](https://github.com/kikito/inspect.lua) for table diffing and viewing - MIT
+- Also bundles a slightly modified [ansicolors.lua](https://github.com/kikito/ansicolors.lua) - MIT
