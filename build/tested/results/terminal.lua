@@ -97,7 +97,7 @@ function terminal.summary(counts, all_fully_tested, total_time)
    table.insert(summary, "Other: %{yellow}" .. counts.skipped .. " skipped%{reset}, " .. counts.invalid .. " invalid")
 
    if all_fully_tested then
-      table.insert(summary, "\n{%green}Fully Tested!%{reset}")
+      table.insert(summary, "\n%{bright}Fully Tested!%{reset}")
    end
 
    print(colors(table.concat(summary, "\n")))

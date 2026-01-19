@@ -1,7 +1,6 @@
 local argparse = require("argparse")
 local lfs = require("lfs")
-local tl = require("tl")
-tl.loader() -- register the tl loader so we can rip
+local file_loader = require("tested.file_loader")
 
 local test_runner = require("tested.test_runner")
 local type types = require("tested.types")
@@ -28,33 +27,45 @@ local cli_to_display: {DisplayOptions:types.TestResult} = {
     ["timeout"] = "TIMEOUT"
 }
 
+local enum DisplayFormat
+    "terminal" "plain"
+end
+
 local record CLIOptions
-    randomize: boolean
-    display: {DisplayOptions}
-    output_format: string
+    random: boolean
+    show: {DisplayOptions}
+    display_format: DisplayFormat
     custom_formatter: string
+    format_handler: {string}
     paths: {string}
+
+    -- derived from paths
+    test_files: {string}
+    test_directories: {string}
 end
 
 local function parse_args(): CLIOptions
     local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://github.com/FourierTransformer/tested")
-    parser:flag("-v --version")
+    parser:flag("--version")
         :description("Show version information")
         :action(function() print("tested v0.0.0") os.exit(0) end)
-    parser:flag("-r --randomize")
+    parser:flag("-r --random")
         :description("Randomize the order of the tests (default: not-set)")
         :default(false)
-    parser:option("-d --display")
-        :description("What test results to display (default: '-d fail -d exception -d unknown'")
+    parser:option("-s --show")
+        :description("What test results to display (default: '-s fail -s exception -s unknown')")
         :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout"})
         :count("*")
-    parser:option("-o --output-format")
+    parser:option("-f --display-format")
         :description("What format to output the results in (default: 'terminal')")
         :choices({"terminal", "plain"})
         :default("terminal")
-    parser:option("-f --custom-formatter")
-        :description("Custom Formatter to use for output")
-    parser:argument("paths", "Path(s) to directories containing test files to run (default: 'tests')")
+    parser:option("--custom-formatter")
+        :description("File that loads a custom formatter to use for output")
+    parser:option("--format-handler")
+        :description("File that loads custom formats that are Lua-compatible")
+        :count("*")
+    parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')")
         :args("*")
 
     local args: CLIOptions = parser:parse() as CLIOptions
@@ -62,64 +73,33 @@ local function parse_args(): CLIOptions
 end
 
 local function set_defaults(args: CLIOptions)
-    if #args.display == 0 then
-        args.display = {"fail", "exception", "unknown", "timeout"}
-    end
+    if #args.show == 0 then args.show = {"fail", "exception", "unknown", "timeout"} end
+    -- if not args.paths then args.paths = {"./tests"} end
     if #args.paths == 0 then args.paths = {"tests"} end
+    args.test_files = {}
+    args.test_directories = {}
+    
     local show_all = false
-    for _, display_option in ipairs(args.display) do if display_option == "all" then show_all = true break end end
-    if show_all then args.display = {"skip", "pass", "fail", "exception", "unknown", "timeout"} end
-    if not args.paths then args.paths = {"./tests"} end
+    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true break end end
+    if show_all then args.show = {"skip", "pass", "fail", "exception", "unknown", "timeout"} end
 end
 
 local function validate_args(args: CLIOptions)
     for _, path in ipairs(args.paths) do
-        local _, err = lfs.attributes(path)
-        if err then error("The directory '" .. path .. "' does not appear to exist. Unable to run tests") end
-        assert(lfs.attributes(path).mode == "directory", "tested requires the paths passed in to be a directory")
+        local info, err = lfs.attributes(path)
+        if err then error("The file or directory '" .. path .. "' does not appear to exist. Unable to run tests") end
+        assert(info.mode == "directory" or info.mode == "file", "tested requires the paths passed in to be a directory or file")
+        if info.mode == "directory" then table.insert(args.test_directories, path) end
+        if info.mode == "file" then table.insert(args.test_files, path) end
     end
-end
-
-local function find_lua_and_tl_tests(path: string): {string}
-    local modules = {}
-
-    for file in lfs.dir(path) do
-        local _, _, tl_module = file:find("^([^%.].-_test)%.tl$")
-        local _, _, lua_module = file:find("^([^%.].-_test)%.lua$")
-        if tl_module or lua_module  then
-            local f = path..'/'..file
-            local attr = lfs.attributes(f)
-            if attr and attr.mode == "file" then
-                if tl_module then table.insert(modules, path .. "." .. tl_module) end
-                if lua_module then table.insert(modules, path .. "." .. lua_module) end
-            end
-        end
-    end
-    return modules
 end
 
 local function load_result_formatter(args: CLIOptions): types.ResultFormatter
     if args.custom_formatter then
-        local file = io.open(args.custom_formatter, "r")
-        if not file then
-            error("Unable to load custom formatter, file not found: " .. args.custom_formatter)
-        end
-
-        local formatter: types.ResultFormatter
-        if args.custom_formatter:find("%.tl$") then
-            -- had some troubles wrapping in an assert...
-            local load_function, errors = tl.load(file:read("*all"), args.custom_formatter)
-            if not load_function then error(errors) end
-            formatter = load_function() as types.ResultFormatter
-            file:close()
-
-        elseif args.custom_formatter:find("^[^%.].-%.lua$") then
-            formatter = assert(loadfile(args.custom_formatter))() as types.ResultFormatter
-            file:close()
-
-        else
-            error("The custom formatter must point to a Lua (.lua) or Teal (.tl) file. Found: " .. args.custom_formatter)
-        end
+        local info, err = lfs.attributes(args.custom_formatter)
+        if err then error("Unable to load custom formatter, the file at '" .. args.custom_formatter .. "' does not appear to exist.") end
+        assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
+        local formatter = file_loader.load_file(args.custom_formatter) as types.ResultFormatter
 
         if formatter then
             assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
@@ -130,14 +110,53 @@ local function load_result_formatter(args: CLIOptions): types.ResultFormatter
             error("Unable to load custom formatter from: " .. args.custom_formatter)
         end
     else
-        return require("tested.results." .. args.output_format) as types.ResultFormatter
+        return require("tested.results." .. args.display_format) as types.ResultFormatter
     end
 end
 
-local function get_test_files(paths: {string}): {string}
+local function register_format_handler(handlers: {string})
+    for _, handler in ipairs(handlers) do
+        local info, err = lfs.attributes(handler)
+        if err then error("Unable to load format handler, the file at '" .. handler .."' does not appear to exist.") end
+        assert(info.mode == "file", "The custom format loader should point to a file, but currently appears to be a: " .. info.mode)
+
+        file_loader.register_handler(handler)
+    end
+end
+
+local function find_tests(files: {string}, test_path: string): {string}
+    for file in lfs.dir(test_path) do
+        local _, _, extension = file:find("^[^%.].-_test(%..-)$")
+        if extension then
+            local f = test_path..'/'..file
+            local attr = lfs.attributes(f)
+            if attr then
+                if attr.mode == "file" and file_loader.file_loader[extension] then
+                    table.insert(files, f)
+
+                elseif attr.mode == "directory" then
+                    find_tests(files, f)
+
+                end
+            end
+        end
+    end
+end
+
+local function get_file_extension(str: string): string
+    return str:match("^.+(%..+)$")
+end
+
+local function get_all_test_files(args: CLIOptions): {string}
     local all_files = {}
-    for _, path in ipairs(paths) do
-        local filenames = find_lua_and_tl_tests(path)
+    for _, test_file in ipairs(args.test_files) do
+        if file_loader.file_loader[get_file_extension(test_file)] then
+            table.insert(all_files, test_file)
+        end
+    end
+    for _, test_path in ipairs(args.test_directories) do
+        local filenames = {}
+        find_tests(filenames, test_path)
         for _, module in ipairs(filenames) do table.insert(all_files, module) end
     end
     return all_files
@@ -172,14 +191,17 @@ local function main()
     set_defaults(args)
     validate_args(args)
     local formatter = load_result_formatter(args)
+    if args.format_handler then
+        register_format_handler(args.format_handler)
+    end
     
-    local test_files = get_test_files(args.paths)
+    local test_files = get_all_test_files(args)
     assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
-    formatter.header(test_files)
+    formatter.header(args.paths)
 
     local runner_output: types.TestRunnerOutput
-    for test_result, output in test_runner.run_tests(test_files, {randomize=args.randomize}) do
-        formatter.results(test_result, display_types(args.display))
+    for test_result, output in test_runner.run_tests(test_files, {random=args.random}) do
+        formatter.results(test_result, display_types(args.show))
         runner_output = output
     end
 

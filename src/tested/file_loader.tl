@@ -1,0 +1,48 @@
+local tl = require("tl")
+local type types = require("tested.types")
+
+local function load_lua_file(filepath: string): function(): any
+    return assert(loadfile(filepath))
+end
+
+local function load_teal_file(filepath: string): function(): any
+    local file = io.open(filepath, "rb")
+    local load_function, errors = tl.load(file:read("*all"), filepath)
+    file:close()
+    if not load_function then error(errors) end
+    return load_function
+end
+
+local record FileLoader
+    load_file: function(filepath: string): any
+    file_loader: {string: function(filepath: string): function()}
+    register_handler: function(filepath: string)
+end
+
+FileLoader.file_loader = {
+    [".lua"] = load_lua_file,
+    [".tl"] = load_teal_file
+}
+
+local function get_file_extension(str: string): string
+    return str:match("^.+(%..+)$")
+end
+
+function FileLoader.load_file(filepath: string): any
+    local extension = get_file_extension(filepath)
+    if FileLoader.file_loader[extension] then
+        local loader = FileLoader.file_loader[extension](filepath)
+        return loader() as any
+    else
+        error("Unable to load file of type: '" .. extension .. "'. It must be registered first")
+    end
+
+    error("No file loader found for format: " .. extension)
+end
+
+function FileLoader.register_handler(filepath: string)
+    local handler = FileLoader.load_file(filepath) as types.FileLoaderHandler
+    FileLoader.file_loader[handler.extension] = handler.loader
+end
+
+return FileLoader
