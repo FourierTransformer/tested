@@ -1,4 +1,4 @@
-local inspect = require("libs.inspect")
+local inspect = require("tested.libs.inspect")
 
 
 

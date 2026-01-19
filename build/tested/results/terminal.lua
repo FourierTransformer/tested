@@ -1,5 +1,5 @@
 
-local colors = require("libs.ansicolors")
+local colors = require("tested.libs.ansicolors")
 
 local symbol_map = {
    PASS = " ✓",

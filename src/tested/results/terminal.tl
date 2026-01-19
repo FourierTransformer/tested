@@ -1,5 +1,5 @@
 local type types = require("tested.types")
-local colors = require("libs.ansicolors")
+local colors = require("tested.libs.ansicolors")
 
 local symbol_map <total>: {types.TestResult: string} = {
     PASS = " ✓",

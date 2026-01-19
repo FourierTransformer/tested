@@ -6,8 +6,16 @@ local function load_lua_file(filepath)
 end
 
 local function load_teal_file(filepath)
+
+
+
+
+
+
+
    local file = io.open(filepath, "rb")
-   local load_function, errors = tl.load(file:read("*all"), filepath)
+
+   local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
    file:close()
    if not load_function then error(errors) end
    return load_function
@@ -44,5 +52,6 @@ function FileLoader.register_handler(filepath)
    local handler = FileLoader.load_file(filepath)
    FileLoader.file_loader[handler.extension] = handler.loader
 end
+
 
 return FileLoader
