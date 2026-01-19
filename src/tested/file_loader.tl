@@ -1,5 +1,4 @@
 local tl = require("tl")
-tl.loader()
 local type types = require("tested.types")
 
 local function load_lua_file(filepath: string): function(): any

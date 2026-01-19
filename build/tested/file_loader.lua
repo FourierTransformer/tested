@@ -1,5 +1,4 @@
 local tl = require("tl")
-tl.loader()
 
 
 local function load_lua_file(filepath)
