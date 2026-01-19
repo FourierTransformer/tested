@@ -1,4 +1,5 @@
 local tl = require("tl")
+tl.loader()
 local type types = require("tested.types")
 
 local function load_lua_file(filepath: string): function(): any
@@ -6,8 +7,16 @@ local function load_lua_file(filepath: string): function(): any
 end
 
 local function load_teal_file(filepath: string): function(): any
+    -- very dirty hacks to turn filenames into requires.
+    -- this is how I used to do it, and occaisionally go back to analyze differences
+    -- local module = filepath:gsub("^./", "")
+    -- module = module:gsub(".tl", "")
+    -- module = module:gsub("/", ".")
+    -- return function(): any return require(module) end
+
     local file = io.open(filepath, "rb")
-    local load_function, errors = tl.load(file:read("*all"), filepath)
+    -- the '@' is a quick hack to get luacov to be able to analyze the lines of teal files!
+    local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
     file:close()
     if not load_function then error(errors) end
     return load_function
@@ -45,4 +54,5 @@ function FileLoader.register_handler(filepath: string)
     FileLoader.file_loader[handler.extension] = handler.loader
 end
 
+-- ngl, this feels a little weird to do, but I really only want one shared instance of this across the app.
 return FileLoader

@@ -1,4 +1,7 @@
 local file_loader = require("tested.file_loader")
+local luacov_runner = require("luacov.runner")
+
+
 
 
 
@@ -133,9 +136,13 @@ function TestRunner.run_tests(test_files, options)
 
    local i = 0
 
+   luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+   luacov_runner.pause()
+
    return function()
       i = i + 1
       if i > #test_files then
+         luacov_runner.shutdown()
          return nil, output
       end
 
@@ -148,7 +155,9 @@ function TestRunner.run_tests(test_files, options)
       local test_module = file_loader.load_file(test_file)
       assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
 
+      luacov_runner.resume()
       local test_output = TestRunner.run(test_file, test_module, options)
+      luacov_runner.pause()
 
 
       for package_name, _ in pairs(package.loaded) do
