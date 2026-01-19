@@ -37,24 +37,34 @@ local cli_to_display = {
 
 
 
+
+
+
+
+
+
+
 local function parse_args()
    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://github.com/FourierTransformer/tested")
-   parser:flag("-v --version"):
+   parser:flag("--version"):
    description("Show version information"):
    action(function() print("tested v0.0.0"); os.exit(0) end)
-   parser:flag("-r --randomize"):
+   parser:flag("-r --random"):
    description("Randomize the order of the tests (default: not-set)"):
    default(false)
-   parser:option("-d --display"):
-   description("What test results to display (default: '-d fail -d exception -d unknown'"):
+   parser:option("-s --show"):
+   description("What test results to display (default: '-s fail -s exception -s unknown')"):
    choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout" }):
    count("*")
-   parser:option("-o --output-format"):
+   parser:option("-f --display-format"):
    description("What format to output the results in (default: 'terminal')"):
    choices({ "terminal", "plain" }):
    default("terminal")
-   parser:option("-f --custom-formatter"):
-   description("Custom Formatter to use for output")
+   parser:option("--custom-formatter"):
+   description("File that loads a custom formatter to use for output")
+   parser:option("--format-handler"):
+   description("File that loads custom formats that are Lua-compatible"):
+   count("*")
    parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')"):
    args("*")
 
@@ -63,15 +73,15 @@ local function parse_args()
 end
 
 local function set_defaults(args)
-   if #args.display == 0 then args.display = { "fail", "exception", "unknown", "timeout" } end
+   if #args.show == 0 then args.show = { "fail", "exception", "unknown", "timeout" } end
 
    if #args.paths == 0 then args.paths = { "tests" } end
    args.test_files = {}
    args.test_directories = {}
 
    local show_all = false
-   for _, display_option in ipairs(args.display) do if display_option == "all" then show_all = true; break end end
-   if show_all then args.display = { "skip", "pass", "fail", "exception", "unknown", "timeout" } end
+   for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true; break end end
+   if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown", "timeout" } end
 end
 
 local function validate_args(args)
@@ -86,7 +96,10 @@ end
 
 local function load_result_formatter(args)
    if args.custom_formatter then
-      local formatter = file_loader.load_file(args.custom_formatter, "loading a custom formatter")
+      local info, err = lfs.attributes(args.custom_formatter)
+      if err then error("Unable to load custom formatter, the file at '" .. args.custom_formatter .. "' does not appear to exist.") end
+      assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
+      local formatter = file_loader.load_file(args.custom_formatter)
 
       if formatter then
          assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
@@ -97,7 +110,17 @@ local function load_result_formatter(args)
          error("Unable to load custom formatter from: " .. args.custom_formatter)
       end
    else
-      return require("tested.results." .. args.output_format)
+      return require("tested.results." .. args.display_format)
+   end
+end
+
+local function register_format_handler(handlers)
+   for _, handler in ipairs(handlers) do
+      local info, err = lfs.attributes(handler)
+      if err then error("Unable to load format handler, the file at '" .. handler .. "' does not appear to exist.") end
+      assert(info.mode == "file", "The custom format loader should point to a file, but currently appears to be a: " .. info.mode)
+
+      file_loader.register_handler(handler)
    end
 end
 
@@ -168,14 +191,17 @@ local function main()
    set_defaults(args)
    validate_args(args)
    local formatter = load_result_formatter(args)
+   if args.format_handler then
+      register_format_handler(args.format_handler)
+   end
 
    local test_files = get_all_test_files(args)
    assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
    formatter.header(args.paths)
 
    local runner_output
-   for test_result, output in test_runner.run_tests(test_files, { randomize = args.randomize }) do
-      formatter.results(test_result, display_types(args.display))
+   for test_result, output in test_runner.run_tests(test_files, { random = args.random }) do
+      formatter.results(test_result, display_types(args.show))
       runner_output = output
    end
 

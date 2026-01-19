@@ -74,6 +74,11 @@ local record types
         summary: function(counts: types.TestCounts, all_fully_tested: boolean, total_time: number)
     end
 
+    -- needed for registering new file types
+    interface FileLoaderHandler
+        extension: string
+        loader: function(filepath: string): function(): any
+    end
 
     -- needed for tested
     interface Test

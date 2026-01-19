@@ -2,7 +2,7 @@ local file_loader = require("tested.file_loader")
 local type types = require("tested.types")
 
 local interface TestRunnerOptions
-    randomize: boolean
+    random: boolean
 end
 
 local record TestRunner
@@ -17,7 +17,7 @@ local function fisher_yates_shuffle(t: {any})
 end
 
 function TestRunner.run(filename: string, tested: types.Tested, options?: TestRunnerOptions): types.TestedOutput
-    if options and options.randomize then
+    if options and options.random then
         math.randomseed(os.time())
         fisher_yates_shuffle(tested.tests)
     end

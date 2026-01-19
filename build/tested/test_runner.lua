@@ -17,7 +17,7 @@ local function fisher_yates_shuffle(t)
 end
 
 function TestRunner.run(filename, tested, options)
-   if options and options.randomize then
+   if options and options.random then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
    end
