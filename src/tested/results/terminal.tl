@@ -34,11 +34,19 @@ function terminal.header(modules: {string})
     print()
 end
 
-local function to_ms(time: number): string
+local function to_ms(time: number, add_color: boolean): string
     if time < 1 then
-        return string.format("%.2fms", time*1000)
+        return string.format(" (%.2fms)", time*1000)
     else
-        return string.format("%.2fs", time)
+        if add_color then
+            if time > 10 then
+                return string.format(" %%{red dim}(%.2fs)%%{reset}", time)
+            else
+                return string.format(" %%{red}(%.2fs)%%{reset}", time)
+            end
+        else
+            return string.format(" (%.2fs)", time)
+        end
     end
 end
 
@@ -61,12 +69,12 @@ end
 function terminal.results(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
     local test_color = "%{bright}"
     if tested_result.fully_tested then test_color = "%{bright}" end
-    print(colors(test_color .. "- " .. tested_result.filename .. " (" .. to_ms(tested_result.total_time) .. ")"))
+    print(colors(test_color .. "- " .. tested_result.filename .. to_ms(tested_result.total_time)))
     for _, test_result in ipairs(tested_result.tests) do
 
         -- if the user wants to see it
         if test_types_to_display[test_result.result] then
-            print(colors(color_map[test_result.result] .. symbol_map[test_result.result] .. " " .. test_result.name .. " (" .. to_ms(test_result.time) .. ")"))
+            print(colors(color_map[test_result.result] .. symbol_map[test_result.result] .. " " .. test_result.name .. to_ms(test_result.time)))
             local extra_newline = false
             if test_result.result == "FAIL" or test_result.result == "PASS" then
                 for _, assertion_result in ipairs(test_result.assertion_results) do
@@ -101,7 +109,7 @@ end
 
 function terminal.summary(output: types.TestRunnerOutput)
     local summary = {}
-    table.insert(summary, "%{bright}Test Summary for " .. test_counts_s(output.total_tests) .. " (" .. to_ms(output.total_time) .. "):%{reset}")
+    table.insert(summary, "%{bright}Test Summary for " .. test_counts_s(output.total_tests) .. to_ms(output.total_time, false) .. ":%{reset}")
     table.insert(summary, "  Run: %{green}" .. output.total_counts.passed .. " passed%{reset}, %{red}" .. output.total_counts.failed .. " failed%{reset}")
     table.insert(summary, "Other: %{yellow}" .. output.total_counts.skipped .. " skipped%{reset}, " .. output.total_counts.invalid .. " invalid")
 
