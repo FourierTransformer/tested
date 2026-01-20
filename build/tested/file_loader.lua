@@ -10,6 +10,7 @@ local FileLoader = {}
 
 
 
+
 FileLoader.file_loader = {
    [".lua"] = load_lua_file,
 }
@@ -30,9 +31,13 @@ function FileLoader.load_file(filepath)
    error("No file loader found for format: " .. extension)
 end
 
-function FileLoader.register_handler(filepath)
+function FileLoader.register_handler(extension, loader)
+   FileLoader.file_loader[extension] = loader
+end
+
+function FileLoader.load_and_register_handler(filepath)
    local handler = FileLoader.load_file(filepath)
-   FileLoader.file_loader[handler.extension] = handler.loader
+   FileLoader.register_handler(handler.extension, handler.loader)
 end
 
 local tl_ok, tl = pcall(require, "tl")

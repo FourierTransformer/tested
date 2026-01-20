@@ -60,9 +60,9 @@ local function parse_args(): CLIOptions
         :description("What format to output the results in (default: 'terminal')")
         :choices({"terminal", "plain"})
         :default("terminal")
-    parser:option("--custom-formatter")
+    parser:option("-z --custom-formatter")
         :description("File that loads a custom formatter to use for output")
-    parser:option("--format-handler")
+    parser:option("-x --format-handler")
         :description("File that loads custom formats that are Lua-compatible")
         :count("*")
     parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')")
@@ -74,7 +74,6 @@ end
 
 local function set_defaults(args: CLIOptions)
     if #args.show == 0 then args.show = {"fail", "exception", "unknown", "timeout"} end
-    -- if not args.paths then args.paths = {"./tests"} end
     if #args.paths == 0 then args.paths = {"tests"} end
     args.test_files = {}
     args.test_directories = {}
@@ -96,8 +95,15 @@ end
 
 local function load_result_formatter(args: CLIOptions): types.ResultFormatter
     if args.custom_formatter then
+        -- try loading as a module first
+        local ok, custom_formatter = pcall(require, args.custom_formatter)
+        if ok then
+            return custom_formatter as types.ResultFormatter
+        end
+
+        -- then try loading from a file
         local info, err = lfs.attributes(args.custom_formatter)
-        if err then error("Unable to load custom formatter, the file at '" .. args.custom_formatter .. "' does not appear to exist.") end
+        if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
         assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
         local formatter = file_loader.load_file(args.custom_formatter) as types.ResultFormatter
 
@@ -116,11 +122,16 @@ end
 
 local function register_format_handler(handlers: {string})
     for _, handler in ipairs(handlers) do
+        local ok, module_format_handler = pcall(require, handler) as (boolean, types.FileLoaderHandler)
+        if ok then
+             file_loader.register_handler(module_format_handler.extension, module_format_handler.loader)
+        end
+
         local info, err = lfs.attributes(handler)
-        if err then error("Unable to load format handler, the file at '" .. handler .."' does not appear to exist.") end
+        if err then error("Unable to load format handler, the file/module '" .. handler .."' was not able to be loaded.") end
         assert(info.mode == "file", "The custom format loader should point to a file, but currently appears to be a: " .. info.mode)
 
-        file_loader.register_handler(handler)
+        file_loader.load_and_register_handler(handler)
     end
 end
 

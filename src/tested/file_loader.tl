@@ -7,7 +7,8 @@ end
 local record FileLoader
     load_file: function(filepath: string): any
     file_loader: {string: function(filepath: string): function()}
-    register_handler: function(filepath: string)
+    register_handler: function(extension: string, loader: function(filepath: string): function(): any)
+    load_and_register_handler: function(filepath: string)
 end
 
 FileLoader.file_loader = {
@@ -30,9 +31,13 @@ function FileLoader.load_file(filepath: string): any
     error("No file loader found for format: " .. extension)
 end
 
-function FileLoader.register_handler(filepath: string)
+function FileLoader.register_handler(extension: string, loader: function(filepath: string): function(): any)
+    FileLoader.file_loader[extension] = loader
+end
+
+function FileLoader.load_and_register_handler(filepath: string)
     local handler = FileLoader.load_file(filepath) as types.FileLoaderHandler
-    FileLoader.file_loader[handler.extension] = handler.loader
+    FileLoader.register_handler(handler.extension, handler.loader) 
 end
 
 local tl_ok, tl = pcall(require, "tl")
