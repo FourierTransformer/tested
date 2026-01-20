@@ -34,7 +34,7 @@ function terminal.header(modules: {string})
     print()
 end
 
-local function to_ms(time: number, add_color: boolean): string
+local function to_ms(time: number, add_color?: boolean): string
     if time < 1 then
         return string.format(" (%.2fms)", time*1000)
     else
@@ -74,7 +74,7 @@ function terminal.results(tested_result: types.TestedOutput, test_types_to_displ
 
         -- if the user wants to see it
         if test_types_to_display[test_result.result] then
-            print(colors(color_map[test_result.result] .. symbol_map[test_result.result] .. " " .. test_result.name .. to_ms(test_result.time)))
+            print(colors(color_map[test_result.result] .. symbol_map[test_result.result] .. " " .. test_result.name .. to_ms(test_result.time, false)))
             local extra_newline = false
             if test_result.result == "FAIL" or test_result.result == "PASS" then
                 for _, assertion_result in ipairs(test_result.assertion_results) do
