@@ -90,13 +90,22 @@ function terminal.results(tested_result, test_types_to_display)
    end
 end
 
-function terminal.summary(counts, all_fully_tested, total_time)
-   local summary = {}
-   table.insert(summary, "%{bright}Test Summary (" .. to_ms(total_time) .. "):%{reset}")
-   table.insert(summary, "  Run: %{green}" .. counts.passed .. " passed%{reset}, %{red}" .. counts.failed .. " failed%{reset}")
-   table.insert(summary, "Other: %{yellow}" .. counts.skipped .. " skipped%{reset}, " .. counts.invalid .. " invalid")
 
-   if all_fully_tested then
+local function test_counts_s(test_count)
+   if test_count == 1 then
+      return tostring(test_count) .. " test"
+   else
+      return tostring(test_count) .. " tests"
+   end
+end
+
+function terminal.summary(output)
+   local summary = {}
+   table.insert(summary, "%{bright}Test Summary for " .. test_counts_s(output.total_tests) .. " (" .. to_ms(output.total_time) .. "):%{reset}")
+   table.insert(summary, "  Run: %{green}" .. output.total_counts.passed .. " passed%{reset}, %{red}" .. output.total_counts.failed .. " failed%{reset}")
+   table.insert(summary, "Other: %{yellow}" .. output.total_counts.skipped .. " skipped%{reset}, " .. output.total_counts.invalid .. " invalid")
+
+   if output.all_fully_tested then
       table.insert(summary, "\n%{bright}Fully Tested!%{reset}")
    end
 

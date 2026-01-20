@@ -63,6 +63,7 @@ local record types
         module_results: {TestedOutput}
         total_counts: TestCounts
         total_time: number
+        total_tests: integer
         all_fully_tested: boolean
     end
 
@@ -71,7 +72,7 @@ local record types
         format: string
         header: function(modules: {string})
         results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
-        summary: function(counts: types.TestCounts, all_fully_tested: boolean, total_time: number)
+        summary: function(runner_output: types.TestRunnerOutput)
     end
 
     -- needed for registering new file types

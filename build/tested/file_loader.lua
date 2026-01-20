@@ -1,24 +1,7 @@
-local tl = require("tl")
 
 
 local function load_lua_file(filepath)
    return assert(loadfile(filepath))
-end
-
-local function load_teal_file(filepath)
-
-
-
-
-
-
-
-   local file = io.open(filepath, "rb")
-
-   local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
-   file:close()
-   if not load_function then error(errors) end
-   return load_function
 end
 
 local FileLoader = {}
@@ -29,7 +12,6 @@ local FileLoader = {}
 
 FileLoader.file_loader = {
    [".lua"] = load_lua_file,
-   [".tl"] = load_teal_file,
 }
 
 local function get_file_extension(str)
@@ -51,6 +33,26 @@ end
 function FileLoader.register_handler(filepath)
    local handler = FileLoader.load_file(filepath)
    FileLoader.file_loader[handler.extension] = handler.loader
+end
+
+local tl_ok, tl = pcall(require, "tl")
+if tl_ok then
+   local function load_teal_file(filepath)
+
+
+
+
+
+
+
+      local file = io.open(filepath, "rb")
+
+      local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
+      file:close()
+      if not load_function then error(errors) end
+      return load_function
+   end
+   FileLoader.file_loader[".tl"] = load_teal_file
 end
 
 

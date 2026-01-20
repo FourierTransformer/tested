@@ -205,7 +205,7 @@ local function main()
       runner_output = output
    end
 
-   formatter.summary(runner_output.total_counts, runner_output.all_fully_tested, runner_output.total_time)
+   formatter.summary(runner_output)
 
    if runner_output.all_fully_tested then
       os.exit()
