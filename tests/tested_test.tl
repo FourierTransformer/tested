@@ -76,6 +76,13 @@ tested.test("Properly handles exception in assert", function()
     })
 end)
 
+tested.test("assert_throws_exception handles exception in assert", function()
+    tested.assert_throws_exception({
+        given = "2 + 2",
+        actual = function() error("gets raised, but handled!") end
+    })
+end)
+
 tested.test("should return unknown since no tested.assert called", function() end)
 
 return tested

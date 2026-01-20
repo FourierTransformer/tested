@@ -50,7 +50,18 @@ function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
     end
 
     return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
+end
 
+function tested.assert_truthy(assertion: types.TruthyAssertion): boolean, string
+    return tested.assert({given=assertion.given, should="be truthy", expected=true, actual=(not not (assertion.actual)) })
+end
+
+function tested.assert_falsy(assertion: types.FalsyAssertion): boolean, string
+    return tested.assert({given=assertion.given, should="be falsy", expected=false, actual=(not not (assertion.actual)) })
+end
+
+function tested.assert_throws_exception(assertion: types.ExceptionAssertion): boolean, string
+    return tested.assert({given=assertion.given, should="throw exception", expected=false, actual=pcall(function() assertion.actual() end) })
 end
 
 return tested

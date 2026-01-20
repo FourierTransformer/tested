@@ -129,6 +129,7 @@ function TestRunner.run_tests(test_files, options)
 
    local output = {
       total_time = 0,
+      total_tests = 0,
       all_fully_tested = true,
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
@@ -177,6 +178,7 @@ function TestRunner.run_tests(test_files, options)
       output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
+      output.total_tests = output.total_tests + #test_output.tests
 
       return test_output, output
    end
