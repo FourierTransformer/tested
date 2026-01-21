@@ -210,10 +210,16 @@ local function main()
    assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
    formatter.header(args.paths)
 
-   local runner_output
-   for test_result, output in test_runner.run_tests(test_files, { random = args.random }) do
+
+
+
+
+
+
+   local runner_output = test_runner.run_parallel_tests(test_files, { random = args.random })
+   for _, test_result in ipairs(runner_output.module_results) do
+      print(test_result)
       formatter.results(test_result, display_types(args.show))
-      runner_output = output
    end
 
    formatter.summary(runner_output)

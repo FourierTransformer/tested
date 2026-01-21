@@ -1,5 +1,5 @@
-local file_loader = require("tested.file_loader")
 local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
+local thread_pool = require("tested.libs.thread_pool")
 
 
 
@@ -12,17 +12,189 @@ local TestRunner = {}
 
 
 
-local function fisher_yates_shuffle(t)
-   for i = #t, 2, -1 do
-      local j = math.random(i)
-      t[i], t[j] = t[j], t[i]
-   end
-end
 
-function TestRunner.run(filename, tested, options)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local function load_and_run_test(test_file, options)
+   print("load and run test?")
+   local file_loader = require("tested.file_loader")
+   local tested = file_loader.load_file(test_file)
+   print("file loaded " .. test_file)
+   assert(type(tested) == "table" and type(tested.tests) == "table" and type(tested.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
+
    if options and options.random then
       math.randomseed(os.time())
-      fisher_yates_shuffle(tested.tests)
+
    end
 
    if tested.run_only_tests then
@@ -32,7 +204,7 @@ function TestRunner.run(filename, tested, options)
    local test_results = {
       counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       tests = {},
-      filename = filename,
+      filename = test_file,
       fully_tested = false,
       total_time = 0,
    }
@@ -125,8 +297,8 @@ function TestRunner.run(filename, tested, options)
    return test_results
 end
 
-function TestRunner.run_tests(test_files, options)
 
+function TestRunner.run_parallel_tests(test_files, options)
    local output = {
       total_time = 0,
       total_tests = 0,
@@ -134,55 +306,15 @@ function TestRunner.run_tests(test_files, options)
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
    }
-
-   local i = 0
-
-   if luacov_loaded then
-      luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
-      luacov_runner.pause()
+   local pool = thread_pool.init(4)
+   local input = {}
+   for i = 1, #test_files do
+      input[i] = { test_files[i] }
    end
 
-   return function()
-      i = i + 1
-      if i > #test_files then
-         if luacov_loaded then luacov_runner.shutdown() end
-         return nil, output
-      end
+   output.module_results = pool:map(load_and_run_test, input)
 
-      local test_file = test_files[i]
-
-
-      local pre_test_loaded_packages = {}
-      for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
-
-      local test_module = file_loader.load_file(test_file)
-      assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
-
-      if luacov_loaded then luacov_runner.resume() end
-      local test_output = TestRunner.run(test_file, test_module, options)
-      if luacov_loaded then luacov_runner.pause() end
-
-
-      for package_name, _ in pairs(package.loaded) do
-         if not pre_test_loaded_packages[package_name] then
-            package.loaded[package_name] = nil
-         end
-      end
-      collectgarbage()
-
-      output.module_results[i] = test_output
-
-      if test_output.fully_tested == false then output.all_fully_tested = false end
-      output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
-      output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
-      output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
-      output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
-      output.total_time = output.total_time + test_output.total_time
-      output.total_tests = output.total_tests + #test_output.tests
-
-      return test_output, output
-   end
-
+   return output
 end
 
 return TestRunner
