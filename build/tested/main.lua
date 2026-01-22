@@ -3,6 +3,7 @@ local lfs = require("lfs")
 local file_loader = require("tested.file_loader")
 
 local test_runner = require("tested.test_runner")
+local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 
 
 
@@ -216,7 +217,7 @@ local function main()
 
 
 
-   local runner_output = test_runner.run_parallel_tests(test_files, { random = args.random })
+   local runner_output = run_parallel_tests(test_files, { random = args.random })
    for _, test_result in ipairs(runner_output.module_results) do
       print(test_result)
       formatter.results(test_result, display_types(args.show))

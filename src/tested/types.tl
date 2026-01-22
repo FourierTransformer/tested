@@ -3,6 +3,10 @@
 local record types
 
     -- test running types
+    interface TestRunnerOptions
+        random: boolean
+    end
+
     enum TestResult
         "PASS"
         "FAIL"
