@@ -1,6 +1,6 @@
-# tested
+# `tested`
 
-tested is a new (and somewhat experimental) unit testing framework that can be used for Lua and Teal unit tests. It is designed to generate an easy-to-read output that helps you quickly identify what the issue is.
+`tested` is a new (and somewhat experimental) unit testing framework that can be used for Lua and Teal unit tests. It is designed to generate an easy-to-read output that helps you quickly identify what the issue is.
 
 ## Installing
 
@@ -106,7 +106,7 @@ Test Summary (0.068ms):
 Other: 1 skipped, 0 invalid
 ```
 
-Running the tests are as simple as placing the file in a `tests` folder and then running the CLI command `tested` (which should be installed from LuaRocks). It will go through the `tests` folder, load each file, and run it through the test framework. It also doesn't matter if the test is written in Lua or Teal, tested is able to load and run both!
+Running the tests are as simple as placing the file in a `tests` folder and then running the CLI command `tested` (which should be installed from LuaRocks). It will go through the `tests` folder, load each file, and run it through the test framework. It also doesn't matter if the test is written in Lua or Teal, `tested` is able to load and run both!
 
 
 ## tested cli arguments

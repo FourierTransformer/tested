@@ -8,6 +8,8 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
+local TESTED_VERSION = "tested v0.0.1"
+
 local type types = require("tested.types")
 
 local enum DisplayOptions
@@ -46,9 +48,10 @@ local record CLIOptions
    debug: logging.level
    threads: integer
 
-   -- derived from paths
+   -- derived from above values
    test_files: {string}
    test_directories: {string}
+   specified_show: boolean
 end
 
 local function parse_args(): CLIOptions
@@ -84,7 +87,7 @@ local function parse_args(): CLIOptions
       :default("WARNING")
    parser:flag("--version")
       :description("Show version information")
-      :action(function() print("tested v0.0.0") os.exit(0) end)
+      :action(function() print(TESTED_VERSION) os.exit(0) end)
    parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')")
       :args("*")
 
@@ -96,7 +99,12 @@ end
 
 local function set_defaults(args: CLIOptions)
    logger:info("Setting Defaults...")
-   if #args.show == 0 then args.show = {"fail", "exception", "unknown", "timeout"} end
+   if #args.show == 0 then 
+      args.show = {"fail", "exception", "unknown", "timeout"}
+      args.specified_show = false
+   else
+      args.specified_show = true
+   end
    if #args.paths == 0 then args.paths = {"tests"} end
    args.test_files = {}
    args.test_directories = {}
@@ -261,6 +269,9 @@ local function main()
    set_defaults(args)
    validate_args(args)
    local formatter = load_result_formatter(args)
+   if args.specified_show and formatter.allow_filtering == false then
+      logger:warning("It appears the formatter you selected does not allow filtering. Please remove the '-s, --show' paramters from the CLI invocation")
+   end
    if args.format_handler then
       register_format_handler(args.format_handler)
    end
@@ -270,7 +281,7 @@ local function main()
    assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
    
    -- running the tests
-   formatter.header(args.paths)
+   formatter.header(TESTED_VERSION, args.paths)
    local runner_output = run_tests(formatter, args, test_files)
    formatter.summary(runner_output)
    

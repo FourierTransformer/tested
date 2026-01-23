@@ -27,10 +27,13 @@ local record terminal is types.ResultFormatter where self.format == "terminal"
 end
 
 terminal.format = "terminal"
+terminal.allow_filtering = true
+
+-- used to disable the colors in the "plain" formatter
 terminal.colors = colors
 
-function terminal.header(modules: {string})
-   print(colors("%{bright}tested v0.0.0  " .. table.concat(modules, " ")))
+function terminal.header(version_info: string, filepaths: {string})
+   print(colors("%{bright}" .. version_info .. "  " .. table.concat(filepaths, " ")))
    print()
 end
 
@@ -118,6 +121,9 @@ function terminal.summary(output: types.TestRunnerOutput)
    end
 
    print(colors(table.concat(summary, "\n")))
+
+   local inspect = require("tested.libs.inspect")
+   print(inspect.inspect(output, {}))
 end
 
 return terminal
