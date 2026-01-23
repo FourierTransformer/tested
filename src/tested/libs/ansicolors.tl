@@ -73,6 +73,7 @@ local keys: {string: integer} = {
   magenta   = 35,
   cyan      = 36,
   white     = 37,
+  grey      = 38,
 
   -- background colors
   blackbg   = 40,

@@ -4,7 +4,8 @@ tested is a new (and somewhat experimental) unit testing framework that can be u
 
 ## Installing
 
-We're not currently in LuaRocks, so you can install it by cloning this repo and running a `luarocks make`.
+We're not currently on LuaRocks, so pulling down this repo and running a `luarocks make` is the best way to get it installed!
+
 
 ## A basic test
 
@@ -138,7 +139,13 @@ As far as only one assert check (for equality). While I do think luassert has to
 
 Maybe others, but I think with those couple we would be good.
 
-## Licences
+## AI Disclosure
+- AI was not used to write any of this code. It's all been hand written over the course of 2-3 weeks.
+- AI was used to help research Lua internals (mostly around file loading and the debug module)
+- AI helped generate a prettier terminal output.
+  - I fed it my [original terminal output], and it re-formatted it to something that looks a lot closer to the final terminal output.
+
+## Licenses
 Parts of the following are included in the source code:
 - Bundles a slightly modified [inspect.lua](https://github.com/kikito/inspect.lua) for table diffing and viewing - MIT
 - Also bundles a slightly modified [ansicolors.lua](https://github.com/kikito/ansicolors.lua) - MIT

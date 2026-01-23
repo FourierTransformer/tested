@@ -73,6 +73,7 @@ local keys = {
    magenta = 35,
    cyan = 36,
    white = 37,
+   grey = 38,
 
 
    blackbg = 40,
