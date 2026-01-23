@@ -15,7 +15,7 @@ local function fisher_yates_shuffle(t: {any})
    end
 end
 
-function TestRunner.run(filename: string, tested: types.Tested, options?: types.TestRunnerOptions): types.TestedOutput
+function TestRunner.run(filename: string, tested: types.Tested, options: types.TestRunnerOptions): types.TestedOutput
    logger:info(filename .. ": starting test")
    if options and options.random then
       math.randomseed(os.time())
@@ -122,7 +122,7 @@ function TestRunner.run(filename: string, tested: types.Tested, options?: types.
    return test_results
 end
 
-function TestRunner.run_with_cleanup(file_loader: types.FileLoader, test_file: string, options?: types.TestRunnerOptions): types.TestedOutput
+function TestRunner.run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
 
    logger:info(test_file .. ": keeping track of pre-loaded packages")
    local pre_test_loaded_packages: {string: boolean} = {}
@@ -148,12 +148,15 @@ end
 
 function TestRunner.run_tests(
    test_files: {string},
-   options?: types.TestRunnerOptions
+   options: types.TestRunnerOptions
 ): function(): (types.TestedOutput, types.TestRunnerOutput)
 
    -- these get called in here to avoid weirdness with lanes
    -- if they are called outside, the lanes will sometimes hang.
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
+   if options and options.coverage and not luacov_loaded then
+      error("Code coverage requires the luacov module to be installed")
+   end
    local file_loader = require("tested.file_loader")
 
    local output: types.TestRunnerOutput = {
@@ -166,15 +169,15 @@ function TestRunner.run_tests(
 
    local i = 0
 
-   if luacov_loaded then
+   if options.coverage then
+      logger:info("Initializing luacov")
       luacov_runner.init({exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
-      luacov_runner.pause()
    end
 
    return function(): (types.TestedOutput, types.TestRunnerOutput)
       i = i + 1
       if i > #test_files then
-         if luacov_loaded then luacov_runner.shutdown() end
+         if options.coverage then luacov_runner.shutdown() end
          return nil, output
       end
 
@@ -197,7 +200,7 @@ function TestRunner.run_tests(
 
 end
 
-local function load_and_run_test(test_file: string, options?: types.TestRunnerOptions): types.TestedOutput
+local function load_and_run_test(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
    -- I feel like there's some way to get this loaded into Lanes.
    -- Notably, it needs to be added to lanes _after_ any language registration,
    -- because I think lanes will copy it somewhere?
@@ -208,7 +211,7 @@ end
 local function run_parallel_tests(
    test_files: {string},
    num_threads: integer,
-   options?: types.TestRunnerOptions
+   options: types.TestRunnerOptions
 ): types.TestRunnerOutput
 
    local output: types.TestRunnerOutput = {
@@ -219,7 +222,7 @@ local function run_parallel_tests(
       module_results = {}
    }
 
-   local pool = thread_pool.init(num_threads)
+   local pool = thread_pool.init(num_threads, options.coverage)
    local input = {}
    for i = 1, #test_files do
       input[i] = {test_files[i], options}

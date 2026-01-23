@@ -22,7 +22,6 @@ local logger = logging.get_logger("tested.main")
 
 
 
-
 local cli_to_display = {
    ["skip"] = "SKIP",
    ["pass"] = "PASS",
@@ -82,7 +81,7 @@ local function parse_args()
    parser:option("-d --debug"):
    description("Set the log level - mostly for debugging purposes (default: 'WARNING')"):
    choices({ "DEBUG", "INFO", "WARNING" }):
-   default("INFO")
+   default("WARNING")
    parser:flag("--version"):
    description("Show version information"):
    action(function() print("tested v0.0.0"); os.exit(0) end)
@@ -230,10 +229,15 @@ local function display_types(options)
 end
 
 local function run_tests(formatter, args, test_files)
+   local options = {
+      random = args.random,
+      coverage = args.coverage,
+   }
+
    if args.threads == 0 then
       logger:info("Running tests sequentially")
       local runner_output
-      for test_result, output in TestRunner.run_tests(test_files, { random = args.random }) do
+      for test_result, output in TestRunner.run_tests(test_files, options) do
          formatter.results(test_result, display_types(args.show))
          runner_output = output
       end
@@ -241,7 +245,7 @@ local function run_tests(formatter, args, test_files)
    end
 
    logger:info("Running tests in parallel")
-   local runner_output = run_parallel_tests(test_files, args.threads, { random = args.random })
+   local runner_output = run_parallel_tests(test_files, args.threads, options)
    for _, test_result in ipairs(runner_output.module_results) do
       formatter.results(test_result, display_types(args.show))
    end

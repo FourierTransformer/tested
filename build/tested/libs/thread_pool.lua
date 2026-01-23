@@ -1,6 +1,7 @@
 local lanes = require("lanes").configure()
 local logging = require("tested.libs.logging")
 
+
 local logger = logging.get_logger("tested.libs.thread_pool")
 
 
@@ -31,16 +32,21 @@ local _result_queue = "results"
 
 
 
-local function worker(num, linda)
+local function worker(num, run_coverage, linda)
    logger:info("Starting worker " .. num)
-   local luacov_runner = require("luacov.runner")
+
+   local luacov
+
+   if run_coverage then
 
 
 
 
-
-   luacov_runner.init({ statsfile = num .. ".cov.out", tick = true, exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
-   luacov_runner.pause()
+      local luacov_runner = require("luacov.runner")
+      luacov_runner.init({ statsfile = num .. ".cov.out", tick = true, exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+      luacov_runner.pause()
+      luacov = luacov_runner
+   end
 
    while true do
       logger:debug("Worker " .. num .. " waiting for task")
@@ -49,12 +55,13 @@ local function worker(num, linda)
       logger:debug("Worker " .. num .. " Got task " .. task_data.order)
 
 
-      luacov_runner.resume()
+      if run_coverage then luacov.resume() end
       local success, result = pcall(task_data.func, table.unpack(task_data.args))
-      luacov_runner.pause()
+      if run_coverage then luacov.pause() end
 
-      local coverage_data = luacov_runner.data
-      luacov_runner.data = {}
+      local coverage_data = {}
+      if run_coverage then coverage_data = luacov.data end
+      if run_coverage then luacov.data = {} end
 
       logger:debug(
       "Worker " .. num .. " finished task " .. task_data.order ..
@@ -70,7 +77,7 @@ local function worker(num, linda)
    end
 end
 
-function ThreadPool.init(workers)
+function ThreadPool.init(workers, run_coverage)
    local instance = setmetatable({}, { __index = ThreadPool })
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -78,7 +85,7 @@ function ThreadPool.init(workers)
    for i = 1, workers do
 
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, instance.linda)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance
 end

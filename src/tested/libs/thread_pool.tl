@@ -1,5 +1,6 @@
 local lanes = require("lanes").configure()
 local logging = require("tested.libs.logging")
+local type luacov_type = require("luacov.runner")
 
 local logger = logging.get_logger("tested.libs.thread_pool")
 
@@ -12,7 +13,7 @@ local record ThreadPool
       code_coverage: table
    end
 
-   init: function(workers: integer): ThreadPool
+   init: function(workers: integer, run_coverage: boolean): ThreadPool
    map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, timeout?: number): {Result<T>}
    shutdown: function(self: ThreadPool, timeout?: number)
    workers: {lanes.Lane}
@@ -31,16 +32,21 @@ local record Task
 end
 
 -- waits for a task, then executes it
-local function worker(num: integer, linda: lanes.Linda)
+local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    logger:info("Starting worker " .. num)
-   local luacov_runner = require("luacov.runner")
+   
+   local luacov: luacov_type
 
-   -- I _really_ don't like instantiating luacov way out here.
-   -- I tried to do some init/shutdown stuff in test_runner.tl,
-   -- but ran into a bunch of issues wrt either lanes hanging or
-   -- not having the statsfile get saved off correctly
-   luacov_runner.init({statsfile= num .. ".cov.out", tick=true, exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
-   luacov_runner.pause()
+   if run_coverage then
+      -- I _really_ don't like instantiating luacov way out here.
+      -- I tried to do some init/shutdown stuff in test_runner.tl,
+      -- but ran into a bunch of issues wrt either lanes hanging or
+      -- not having the statsfile get saved off correctly
+      local luacov_runner = require("luacov.runner")
+      luacov_runner.init({statsfile= num .. ".cov.out", tick=true, exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+      luacov_runner.pause()
+      luacov = luacov_runner
+   end
    
    while true do
       logger:debug("Worker " .. num .. " waiting for task")
@@ -49,12 +55,13 @@ local function worker(num: integer, linda: lanes.Linda)
       logger:debug("Worker " .. num .. " Got task " .. task_data.order)
 
       -- Execute the task
-      luacov_runner.resume()
+      if run_coverage then luacov.resume() end
       local success, result = pcall(task_data.func, table.unpack(task_data.args))
-      luacov_runner.pause()
+      if run_coverage then luacov.pause() end
 
-      local coverage_data = luacov_runner.data
-      luacov_runner.data = {}
+      local coverage_data = {}
+      if run_coverage then coverage_data = luacov.data end
+      if run_coverage then luacov.data = {} end
 
       logger:debug(
          "Worker " .. num .. " finished task " .. task_data.order .. 
@@ -70,7 +77,7 @@ local function worker(num: integer, linda: lanes.Linda)
    end
 end
 
-function ThreadPool.init(workers: integer): ThreadPool
+function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
    local instance = setmetatable({}, {__index=ThreadPool}) as ThreadPool
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -78,7 +85,7 @@ function ThreadPool.init(workers: integer): ThreadPool
    for i = 1, workers do
       -- Create worker lanes with separate state
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, instance.linda)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance
 end

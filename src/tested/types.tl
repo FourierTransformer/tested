@@ -10,6 +10,7 @@ local record types
    -- test running types
    interface TestRunnerOptions
       random: boolean
+      coverage: boolean
    end
 
    enum TestResult

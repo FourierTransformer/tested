@@ -154,6 +154,9 @@ function TestRunner.run_tests(
 
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
+   if options and options.coverage and not luacov_loaded then
+      error("Code coverage requires the luacov module to be installed")
+   end
    local file_loader = require("tested.file_loader")
 
    local output = {
@@ -166,15 +169,15 @@ function TestRunner.run_tests(
 
    local i = 0
 
-   if luacov_loaded then
+   if options.coverage then
+      logger:info("Initializing luacov")
       luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
-      luacov_runner.pause()
    end
 
    return function()
       i = i + 1
       if i > #test_files then
-         if luacov_loaded then luacov_runner.shutdown() end
+         if options.coverage then luacov_runner.shutdown() end
          return nil, output
       end
 
@@ -219,7 +222,7 @@ local function run_parallel_tests(
       module_results = {},
    }
 
-   local pool = thread_pool.init(num_threads)
+   local pool = thread_pool.init(num_threads, options.coverage)
    local input = {}
    for i = 1, #test_files do
       input[i] = { test_files[i], options }
