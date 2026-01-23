@@ -1,10 +1,5 @@
 local thread_pool = require("tested.libs.thread_pool")
 
-local inspect = require("tested.libs.inspect")
-
-
-
-
 
 local TestRunner = {}
 
@@ -125,6 +120,29 @@ function TestRunner.run(filename, tested, options)
    return test_results
 end
 
+function TestRunner.run_with_cleanup(file_loader, test_file, options)
+
+
+   local pre_test_loaded_packages = {}
+   for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
+
+   local test_module = file_loader.load_file(test_file)
+   assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
+
+   local test_results = TestRunner.run(test_file, test_module, options)
+
+   for package_name, _ in pairs(package.loaded) do
+      if not pre_test_loaded_packages[package_name] then
+
+         package.loaded[package_name] = nil
+      end
+   end
+   collectgarbage()
+
+   return test_results
+
+end
+
 function TestRunner.run_tests(test_files, options)
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    local file_loader = require("tested.file_loader")
@@ -153,33 +171,7 @@ function TestRunner.run_tests(test_files, options)
 
       local test_file = test_files[i]
 
-
-
-
-
-
-      local pre_test_loaded_packages = {}
-      for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
-
-      local test_module = file_loader.load_file(test_file)
-      assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
-
-      if luacov_loaded then luacov_runner.resume() end
-      local test_output = TestRunner.run(test_file, test_module, options)
-      if luacov_loaded then luacov_runner.pause() end
-
-
-      for package_name, _ in pairs(package.loaded) do
-         if not pre_test_loaded_packages[package_name] then
-            package.loaded[package_name] = nil
-         end
-      end
-      collectgarbage()
-
-
-
-
-
+      local test_output = TestRunner.run_with_cleanup(file_loader, test_file, options)
 
       output.module_results[i] = test_output
 
@@ -196,42 +188,17 @@ function TestRunner.run_tests(test_files, options)
 
 end
 
-
-
-
 local function load_and_run_test(test_file, options)
-
    local file_loader = require("tested.file_loader")
-
-
-   local pre_test_loaded_packages = {}
-   for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
-
-
-   local test_module = file_loader.load_file(test_file)
-   assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
-
-
-
-   local test_results = TestRunner.run(test_file, test_module, options)
-
-
-
-
-
-
-   for package_name, _ in pairs(package.loaded) do
-      if not pre_test_loaded_packages[package_name] then
-
-         package.loaded[package_name] = nil
-      end
-   end
-   collectgarbage()
-
-   return test_results
+   return TestRunner.run_with_cleanup(file_loader, test_file, options)
 end
 
-local function run_parallel_tests(test_files, options)
+local function run_parallel_tests(
+   test_files,
+   num_threads,
+   options)
+
+
    local output = {
       total_time = 0,
       total_tests = 0,
@@ -239,10 +206,10 @@ local function run_parallel_tests(test_files, options)
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
    }
-   local pool = thread_pool.init(4)
+   local pool = thread_pool.init(num_threads)
    local input = {}
    for i = 1, #test_files do
-      input[i] = { test_files[i] }
+      input[i] = { test_files[i], options }
    end
 
    local map_results = pool:map(load_and_run_test, input)

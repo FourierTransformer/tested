@@ -2,6 +2,11 @@
 
 local record types
 
+    -- file loader
+    interface FileLoader
+        load_file: function(filepath: string): any
+    end
+
     -- test running types
     interface TestRunnerOptions
         random: boolean

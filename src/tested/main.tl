@@ -241,7 +241,7 @@ local function run_tests(formatter: types.ResultFormatter, args: CLIOptions, tes
     end
 
     logger:info("Running tests in parallel")
-    local runner_output = run_parallel_tests(test_files, {random=args.random})
+    local runner_output = run_parallel_tests(test_files, args.threads, {random=args.random})
     for _, test_result in ipairs(runner_output.module_results) do
         formatter.results(test_result, display_types(args.show))
     end
@@ -264,7 +264,7 @@ local function main()
     local test_files = get_all_test_files(args)
     assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
     
-    -- runnint the tests
+    -- running the tests
     formatter.header(args.paths)
     local runner_output = run_tests(formatter, args, test_files)
     formatter.summary(runner_output)

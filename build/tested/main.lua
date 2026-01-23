@@ -241,7 +241,7 @@ local function run_tests(formatter, args, test_files)
    end
 
    logger:info("Running tests in parallel")
-   local runner_output = run_parallel_tests(test_files, { random = args.random })
+   local runner_output = run_parallel_tests(test_files, args.threads, { random = args.random })
    for _, test_result in ipairs(runner_output.module_results) do
       formatter.results(test_result, display_types(args.show))
    end
