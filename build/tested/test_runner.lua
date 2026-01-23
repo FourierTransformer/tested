@@ -1,11 +1,14 @@
 local thread_pool = require("tested.libs.thread_pool")
+local logging = require("tested.libs.logging")
 
+
+local logger = logging.get_logger("tested.test_runner")
 
 local TestRunner = {}
 
 
-
 local function fisher_yates_shuffle(t)
+   logger:info("Shuffling tests!")
    for i = #t, 2, -1 do
       local j = math.random(i)
       t[i], t[j] = t[j], t[i]
@@ -13,14 +16,14 @@ local function fisher_yates_shuffle(t)
 end
 
 function TestRunner.run(filename, tested, options)
-
+   logger:info(filename .. ": starting test")
    if options and options.random then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
    end
 
    if tested.run_only_tests then
-
+      logger:warning("Only running tests with 'tested.only'")
    end
 
    local test_results = {
@@ -30,7 +33,6 @@ function TestRunner.run(filename, tested, options)
       fully_tested = false,
       total_time = 0,
    }
-
 
    for i, test in ipairs(tested.tests) do
 
@@ -116,13 +118,13 @@ function TestRunner.run(filename, tested, options)
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
    end
-
+   logger:info(filename .. ": completed running tests!")
    return test_results
 end
 
 function TestRunner.run_with_cleanup(file_loader, test_file, options)
 
-
+   logger:info(test_file .. ": keeping track of pre-loaded packages")
    local pre_test_loaded_packages = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
@@ -131,9 +133,10 @@ function TestRunner.run_with_cleanup(file_loader, test_file, options)
 
    local test_results = TestRunner.run(test_file, test_module, options)
 
+   logger:info(test_file .. " Clearing out any packages that were loaded")
    for package_name, _ in pairs(package.loaded) do
       if not pre_test_loaded_packages[package_name] then
-
+         logger:debug(test_file .. ": Clearing out package: " .. package_name)
          package.loaded[package_name] = nil
       end
    end
@@ -143,7 +146,13 @@ function TestRunner.run_with_cleanup(file_loader, test_file, options)
 
 end
 
-function TestRunner.run_tests(test_files, options)
+function TestRunner.run_tests(
+   test_files,
+   options)
+
+
+
+
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    local file_loader = require("tested.file_loader")
 
@@ -189,6 +198,9 @@ function TestRunner.run_tests(test_files, options)
 end
 
 local function load_and_run_test(test_file, options)
+
+
+
    local file_loader = require("tested.file_loader")
    return TestRunner.run_with_cleanup(file_loader, test_file, options)
 end
@@ -206,6 +218,7 @@ local function run_parallel_tests(
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
    }
+
    local pool = thread_pool.init(num_threads)
    local input = {}
    for i = 1, #test_files do

@@ -20,7 +20,6 @@ local ThreadPool = {}
 
 
 
-local _default_workers = 4
 local _task_queue = "tasks"
 local _result_queue = "results"
 
@@ -44,10 +43,10 @@ local function worker(num, linda)
    luacov_runner.pause()
 
    while true do
-
+      logger:debug("Worker " .. num .. " waiting for task")
 
       local _queue, task_data = linda:receive(_task_queue)
-
+      logger:debug("Worker " .. num .. " Got task " .. task_data.order)
 
 
       luacov_runner.resume()
@@ -57,6 +56,9 @@ local function worker(num, linda)
       local coverage_data = luacov_runner.data
       luacov_runner.data = {}
 
+      logger:debug(
+      "Worker " .. num .. " finished task " .. task_data.order ..
+      ": " .. tostring(success) .. " " .. tostring(result))
 
 
       if success then
@@ -71,14 +73,11 @@ end
 function ThreadPool.init(workers)
    local instance = setmetatable({}, { __index = ThreadPool })
    instance.linda = lanes.linda()
-   local threads = workers or _default_workers
    instance.workers = {}
 
-   for i = 1, threads do
-
+   for i = 1, workers do
 
       local worker_lane = lanes.gen("*", worker)
-      logger:info("Creating worker " .. i)
       instance.workers[i] = worker_lane(i, instance.linda)
    end
    return instance
@@ -86,7 +85,7 @@ end
 
 function ThreadPool:map(func, args_list, _timeout)
    local total_calls = #args_list
-
+   logger:info("Sending " .. total_calls .. " tasks")
    for i = 1, total_calls do
       local task_data = {
          order = i,
@@ -95,12 +94,10 @@ function ThreadPool:map(func, args_list, _timeout)
       }
 
 
-
-
       self.linda:send(_task_queue, task_data)
    end
 
-
+   logger:info("Waiting for results...")
 
    local i = 1
    local output = {}
@@ -108,7 +105,6 @@ function ThreadPool:map(func, args_list, _timeout)
       i = i + 1
       local _queue, results = self.linda:receive(_result_queue)
       output[results.order] = results
-
       if i > #args_list then
          return output
       end
