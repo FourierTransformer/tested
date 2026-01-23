@@ -4,7 +4,7 @@ local type luacov_type = require("luacov.runner")
 
 local logger = logging.get_logger("tested.libs.thread_pool")
 
--- very basic threadpool.
+-- very basic threadpool. I really wish I could've made this more generic, but time and limitations are real.
 local record ThreadPool
    interface Result<T>
       error: string
@@ -14,7 +14,7 @@ local record ThreadPool
    end
 
    init: function(workers: integer, run_coverage: boolean): ThreadPool
-   map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, timeout?: number): {Result<T>}
+   map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, display_func: function(T), timeout?: number): {Result<T>}
    shutdown: function(self: ThreadPool, timeout?: number)
    workers: {lanes.Lane}
    linda: lanes.Linda
@@ -43,7 +43,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
       -- but ran into a bunch of issues wrt either lanes hanging or
       -- not having the statsfile get saved off correctly
       local luacov_runner = require("luacov.runner")
-      luacov_runner.init({statsfile= num .. ".cov.out", tick=true, exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+      luacov_runner.init({statsfile= num .. ".cov.out", exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
       luacov_runner.pause()
       luacov = luacov_runner
    end
@@ -60,8 +60,10 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
       if run_coverage then luacov.pause() end
 
       local coverage_data = {}
-      if run_coverage then coverage_data = luacov.data end
-      if run_coverage then luacov.data = {} end
+      if run_coverage then 
+         coverage_data = luacov.data 
+         luacov.data = {} 
+      end
 
       logger:debug(
          "Worker " .. num .. " finished task " .. task_data.order .. 
@@ -90,7 +92,13 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
    return instance
 end
 
-function ThreadPool:map<T>(func: function(...: any): T, args_list: {{any}}, _timeout?: number): {ThreadPool.Result<T>}
+function ThreadPool:map<T>(
+   func: function(...: any): T, 
+   args_list: {{any}}, 
+   display_func: function(T), 
+   _timeout?: number
+): {ThreadPool.Result<T>}
+
    local total_calls = #args_list
    logger:info("Sending " .. total_calls .. " tasks")
    for i = 1, total_calls do
@@ -112,6 +120,7 @@ function ThreadPool:map<T>(func: function(...: any): T, args_list: {{any}}, _tim
       i = i + 1
       local _queue, results: string, ThreadPool.Result<T> = self.linda:receive(_result_queue) as (string, ThreadPool.Result<T>)
       output[results.order] = results
+      display_func(results.result)
       if i > #args_list then
          return output
       end

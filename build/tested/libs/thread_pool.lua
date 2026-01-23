@@ -43,7 +43,7 @@ local function worker(num, run_coverage, linda)
 
 
       local luacov_runner = require("luacov.runner")
-      luacov_runner.init({ statsfile = num .. ".cov.out", tick = true, exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+      luacov_runner.init({ statsfile = num .. ".cov.out", exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
       luacov_runner.pause()
       luacov = luacov_runner
    end
@@ -60,8 +60,10 @@ local function worker(num, run_coverage, linda)
       if run_coverage then luacov.pause() end
 
       local coverage_data = {}
-      if run_coverage then coverage_data = luacov.data end
-      if run_coverage then luacov.data = {} end
+      if run_coverage then
+         coverage_data = luacov.data
+         luacov.data = {}
+      end
 
       logger:debug(
       "Worker " .. num .. " finished task " .. task_data.order ..
@@ -90,7 +92,13 @@ function ThreadPool.init(workers, run_coverage)
    return instance
 end
 
-function ThreadPool:map(func, args_list, _timeout)
+function ThreadPool:map(
+   func,
+   args_list,
+   display_func,
+   _timeout)
+
+
    local total_calls = #args_list
    logger:info("Sending " .. total_calls .. " tasks")
    for i = 1, total_calls do
@@ -112,6 +120,7 @@ function ThreadPool:map(func, args_list, _timeout)
       i = i + 1
       local _queue, results = self.linda:receive(_result_queue)
       output[results.order] = results
+      display_func(results.result)
       if i > #args_list then
          return output
       end

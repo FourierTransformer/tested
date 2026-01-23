@@ -234,21 +234,25 @@ local function run_tests(formatter, args, test_files)
       coverage = args.coverage,
    }
 
+   local display_results = function(test_output)
+      formatter.results(test_output, display_types(args.show))
+   end
+
    if args.threads == 0 then
       logger:info("Running tests sequentially")
       local runner_output
       for test_result, output in TestRunner.run_tests(test_files, options) do
-         formatter.results(test_result, display_types(args.show))
+         display_results(test_result)
          runner_output = output
       end
       return runner_output
    end
 
    logger:info("Running tests in parallel")
-   local runner_output = run_parallel_tests(test_files, args.threads, options)
-   for _, test_result in ipairs(runner_output.module_results) do
-      formatter.results(test_result, display_types(args.show))
-   end
+   local runner_output = run_parallel_tests(test_files, args.threads, options, display_results)
+
+
+
 
    return runner_output
 end

@@ -211,7 +211,8 @@ end
 local function run_parallel_tests(
    test_files: {string},
    num_threads: integer,
-   options: types.TestRunnerOptions
+   options: types.TestRunnerOptions,
+   display_func: function(to_display: types.TestedOutput)
 ): types.TestRunnerOutput
 
    local output: types.TestRunnerOutput = {
@@ -228,7 +229,7 @@ local function run_parallel_tests(
       input[i] = {test_files[i], options}
    end
 
-   local map_results = pool:map(load_and_run_test, input)
+   local map_results = pool:map(load_and_run_test, input, display_func)
    for i, map_result in ipairs(map_results) do
       output.module_results[i] = map_result.result
    end
