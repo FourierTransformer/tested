@@ -251,9 +251,6 @@ local function run_tests(formatter, args, test_files)
    logger:info("Running tests in parallel")
    local runner_output = run_parallel_tests(test_files, args.threads, options, display_results)
 
-
-
-
    return runner_output
 end
 

@@ -57,6 +57,8 @@ local record types
 
    interface TestRunnerOutput
       module_results: {TestedOutput}
+      -- removing until we can safely retain all stats.
+      -- coverage_results: {table}
       total_counts: TestCounts
       total_time: number
       total_tests: integer

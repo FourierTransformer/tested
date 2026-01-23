@@ -166,12 +166,14 @@ function TestRunner.run_tests(
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
    }
+   local coverage_results = {}
 
    local i = 0
 
    if options.coverage then
       logger:info("Initializing luacov")
       luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+      luacov_runner.pause()
    end
 
    return function()
@@ -181,11 +183,17 @@ function TestRunner.run_tests(
          return nil, output
       end
 
-      local test_file = test_files[i]
+      local coverage = {}
 
-      local test_output = TestRunner.run_with_cleanup(file_loader, test_file, options)
+      if options.coverage then luacov_runner.resume() end
+      local test_output = TestRunner.run_with_cleanup(file_loader, test_files[i], options)
+      if options.coverage then
+         coverage = luacov_runner.data
+         luacov_runner.resume()
+      end
 
       output.module_results[i] = test_output
+      coverage_results[i] = coverage
 
       if test_output.fully_tested == false then output.all_fully_tested = false end
       output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
@@ -222,6 +230,7 @@ local function run_parallel_tests(
       total_counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
       module_results = {},
    }
+   local coverage_results = {}
 
    local pool = thread_pool.init(num_threads, options.coverage)
    local input = {}
@@ -232,6 +241,30 @@ local function run_parallel_tests(
    local map_results = pool:map(load_and_run_test, input, display_func)
    for i, map_result in ipairs(map_results) do
       output.module_results[i] = map_result.result
+      coverage_results[i] = map_result.code_coverage
+   end
+   pool:shutdown()
+
+
+
+
+   if options.coverage then
+
+
+      local luacov = require("luacov.runner")
+      luacov.data = {}
+      luacov.configuration = { statsfile = "luacov.stats.out" }
+
+      for _, stats in ipairs(coverage_results) do
+         for name, file_data in pairs(stats) do
+            if luacov.data[name] then
+               luacov.update_stats(luacov.data[name], file_data)
+            else
+               luacov.data[name] = file_data
+            end
+         end
+      end
+      luacov.save_stats()
    end
 
    for _, test_output in ipairs(output.module_results) do

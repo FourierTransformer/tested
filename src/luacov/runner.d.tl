@@ -19,7 +19,9 @@ local record runner
    pause: function()
    resume: function()
    save_stats: function()
+   update_stats: function(table, table)   
    data: table
+   configuration: LuacovConfig
 end
 
 
