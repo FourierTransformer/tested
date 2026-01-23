@@ -4,6 +4,10 @@ local file_loader = require("tested.file_loader")
 
 local test_runner = require("tested.test_runner")
 local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
+
+local logging = require("tested.libs.logging")
+local logger = logging.get_logger("tested.main")
+
 local type types = require("tested.types")
 
 
@@ -33,12 +37,15 @@ local enum DisplayFormat
 end
 
 local record CLIOptions
+    coverage: boolean
     random: boolean
     show: {DisplayOptions}
     display_format: DisplayFormat
     custom_formatter: string
     format_handler: {string}
     paths: {string}
+    debug: logging.level
+    threads: integer
 
     -- derived from paths
     test_files: {string}
@@ -46,10 +53,10 @@ local record CLIOptions
 end
 
 local function parse_args(): CLIOptions
-    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://github.com/FourierTransformer/tested")
-    parser:flag("--version")
-        :description("Show version information")
-        :action(function() print("tested v0.0.0") os.exit(0) end)
+    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io")
+    parser:flag("-c --coverage")
+        :description("Enable code coverage - will generate luacov.stats.out (default: not-set)")
+        :default(false)
     parser:flag("-r --random")
         :description("Randomize the order of the tests (default: not-set)")
         :default(false)
@@ -57,23 +64,39 @@ local function parse_args(): CLIOptions
         :description("What test results to display (default: '-s fail -s exception -s unknown')")
         :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout"})
         :count("*")
-    parser:option("-f --display-format")
-        :description("What format to output the results in (default: 'terminal')")
-        :choices({"terminal", "plain"})
-        :default("terminal")
-    parser:option("-z --custom-formatter")
-        :description("File that loads a custom formatter to use for output")
+    parser:mutex(
+        parser:option("-f --display-format")
+            :description("What format to output the results in (default: 'terminal')")
+            :choices({"terminal", "plain"})
+            :default("terminal"),
+        parser:option("-z --custom-formatter")
+            :description("File that loads a custom formatter to use for output")
+    )
+    parser:option("-n --threads")
+        :description("Set the number of threads to run the tests with (default: 4). Set to 0 to disable.")
+        :default(4)
+        :convert(tonumber)
     parser:option("-x --format-handler")
         :description("File that loads custom formats that are Lua-compatible")
         :count("*")
+    parser:option("-d --debug")
+        :description("Set the log level - mostly for debugging purposes (default: 'WARNING')")
+        :choices({"DEBUG", "INFO", "WARNING"})
+        :default("INFO")
+    parser:flag("--version")
+        :description("Show version information")
+        :action(function() print("tested v0.0.0") os.exit(0) end)
     parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')")
         :args("*")
+
+    logger:info("Parsing Arguments...")
 
     local args: CLIOptions = parser:parse() as CLIOptions
     return args
 end
 
 local function set_defaults(args: CLIOptions)
+    logger:info("Setting Defaults...")
     if #args.show == 0 then args.show = {"fail", "exception", "unknown", "timeout"} end
     if #args.paths == 0 then args.paths = {"tests"} end
     args.test_files = {}
@@ -85,6 +108,7 @@ local function set_defaults(args: CLIOptions)
 end
 
 local function validate_args(args: CLIOptions)
+    logger:info("Validating args...")
     for _, path in ipairs(args.paths) do
         local info, err = lfs.attributes(path)
         if err then error("The file or directory '" .. path .. "' does not appear to exist. Unable to run tests") end
@@ -96,13 +120,16 @@ end
 
 local function load_result_formatter(args: CLIOptions): types.ResultFormatter
     if args.custom_formatter then
+        logger:info("Loading custom formatter: " .. args.custom_formatter)
         -- try loading as a module first
         local ok, custom_formatter = pcall(require, args.custom_formatter)
         if ok then
+            logger:info("Successfully loaded custom formatter as module")
             return custom_formatter as types.ResultFormatter
         end
 
         -- then try loading from a file
+        logger:info("Unable to load as module, attempting to load from filepath")
         local info, err = lfs.attributes(args.custom_formatter)
         if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
         assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
@@ -117,12 +144,14 @@ local function load_result_formatter(args: CLIOptions): types.ResultFormatter
             error("Unable to load custom formatter from: " .. args.custom_formatter)
         end
     else
+        logger:info("Loading builtin formatter: " .. args.display_format)
         return require("tested.results." .. args.display_format) as types.ResultFormatter
     end
 end
 
 local function register_format_handler(handlers: {string})
     for _, handler in ipairs(handlers) do
+        logger:info("Registering format handler: " .. handler)
         local ok, module_format_handler = pcall(require, handler) as (boolean, types.FileLoaderHandler)
         if ok then
              file_loader.register_handler(module_format_handler.extension, module_format_handler.loader)
@@ -137,6 +166,7 @@ local function register_format_handler(handlers: {string})
 end
 
 local function find_tests(files: {string}, test_path: string): {string}
+    logger:info("Looking for test files in " .. test_path)
     for file in lfs.dir(test_path) do
         local _, _, extension = file:find("^[^%.].-_test(%..-)$")
         if extension then
@@ -153,6 +183,7 @@ local function find_tests(files: {string}, test_path: string): {string}
             end
         end
     end
+    logger:info("Found " .. #files .. " test files to run in " .. test_path)
 end
 
 local function get_file_extension(str: string): string
@@ -198,8 +229,30 @@ local function display_types(options: {DisplayOptions}): {types.TestResult: bool
     return to_display
 end
 
+local function run_tests(formatter: types.ResultFormatter, args: CLIOptions, test_files: {string}): types.TestRunnerOutput
+    if args.threads == 0 then
+        logger:info("Running tests sequentially")
+        local runner_output: types.TestRunnerOutput
+        for test_result, output in TestRunner.run_tests(test_files, {random=args.random}) do
+            formatter.results(test_result, display_types(args.show))
+            runner_output = output
+        end
+        return runner_output
+    end
+
+    logger:info("Running tests in parallel")
+    local runner_output = run_parallel_tests(test_files, {random=args.random})
+    for _, test_result in ipairs(runner_output.module_results) do
+        formatter.results(test_result, display_types(args.show))
+    end
+
+    return runner_output
+end
+
 local function main()
+    -- setting up defaults and registering things...
     local args = parse_args()
+    logging.set_level(args.debug)
     set_defaults(args)
     validate_args(args)
     local formatter = load_result_formatter(args)
@@ -207,24 +260,16 @@ local function main()
         register_format_handler(args.format_handler)
     end
     
+    -- finding all the files
     local test_files = get_all_test_files(args)
     assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
+    
+    -- runnint the tests
     formatter.header(args.paths)
-
-    -- local runner_output: types.TestRunnerOutput
-    -- for test_result, output in TestRunner.run_tests(test_files, {random=args.random}) do
-    --     formatter.results(test_result, display_types(args.show))
-    --     runner_output = output
-    -- end
-
-    local runner_output = run_parallel_tests(test_files, {random=args.random})
-    for _, test_result in ipairs(runner_output.module_results) do
-        print(test_result)
-        formatter.results(test_result, display_types(args.show))
-    end
-
+    local runner_output = run_tests(formatter, args, test_files)
     formatter.summary(runner_output)
-
+    
+    -- exiting cleanly
     if runner_output.all_fully_tested then
         os.exit()
     else

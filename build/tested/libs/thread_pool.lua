@@ -1,7 +1,17 @@
-local lanes = require("lanes").configure({ demote_full_userdata = true })
+local lanes = require("lanes").configure()
+local logging = require("tested.libs.logging")
+
+local logger = logging.get_logger("tested.libs.thread_pool")
 
 
 local ThreadPool = {}
+
+
+
+
+
+
+
 
 
 
@@ -22,13 +32,16 @@ local _result_queue = "results"
 
 
 
-
-
-
-
-
-
 local function worker(num, linda)
+   logger:info("Starting worker " .. num)
+   local luacov_runner = require("luacov.runner")
+
+
+
+
+
+   luacov_runner.init({ statsfile = num .. ".cov.out", tick = true, exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+   luacov_runner.pause()
 
    while true do
 
@@ -37,31 +50,38 @@ local function worker(num, linda)
 
 
 
+      luacov_runner.resume()
       local success, result = pcall(task_data.func, table.unpack(task_data.args))
-      print("Task complete!", success, result)
+      luacov_runner.pause()
+
+      local coverage_data = luacov_runner.data
+      luacov_runner.data = {}
+
+
 
       if success then
-         linda:send(_result_queue, { result = result, order = task_data.order })
+         linda:send(_result_queue, { result = result, code_coverage = coverage_data, order = task_data.order })
       else
          print("error", error)
-         linda:send(_result_queue, { error = result, order = task_data.order })
+         linda:send(_result_queue, { error = result, code_coverage = coverage_data, order = task_data.order })
       end
    end
 end
 
 function ThreadPool.init(workers)
-   local self = setmetatable(ThreadPool, {})
-   self.linda = lanes.linda()
+   local instance = setmetatable({}, { __index = ThreadPool })
+   instance.linda = lanes.linda()
    local threads = workers or _default_workers
-   self.workers = {}
+   instance.workers = {}
 
    for i = 1, threads do
 
-      local worker_lane = lanes.gen("*", worker)
 
-      self.workers[i] = worker_lane(i, self.linda)
+      local worker_lane = lanes.gen("*", worker)
+      logger:info("Creating worker " .. i)
+      instance.workers[i] = worker_lane(i, instance.linda)
    end
-   return self
+   return instance
 end
 
 function ThreadPool:map(func, args_list, _timeout)
@@ -74,20 +94,20 @@ function ThreadPool:map(func, args_list, _timeout)
          args = args_list[i],
       }
 
-      print(task_data.args[1])
+
 
 
       self.linda:send(_task_queue, task_data)
    end
 
-   print("Waiting for results...")
+
 
    local i = 1
    local output = {}
    while true do
       i = i + 1
       local _queue, results = self.linda:receive(_result_queue)
-      output[results.order] = results.result
+      output[results.order] = results
 
       if i > #args_list then
          return output
@@ -98,7 +118,7 @@ end
 
 function ThreadPool:shutdown(timeout)
    for i = 1, #self.workers do
-      self.workers[i]:cancel("hard", timeout)
+      self.workers[i]:cancel("soft", timeout)
    end
 end
 

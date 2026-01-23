@@ -1,5 +1,7 @@
 local thread_pool = require("tested.libs.thread_pool")
 
+local inspect = require("tested.libs.inspect")
+
 local type types = require("tested.types")
 
 
@@ -16,13 +18,14 @@ local function fisher_yates_shuffle(t: {any})
 end
 
 function TestRunner.run(filename: string, tested: types.Tested, options?: types.TestRunnerOptions): types.TestedOutput
+    -- print(filename .. " starting test")
     if options and options.random then
         math.randomseed(os.time())
         fisher_yates_shuffle(tested.tests)
     end
 
     if tested.run_only_tests then
-        print("Only running tests with 'tested.only'")
+        -- print("Only running tests with 'tested.only'")
     end
 
     local test_results: types.TestedOutput = {
@@ -118,6 +121,7 @@ function TestRunner.run(filename: string, tested: types.Tested, options?: types.
     if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
         test_results.fully_tested = true
     end
+    -- print(filename .. " returning test_results")
     return test_results
 end
 
@@ -149,6 +153,10 @@ function TestRunner.run_tests(test_files: {string}, options?: types.TestRunnerOp
 
         local test_file = test_files[i]
 
+
+
+
+
         -- keep track of packages that already exist.        
         local pre_test_loaded_packages: {string: boolean} = {}
         for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
@@ -168,6 +176,11 @@ function TestRunner.run_tests(test_files: {string}, options?: types.TestRunnerOp
         end
         collectgarbage()
 
+
+
+
+
+
         output.module_results[i] = test_output
 
         if test_output.fully_tested == false then output.all_fully_tested = false end
@@ -183,13 +196,37 @@ function TestRunner.run_tests(test_files: {string}, options?: types.TestRunnerOp
 
 end
 
+-- local luacov_runner = require("luacov.runner")
+
+-- local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
 local function load_and_run_test(test_file: string, options?: types.TestRunnerOptions): types.TestedOutput
+    -- print(test_file .. " in load_and_run_test")
     local file_loader = require("tested.file_loader")
-    local tested = file_loader.load_file(test_file) as types.Tested
 
-    assert(type(tested) == "table" and type(tested.tests) == "table" and type(tested.run_only_tests) == "boolean", "It does not appear that '" .. test_file .."' returns the 'tested' module")
+    -- keep track of packages that already exist.        
+    local pre_test_loaded_packages: {string: boolean} = {}
+    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-    local test_results = TestRunner.run(test_file, tested, options)
+
+    local test_module = file_loader.load_file(test_file) as types.Tested
+    assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .."' returns the 'tested' module")
+
+    -- luacov_runner.init({statsfile= test_file .. ".cov.out", tick=true, exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+    -- print(test_file .. " starting testrunner.run")
+    local test_results = TestRunner.run(test_file, test_module, options)
+
+    -- print(test_file .. " finished running test")
+    -- luacov_runner.shutdown()
+    -- print(test_file .. " attempting to save off stats")
+
+    -- clear out packages that weren't there before, before running next test
+    for package_name, _ in pairs(package.loaded) do 
+        if not pre_test_loaded_packages[package_name] then
+            -- print("Clearing out: " .. package_name)
+            package.loaded[package_name] = nil
+        end
+    end
+    collectgarbage()
 
     return test_results
 end
@@ -208,7 +245,10 @@ local function run_parallel_tests(test_files: {string}, options?: types.TestRunn
         input[i] = {test_files[i]}
     end
 
-    output.module_results = pool:map(load_and_run_test, input)
+    local map_results = pool:map(load_and_run_test, input)
+    for i, map_result in ipairs(map_results) do
+        output.module_results[i] = map_result.result
+    end
 
     for _, test_output in ipairs(output.module_results) do
         if test_output.fully_tested == false then output.all_fully_tested = false end

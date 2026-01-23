@@ -1,9 +1,19 @@
-local lanes = require("lanes").configure({demote_full_userdata=true})
+local lanes = require("lanes").configure()
+local logging = require("tested.libs.logging")
+
+local logger = logging.get_logger("tested.libs.thread_pool")
 
 -- very basic threadpool.
 local record ThreadPool
+    interface Result<T>
+        error: string
+        result: T
+        order: integer
+        code_coverage: table
+    end
+
     init: function(workers: integer): ThreadPool
-    map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, timeout?: number): {T}
+    map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, timeout?: number): {Result<T>}
     shutdown: function(self: ThreadPool, timeout?: number)
     workers: {lanes.Lane}
     linda: lanes.Linda
@@ -21,50 +31,60 @@ local record Task
     args: table
 end
 
-local record Result
-    error: string
-    result: any
-    order: integer
-end
-
 -- waits for a task, then executes it
 local function worker(num: integer, linda: lanes.Linda)
-    -- print("Starting worker " .. num)
+    logger:info("Starting worker " .. num)
+    local luacov_runner = require("luacov.runner")
+
+    -- I _really_ don't like instantiating luacov way out here.
+    -- I tried to do some init/shutdown stuff in test_runner.tl,
+    -- but ran into a bunch of issues wrt either lanes hanging or
+    -- not having the statsfile get saved off correctly
+    luacov_runner.init({statsfile= num .. ".cov.out", tick=true, exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+    luacov_runner.pause()
+    
     while true do
         -- print("worker " .. num .. " waiting for task")
-        -- Get a task from the queue should blocking call
+        -- Get a task from the queue should be a blocking call
         local _queue, task_data = linda:receive(_task_queue) as (string, Task)
-        -- print("Got task!")
+        -- print("worker " .. num .. " Got task " .. task_data.order)
 
         -- Execute the task
+        luacov_runner.resume()
         local success, result = pcall(task_data.func, table.unpack(task_data.args))
-        print("Task complete!", success, result)
+        luacov_runner.pause()
+
+        local coverage_data = luacov_runner.data
+        luacov_runner.data = {}
+
+        -- print("worker " .. num .. " finished task " .. task_data.order, success, result)
 
         if success then
-            linda:send(_result_queue, {result=result, order=task_data.order})
+            linda:send(_result_queue, {result=result, code_coverage=coverage_data, order=task_data.order})
         else
             print("error", error)
-            linda:send(_result_queue, {error = result, order=task_data.order})
+            linda:send(_result_queue, {error = result, code_coverage=coverage_data, order=task_data.order})
         end
     end
 end
 
 function ThreadPool.init(workers?: integer): ThreadPool
-    local self = setmetatable(ThreadPool, {})
-    self.linda = lanes.linda()
+    local instance = setmetatable({}, {__index=ThreadPool}) as ThreadPool
+    instance.linda = lanes.linda()
     local threads = workers or _default_workers
-    self.workers = {}
+    instance.workers = {}
 
     for i = 1, threads do
         -- Create worker lanes with separate state
+        -- local worker_lane = lanes.gen("*", {required={"luacov"}}, worker)
         local worker_lane = lanes.gen("*", worker)
-        -- print("Creating worker " .. i)
-        self.workers[i] = worker_lane(i, self.linda)
+        logger:info("Creating worker " .. i)
+        instance.workers[i] = worker_lane(i, instance.linda)
     end
-    return self
+    return instance
 end
 
-function ThreadPool:map<T>(func: function(...: any): T, args_list: {{any}}, _timeout?: number): {T}
+function ThreadPool:map<T>(func: function(...: any): T, args_list: {{any}}, _timeout?: number): {ThreadPool.Result<T>}
     local total_calls = #args_list
     -- print("Sending " .. total_calls .. " tasks")
     for i = 1, total_calls do
@@ -74,23 +94,23 @@ function ThreadPool:map<T>(func: function(...: any): T, args_list: {{any}}, _tim
             args = args_list[i]
         }
 
-        print(task_data.args[1])
+        -- print(task_data.args[1])
 
         -- Send task to queue
         self.linda:send(_task_queue, task_data)
     end
 
-    print("Waiting for results...")
+    -- print("Waiting for results...")
 
     local i = 1
     local output = {}
     while true do
         i = i + 1
-        local _queue, results = self.linda:receive(_result_queue) as (string, Result)
-        output[results.order] = results.result
-        -- print("result", results.order, results.result)
+        local _queue, results: string, ThreadPool.Result<T> = self.linda:receive(_result_queue) as (string, ThreadPool.Result<T>)
+        output[results.order] = results
+        -- print("result", i, results.order)
         if i > #args_list then
-            return output as {T}
+            return output
         end
     end
     
@@ -98,7 +118,7 @@ end
 
 function ThreadPool:shutdown(timeout?: number)
     for i = 1, #self.workers do
-        self.workers[i]:cancel("hard", timeout)
+        self.workers[i]:cancel("soft", timeout)
     end
 end
 

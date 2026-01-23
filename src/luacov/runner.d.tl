@@ -18,6 +18,8 @@ local record runner
     shutdown: function()
     pause: function()
     resume: function()
+    save_stats: function()
+    data: table
 end
 
 

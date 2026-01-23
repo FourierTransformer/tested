@@ -1,5 +1,7 @@
 local thread_pool = require("tested.libs.thread_pool")
 
+local inspect = require("tested.libs.inspect")
+
 
 
 
@@ -16,13 +18,14 @@ local function fisher_yates_shuffle(t)
 end
 
 function TestRunner.run(filename, tested, options)
+
    if options and options.random then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
    end
 
    if tested.run_only_tests then
-      print("Only running tests with 'tested.only'")
+
    end
 
    local test_results = {
@@ -118,6 +121,7 @@ function TestRunner.run(filename, tested, options)
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
    end
+
    return test_results
 end
 
@@ -150,6 +154,10 @@ function TestRunner.run_tests(test_files, options)
       local test_file = test_files[i]
 
 
+
+
+
+
       local pre_test_loaded_packages = {}
       for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
@@ -168,6 +176,11 @@ function TestRunner.run_tests(test_files, options)
       end
       collectgarbage()
 
+
+
+
+
+
       output.module_results[i] = test_output
 
       if test_output.fully_tested == false then output.all_fully_tested = false end
@@ -183,13 +196,37 @@ function TestRunner.run_tests(test_files, options)
 
 end
 
+
+
+
 local function load_and_run_test(test_file, options)
+
    local file_loader = require("tested.file_loader")
-   local tested = file_loader.load_file(test_file)
 
-   assert(type(tested) == "table" and type(tested.tests) == "table" and type(tested.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
 
-   local test_results = TestRunner.run(test_file, tested, options)
+   local pre_test_loaded_packages = {}
+   for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
+
+
+   local test_module = file_loader.load_file(test_file)
+   assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
+
+
+
+   local test_results = TestRunner.run(test_file, test_module, options)
+
+
+
+
+
+
+   for package_name, _ in pairs(package.loaded) do
+      if not pre_test_loaded_packages[package_name] then
+
+         package.loaded[package_name] = nil
+      end
+   end
+   collectgarbage()
 
    return test_results
 end
@@ -208,7 +245,10 @@ local function run_parallel_tests(test_files, options)
       input[i] = { test_files[i] }
    end
 
-   output.module_results = pool:map(load_and_run_test, input)
+   local map_results = pool:map(load_and_run_test, input)
+   for i, map_result in ipairs(map_results) do
+      output.module_results[i] = map_result.result
+   end
 
    for _, test_output in ipairs(output.module_results) do
       if test_output.fully_tested == false then output.all_fully_tested = false end
