@@ -21,7 +21,7 @@ local enum DisplayOptions
    "fail"
    "exception"
    "unknown"
-   "timeout"
+   -- "timeout" -- NYI
 end
 
 local cli_to_display: {DisplayOptions:types.TestResult} = {
@@ -30,7 +30,7 @@ local cli_to_display: {DisplayOptions:types.TestResult} = {
    ["fail"] = "FAIL",
    ["exception"] = "EXCEPTION",
    ["unknown"] = "UNKNOWN",
-   ["timeout"] = "TIMEOUT"
+   -- ["timeout"] = "TIMEOUT"
 }
 
 local enum DisplayFormat
@@ -55,7 +55,7 @@ local record CLIOptions
 end
 
 local function parse_args(): CLIOptions
-   local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io")
+   local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io/tested")
    parser:flag("-c --coverage")
       :description("Enable code coverage - will generate luacov.stats.out (default: not-set)")
       :default(false)
@@ -64,7 +64,7 @@ local function parse_args(): CLIOptions
       :default(false)
    parser:option("-s --show")
       :description("What test results to display (default: '-s fail -s exception -s unknown')")
-      :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout"})
+      :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown"})
       :count("*")
    parser:mutex(
       parser:option("-f --display-format")
@@ -100,7 +100,7 @@ end
 local function set_defaults(args: CLIOptions)
    logger:info("Setting Defaults...")
    if #args.show == 0 then 
-      args.show = {"fail", "exception", "unknown", "timeout"}
+      args.show = {"fail", "exception", "unknown"} -- NYI: timeout
       args.specified_show = false
    else
       args.specified_show = true
@@ -111,7 +111,7 @@ local function set_defaults(args: CLIOptions)
    
    local show_all = false
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true break end end
-   if show_all then args.show = {"skip", "pass", "fail", "exception", "unknown", "timeout"} end
+   if show_all then args.show = {"skip", "pass", "fail", "exception", "unknown"} end -- NYI: timeout
 end
 
 local function validate_args(args: CLIOptions)

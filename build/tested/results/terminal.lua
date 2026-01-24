@@ -27,10 +27,13 @@ local terminal = {}
 
 
 terminal.format = "terminal"
+terminal.allow_filtering = true
+
+
 terminal.colors = colors
 
-function terminal.header(modules)
-   print(colors("%{bright}tested v0.0.0  " .. table.concat(modules, " ")))
+function terminal.header(version_info, filepaths)
+   print(colors("%{bright}" .. version_info .. "  " .. table.concat(filepaths, " ")))
    print()
 end
 
@@ -118,6 +121,9 @@ function terminal.summary(output)
    end
 
    print(colors(table.concat(summary, "\n")))
+
+   local inspect = require("tested.libs.inspect")
+   print(inspect.inspect(output, {}))
 end
 
 return terminal

@@ -1,6 +1,8 @@
 # Unit Testing
 
-## Tests
+## Function Reference
+
+### Tests
 
 - `tested.test(name: string, fn: function())`
 - `tested.skip(name: string, fn: function())` - don't run this test. Useful if something is known-broken and you want to disable a test.
@@ -8,7 +10,7 @@
 - `tested.conditional_test(name: string, condition: boolean, fn: function())` - Will only run the test if the condition passes.
     - Ex: the condition could be `type(jit) == 'table'` and the test will only run on LuaJIT
 
-## Asserts
+### Asserts
 All the asserts in `tested` take in a table with a couple of values that should hopefully make debugging your unit tests. The `given` and `should` are [optional] text representations of what your unit test are doing. It can be useful to have text representations so you're not having to rely on the values alone. It's also nice if you're passing in a bunch of test files and could use the filename in `given`, so that it appears in the output if something goes wrong.
 
 - `tested.assert({given?: string, should?: string, expected, actual})`
