@@ -55,7 +55,7 @@ local function deep_compare(errors: {string}, prefix: string, expected: table, a
    -- not cycle safe, but might be good enough to get us started?
    local keys, _key_length, sequence = inspect.getKeys(expected)
    for i = 1, sequence do
-      if not actual[i] then
+      if actual[i] == nil then
          add_index_error(errors, prefix, i, "missing_key")
 
       elseif type(expected[i]) == "table" and type(actual[i]) == "table" then
@@ -67,7 +67,7 @@ local function deep_compare(errors: {string}, prefix: string, expected: table, a
       end
    end
    for _i, k in ipairs(keys) do
-      if not actual[k] then
+      if actual[k] == nil then
          add_key_error(errors, prefix, k, "missing_key")
 
       elseif type(expected[k]) == "table" and type(actual[k]) == "table" then
@@ -82,10 +82,10 @@ local function deep_compare(errors: {string}, prefix: string, expected: table, a
    -- check if there are any additional keys floating around
    keys, _key_length, sequence = inspect.getKeys(actual)
    for i = 1, sequence do 
-      if not expected[i] then add_index_error(errors, prefix, i, "additional_key") end
+      if expected[i] == nil then add_index_error(errors, prefix, i, "additional_key") end
    end
    for _i, k in ipairs(keys) do
-      if not expected[k] then add_key_error(errors, prefix, k, "additional_key") end
+      if expected[k] == nil then add_key_error(errors, prefix, k, "additional_key") end
    end
 end
 

@@ -1,6 +1,17 @@
 # Unit Testing
 
-## Function Reference
+
+
+
+## `tested` reference
+
+### How it works (high level)
+1. Recursively search through the `tests` folder (from where it's called) or the folders specfied [on the commandline](./cli.md#tested-base-command) looking for files with the suffx `_test.lua` (or `_test.tl`) and makes a list of them
+2. Before running a test file, it notes which packages have been loaded.
+3. It runs through the test file and creates a list of all the tests that need to be run. Shuffling the list if desired.
+4. It runs each test, tracking the asserts and results
+5. It clears any packages that were loaded during the test from the `package.loaded` table and then runs garabage collection.
+6. It gathers up all the results
 
 ### Tests
 

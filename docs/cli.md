@@ -3,17 +3,17 @@
 `tested` ships with a command-line interface (CLI) to aid in running tests. Below are some of the options explained in further detail as well as a reference to the full CLI's help page.
 
 ## `tested` - Base command 
-By default `tested` will look for `_test` files recursively in the `./tests` directory relative to where it is run. You can specify your own directories (or individual files to run) by placing them at the end of the CLI invocation.
+By default `tested` will look for `_test.*` files recursively in the `./tests` directory relative to where it is run, looking for registered file extensions (by default `.lua` and `.tl`). You can specify your own directories or individual files to run by placing them at the end of the CLI invocation.
 
 Example commands:
 
 - `tested ./some-tests-here ./other-tests-here` - specifying multiple directories
 - `tested ./tests/non_working_test.lua` - running a specific file
 
-## `tested -c/--coverage` - Code coverage 
+## `tested -c/--coverage`
 The `-c` flag will enable [luacov](https://github.com/lunarmodules/luacov), and generate a `luacov.stats.out` file. It is disabled by default since it is generally used in CI/CD pipelines and unfortunately slows down testing. So feel free to enable it when you need code coverage!
 
-## `tested -s/--show` - Filtering results
+## `tested -s/--show`
 By default the `tested` output shows the problematic test results, that likely need to be addressed: `fail`, `exception`, and `unknown`, but allows filtering to display other results.
 
 Current Values: `pass fail skip exception unknown valid invalid all`
@@ -28,17 +28,19 @@ To pass multiple values:
 
 - `tested -s pass -s fail -s skip`
 
-## `tested -f/--display-format` - Display Output
+## `tested -f/--display-format`
 
 
-## `tested -n/--threads NUM_THREADS` - Number of threads
-Specify the number of threads `tested` should use. If set to `0`, will not use any threads (nor invoke the threading library - [LuaLanes](https://lualanes.github.io/lanes/) - at all) and will just run the tests sequentially. There is a small thread spin-up cost, but if you have a lot of tests it is generally negligible. Also, if you have a lot of resources available on your computer, increasing the number of threads could help tests faster.
+## `tested -n/--threads`
+Specify the number of threads `tested` should use. If set to `0`, will not use any threads (nor invoke the threading library - [LuaLanes](https://lualanes.github.io/lanes/) - at all) and will just run the tests sequentially. There is a small thread spin-up cost, but if you have a lot of tests it is generally negligible. Also, if you have a lot of resources available on your computer, increasing the number of threads could help run tests faster.
 
 ## `tested -z/--custom-formatter`
+`tested` supports loading a [custom result formatter](./custom-formatter.md) from the commandline. It tries to load what's passed in initially as a Lua module, and then as filepath, doing some basic checks to ensure the object returned appears to be a formatter. Only one custom formatter can be loaded and will be used to display results.
 
 ## `tested -x/--format-handler`
+`tested` also supports loading [custom format handlers](./additional-formats.md). These are used to extend the functionality of tested and tap into other languages that can embed into Lua. Similar to custom output formatters, the format handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support a custom format. Multiple format handlers can be loaded, and afterward can be used for custom formatters or the tests themselves.
 
-## `tested -h` Reference
+## `tested -h` - Reference
 
 ```
 $ tested -h

@@ -121,9 +121,6 @@ function terminal.summary(output: types.TestRunnerOutput)
    end
 
    print(colors(table.concat(summary, "\n")))
-
-   local inspect = require("tested.libs.inspect")
-   print(inspect.inspect(output, {}))
 end
 
 return terminal

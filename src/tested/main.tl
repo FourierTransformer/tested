@@ -128,19 +128,22 @@ end
 local function load_result_formatter(args: CLIOptions): types.ResultFormatter
    if args.custom_formatter then
       logger:info("Loading custom formatter: " .. args.custom_formatter)
+      local formatter: types.ResultFormatter
+
       -- try loading as a module first
       local ok, custom_formatter = pcall(require, args.custom_formatter)
       if ok then
          logger:info("Successfully loaded custom formatter as module")
-         return custom_formatter as types.ResultFormatter
-      end
+         formatter = custom_formatter as types.ResultFormatter
+      else
 
-      -- then try loading from a file
-      logger:info("Unable to load as module, attempting to load from filepath")
-      local info, err = lfs.attributes(args.custom_formatter)
-      if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
-      assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
-      local formatter = file_loader.load_file(args.custom_formatter) as types.ResultFormatter
+         -- then try loading from a file
+         logger:info("Unable to load as module, attempting to load from filepath")
+         local info, err = lfs.attributes(args.custom_formatter)
+         if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
+         assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
+         formatter = file_loader.load_file(args.custom_formatter) as types.ResultFormatter
+      end
 
       if formatter then
          assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")

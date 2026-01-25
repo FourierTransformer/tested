@@ -65,15 +65,13 @@ local function worker(num, run_coverage, linda)
          luacov.data = {}
       end
 
-      logger:debug(
-      "Worker " .. num .. " finished task " .. task_data.order ..
-      ": " .. tostring(success) .. " " .. tostring(result))
-
-
       if success then
+         logger:debug(
+         "Worker " .. num .. " finished task " .. task_data.order ..
+         ": " .. tostring(success) .. " " .. tostring(result))
+
          linda:send(_result_queue, { result = result, code_coverage = coverage_data, order = task_data.order })
       else
-         print("error", error)
          linda:send(_result_queue, { error = result, code_coverage = coverage_data, order = task_data.order })
       end
    end
@@ -119,6 +117,7 @@ function ThreadPool:map(
    while true do
       i = i + 1
       local _queue, results = self.linda:receive(_result_queue)
+      if results.error then error(results.error) end
       output[results.order] = results
       display_func(results.result)
       if i > #args_list then

@@ -30,8 +30,12 @@ function tested.assert(assertion)
    if assertion.expected == nil then table.insert(errors, "'expected'") end
    if assertion.actual == nil then table.insert(errors, "'actual'") end
    assert(#errors == 0, "The assertion table must include 'expected' and 'actual'. Missing: " .. table.concat(errors, ", "))
-   if assertion.given and type(assertion.given) ~= "string" then table.insert(errors, "In assertion, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "'") end
-   if assertion.should and type(assertion.should) ~= "string" then table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "'") end
+   if assertion.given and type(assertion.given) ~= "string" then
+      table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given))
+   end
+   if assertion.should and type(assertion.should) ~= "string" then
+      table.insert(errors, "In assertion, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should))
+   end
    assert(#errors == 0, table.concat(errors, ". "))
    local expected_type = type(assertion.expected)
    local actual_type = type(assertion.actual)
@@ -53,15 +57,38 @@ function tested.assert(assertion)
 end
 
 function tested.assert_truthy(assertion)
-   return tested.assert({ given = assertion.given, should = "be truthy", expected = true, actual = (not not (assertion.actual)) })
+   return tested.assert({ given = assertion.given, should = assertion.should or "be truthy", expected = true, actual = (not not (assertion.actual)) })
 end
 
 function tested.assert_falsy(assertion)
-   return tested.assert({ given = assertion.given, should = "be falsy", expected = false, actual = (not not (assertion.actual)) })
+   return tested.assert({ given = assertion.given, should = assertion.should or "be falsy", expected = false, actual = (not not (assertion.actual)) })
 end
 
 function tested.assert_throws_exception(assertion)
-   return tested.assert({ given = assertion.given, should = "throw exception", expected = false, actual = pcall(function() assertion.actual() end) })
+   if assertion.expected then
+      local function wrapped_pcall()
+         local ok, err = pcall(function() assertion.actual() end)
+         if type(err) == "string" then
+            return { ok, err:match(" (.-)$") }
+         else
+            return { ok, err }
+         end
+      end
+
+      return tested.assert({
+         given = assertion.given,
+         should = assertion.should or "throw exception",
+         expected = { false, assertion.expected },
+         actual = wrapped_pcall(),
+      })
+   else
+      return tested.assert({
+         given = assertion.given,
+         should = assertion.should or "throw exception",
+         expected = false,
+         actual = pcall(function() assertion.actual() end),
+      })
+   end
 end
 
 return tested

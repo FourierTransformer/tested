@@ -38,7 +38,7 @@ Below is an example load function for [Teal](https://teal-language.org) files (t
 ```lua
 function handler.loader(filepath: string): function(): any
     local file = io.open(filepath, "rb")
-    -- the '@' is needed for luacov to be able to analyze the lines of teal files!
+    -- the '@' is needed for luacov to be able to analyze the lines of Teal files!
     local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
     file:close()
     if not load_function then error(errors) end
@@ -46,4 +46,4 @@ function handler.loader(filepath: string): function(): any
 end
 ```
 
-I'm not sure what the best way to handle this for other languages that transpile to Lua, so code coverage may or may not work. There are likely some ways to support it for not-as-directly transpiled to Lua languages, but that might be an exercise left to the reader :P. If you have soe ideas or want to help add another transpiled language - feel free to open up a [discussion](https://github.com/FourierTransformer/tested/discussions).
+I'm not sure what the best way to handle this for other languages that compile to Lua, so code coverage may or may not work. There are likely some ways to support it for not-as-directly compiled to Lua languages, but that might be an exercise left to the reader :P. If you have soe ideas or want to help add another compiled language - feel free to open up a [discussion](https://github.com/FourierTransformer/tested/discussions).
