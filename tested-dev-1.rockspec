@@ -1,7 +1,7 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "scm-1"
+version = "dev-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
@@ -18,7 +18,8 @@ dependencies = {
    "luafilesystem",
    "argparse",
    "luacov",
-   "tl==0.24.8"
+   "tl==0.24.8",
+   "lanes==3.17.2"
 }
 
 build = {

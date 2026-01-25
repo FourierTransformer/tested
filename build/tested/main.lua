@@ -249,7 +249,7 @@ local function run_tests(formatter, args, test_files)
       formatter.results(test_output, display_types(args.show))
    end
 
-   if args.threads == 0 then
+   if args.threads == 0 or #test_files <= 1 then
       logger:info("Running tests sequentially")
       local runner_output
       for test_result, output in TestRunner.run_tests(test_files, options) do

@@ -17,6 +17,7 @@ nav = [
   "additional-formats.md",
   "roadmap.md",
   "pure-lua.md",
+  "api-reference.md",
 ]
 
 extra_css = ["stylesheets/extra.css"]

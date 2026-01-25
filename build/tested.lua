@@ -77,7 +77,7 @@ function tested.assert_throws_exception(assertion)
 
       return tested.assert({
          given = assertion.given,
-         should = assertion.should or "throw exception",
+         should = assertion.should or "throw exception with error message",
          expected = { false, assertion.expected },
          actual = wrapped_pcall(),
       })

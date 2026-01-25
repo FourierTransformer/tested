@@ -100,7 +100,7 @@ function TestRunner.run(filename, tested, options)
 
          elseif total_assertions == 0 then
             test_results.tests[i].result = "UNKNOWN"
-            test_results.tests[i].message = "No assertions run during the test"
+            test_results.tests[i].message = "No assertions run during test"
             test_results.counts.invalid = test_results.counts.invalid + 1
 
          elseif assert_failed_count == 0 then
