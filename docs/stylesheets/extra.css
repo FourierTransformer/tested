@@ -1,0 +1,16 @@
+[data-md-color-scheme="slate"] {
+  --md-hue: 190;
+  --md-default-bg-color:hsla(var(--md-hue),50%,20%,1);
+}
+
+.md-grid {
+  max-width: 68rem;
+}
+
+.md-typeset h2 {
+  margin-top: 2.4em;
+}
+
+.overflow-auto {
+  overflow: auto;
+}

@@ -1,0 +1,51 @@
+[project]
+
+site_name = "tested"
+site_description = "A new Lua and Teal Unit Testing Framework"
+
+site_author = "Fourier Transformer"
+
+site_url = "https://fouriertransformer.github.io/tested"
+repo_url = "https://github.com/FourierTransformer/tested"
+
+nav = [
+  "index.md",
+  "unit-testing.md",
+  "teal-support.md",
+  "cli.md",
+  "custom-formatter.md",
+  "additional-formats.md",
+  "roadmap.md",
+  "pure-lua.md",
+  "api-reference.md",
+]
+
+extra_css = ["stylesheets/extra.css"]
+
+[project.theme]
+palette.primary = "teal"
+palette.accent = "cyan"
+palette.scheme = "slate"
+
+#favicon = "images/favicon.png"
+
+language = "en"
+
+features = [
+    "announce.dismiss",
+    "content.code.annotate",
+    "content.code.copy",
+    "content.code.select",
+    "content.footnote.tooltips",
+    "content.tabs.link",
+    "content.tooltips",
+    "navigation.footer",
+    "navigation.indexes",
+    "navigation.instant",
+    "navigation.instant.prefetch",
+    "navigation.instant.progress",
+    "navigation.path",
+    "navigation.sections",
+    "navigation.top",
+    "navigation.tracking",
+]

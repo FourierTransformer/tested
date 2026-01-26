@@ -1,0 +1,17 @@
+FAIL    sum()
+        FAIL    src/play.tl:22 - In 'sum()' given '3 + 4'. Should 'return 7'
+        Expected: '7.0'. Actual: '5'
+
+        FAIL    src/play.tl:31 - In 'sum()' given '4 + 5'. Should 'return 120120901293'
+        Expected: '120120901293'. Actual: '9'
+
+PASS    conditional guy over here
+CNDSKIP conditional guy should be skipped
+PASS    just a test!
+EXCEPTN Throws exception in assert
+PASS    Properly handles exception in assert
+UNKNOWN should return unknown since no tested.assert called
+
+tested v0.0.0 test_file_a test_file_b
+  Run Tests: 3 passed, 1 failed
+Other Tests: 1 skipped, 2 invalid

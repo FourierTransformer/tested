@@ -8,6 +8,8 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
+local TESTED_VERSION = "tested v0.0.1"
+
 
 
 
@@ -28,7 +30,7 @@ local cli_to_display = {
    ["fail"] = "FAIL",
    ["exception"] = "EXCEPTION",
    ["unknown"] = "UNKNOWN",
-   ["timeout"] = "TIMEOUT",
+
 }
 
 
@@ -51,8 +53,9 @@ local cli_to_display = {
 
 
 
+
 local function parse_args()
-   local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io")
+   local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io/tested")
    parser:flag("-c --coverage"):
    description("Enable code coverage - will generate luacov.stats.out (default: not-set)"):
    default(false)
@@ -61,7 +64,7 @@ local function parse_args()
    default(false)
    parser:option("-s --show"):
    description("What test results to display (default: '-s fail -s exception -s unknown')"):
-   choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "timeout" }):
+   choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown" }):
    count("*")
    parser:mutex(
    parser:option("-f --display-format"):
@@ -84,7 +87,7 @@ local function parse_args()
    default("WARNING")
    parser:flag("--version"):
    description("Show version information"):
-   action(function() print("tested v0.0.0"); os.exit(0) end)
+   action(function() print(TESTED_VERSION); os.exit(0) end)
    parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')"):
    args("*")
 
@@ -96,14 +99,19 @@ end
 
 local function set_defaults(args)
    logger:info("Setting Defaults...")
-   if #args.show == 0 then args.show = { "fail", "exception", "unknown", "timeout" } end
+   if #args.show == 0 then
+      args.show = { "fail", "exception", "unknown" }
+      args.specified_show = false
+   else
+      args.specified_show = true
+   end
    if #args.paths == 0 then args.paths = { "tests" } end
    args.test_files = {}
    args.test_directories = {}
 
    local show_all = false
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true; break end end
-   if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown", "timeout" } end
+   if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown" } end
 end
 
 local function validate_args(args)
@@ -120,19 +128,22 @@ end
 local function load_result_formatter(args)
    if args.custom_formatter then
       logger:info("Loading custom formatter: " .. args.custom_formatter)
+      local formatter
+
 
       local ok, custom_formatter = pcall(require, args.custom_formatter)
       if ok then
          logger:info("Successfully loaded custom formatter as module")
-         return custom_formatter
+         formatter = custom_formatter
+      else
+
+
+         logger:info("Unable to load as module, attempting to load from filepath")
+         local info, err = lfs.attributes(args.custom_formatter)
+         if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
+         assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
+         formatter = file_loader.load_file(args.custom_formatter)
       end
-
-
-      logger:info("Unable to load as module, attempting to load from filepath")
-      local info, err = lfs.attributes(args.custom_formatter)
-      if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
-      assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
-      local formatter = file_loader.load_file(args.custom_formatter)
 
       if formatter then
          assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
@@ -238,7 +249,7 @@ local function run_tests(formatter, args, test_files)
       formatter.results(test_output, display_types(args.show))
    end
 
-   if args.threads == 0 then
+   if args.threads == 0 or #test_files <= 1 then
       logger:info("Running tests sequentially")
       local runner_output
       for test_result, output in TestRunner.run_tests(test_files, options) do
@@ -261,6 +272,9 @@ local function main()
    set_defaults(args)
    validate_args(args)
    local formatter = load_result_formatter(args)
+   if args.specified_show and formatter.allow_filtering == false then
+      logger:warning("It appears the formatter you selected does not allow filtering. Please remove the '-s, --show' paramters from the CLI invocation")
+   end
    if args.format_handler then
       register_format_handler(args.format_handler)
    end
@@ -270,7 +284,7 @@ local function main()
    assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
 
 
-   formatter.header(args.paths)
+   formatter.header(TESTED_VERSION, args.paths)
    local runner_output = run_tests(formatter, args, test_files)
    formatter.summary(runner_output)
 

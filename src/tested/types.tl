@@ -68,7 +68,8 @@ local record types
    -- needed for result handling
    interface ResultFormatter
       format: string
-      header: function(modules: {string})
+      allow_filtering: boolean
+      header: function(version: string, filepaths: {string})
       results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
       summary: function(runner_output: types.TestRunnerOutput)
    end
@@ -96,11 +97,11 @@ local record types
 
    interface BaseAssertion
       given: string
+      should: string
       actual: any
    end
 
    interface Assertion<T> is BaseAssertion
-      should: string
       expected: T
       actual: T
    end
@@ -109,6 +110,7 @@ local record types
    interface FalsyAssertion is BaseAssertion end
    interface ExceptionAssertion is BaseAssertion 
       actual: function
+      expected: any
    end
 
    interface Tested
