@@ -1,5 +1,5 @@
 # Unit Testing
-`tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing scenarios and philosophies. 
+`tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing scenarios and philosophies.
 
 ## Quickstart
 
@@ -62,7 +62,7 @@ The `given` and `should` are optional strings that get displayed in the output t
 The `expected` and `actual` take in the expected and actual values. There are a couple of other asserts builtin to `tested`, including one for [exceptions](#testing-exceptions), [truthy, and falsy](#truthyfalsy-tests)!
 
 
-## CLI Quick Reference
+### CLI Quick Reference
 There are a couple CLI commands that are good to know when you get started:
 
 - `tested -c` or `--coverage` will enable luacov code coverage and generate a `luacov.stats.out` file
@@ -72,6 +72,9 @@ There are a couple CLI commands that are good to know when you get started:
     - Ex: `tested -s valid` 
 
 To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
+
+### Teal Support
+`tested` has builtin Teal support, be sure to check out the [Teal Support](./teal-support.md) page for some of the considerations around its usage with Teal.
 
 ## Testing tables
 

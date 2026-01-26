@@ -18,7 +18,9 @@ dependencies = {
    "luafilesystem",
    "argparse",
    "luacov",
-   "tl==0.24.8",
+   -- just use whatever version of tl they have installed
+   -- they'll likely install tl first and then tested, so seems like a safe bet
+   "tl", 
    "lanes==3.17.2"
 }
 

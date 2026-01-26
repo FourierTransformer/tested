@@ -43,13 +43,6 @@ end
 local tl_ok, tl = pcall(require, "tl")
 if tl_ok then
    local function load_teal_file(filepath)
-
-
-
-
-
-
-
       local file = io.open(filepath, "rb")
 
       local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
