@@ -65,18 +65,21 @@ jobs:
         run: |
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --${{ matrix.lua }} --target ${{ matrix.target }}
-          echo lua_install/bin >> $GITHUB_PATH
       - name: Build tested
         run: |
+          .\lua_install\bin\activate
           luarocks make
           luarocks install luacov-coveralls
       - name: Run tests
         continue-on-error: true
         run: |
+          .\lua_install\bin\activate
           tested -c
       - name: Report test coverage
         if: success()
         continue-on-error: true
-        run: luacov-coveralls -e lua_install
+        run: |
+          .\lua_install\bin\activate
+          luacov-coveralls -e lua_install
         env:
           COVERALLS_REPO_TOKEN: ${{ github.token }}
