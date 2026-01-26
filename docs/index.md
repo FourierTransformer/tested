@@ -68,7 +68,7 @@ Test files should be placed in a folder called `tests`, and the `tested` command
     Fully Tested!
     ```
 
-Check out the [Unit Testing](./unit-testing.md) page for more information on how `tested` works!
+Check out the [Unit Testing](./unit-testing.md) page for more information on how `tested` works! and after, if you're using Teal, be sure to check out the [Teal Support](./teal-support.md) page!
 
 ## Inspiration
 While researching unit testing frameworks and how people felt about them I found the following helpful:

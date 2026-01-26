@@ -43,13 +43,6 @@ end
 local tl_ok, tl = pcall(require, "tl")
 if tl_ok then
    local function load_teal_file(filepath: string): function(): any
-      -- very dirty hacks to turn filenames into requires.
-      -- this is how I used to do it, and occaisionally go back to analyze differences
-      -- local module = filepath:gsub("^./", "")
-      -- module = module:gsub(".tl", "")
-      -- module = module:gsub("/", ".")
-      -- return function(): any return require(module) end
-
       local file = io.open(filepath, "rb")
       -- the '@' is a quick hack to get luacov to be able to analyze the lines of teal files!
       local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)

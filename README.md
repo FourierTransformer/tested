@@ -2,6 +2,8 @@
 
 `tested` is a new unit testing framework that can be used for Lua and Teal unit tests. It is designed to be modern and generate an easy-to-read output that helps you quickly identify and help to resolve a faililng test!
 
+Full Docs: https://fouriertransformer.github.io/tested
+
 ## Installing
 
 ```bash
