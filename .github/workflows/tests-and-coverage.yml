@@ -33,17 +33,16 @@ jobs:
         run: |
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --${{ matrix.lua }}
+          echo lua_install/bin >> $GITHUB_PATH
         env:
           MACOSX_DEPLOYMENT_TARGET: 11.0
       - name: Build tested
         run: |
-          source lua_install/bin/activate
           luarocks make
           luarocks install luacov-coveralls
       - name: Run tests
         continue-on-error: true
         run: |
-          source lua_install/bin/activate
           tested -c
       - name: Report test coverage
         if: success()
@@ -66,15 +65,14 @@ jobs:
         run: |
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --${{ matrix.lua }} --target ${{ matrix.target }}
+          echo lua_install/bin >> $GITHUB_PATH
       - name: Build tested
         run: |
-          .\lua_install\bin\activate
           luarocks make
           luarocks install luacov-coveralls
       - name: Run tests
         continue-on-error: true
         run: |
-          .\lua_install\bin\activate
           tested -c
       - name: Report test coverage
         if: success()
