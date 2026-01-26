@@ -1,4 +1,4 @@
-# CLI
+# CLI Reference
 
 `tested` ships with a command-line interface (CLI) to aid in running tests. Below are some of the options explained in further detail as well as a reference to the full CLI's help page.
 
@@ -12,6 +12,10 @@ Example commands:
 
 ## `tested -c/--coverage`
 The `-c` flag will enable [luacov](https://github.com/lunarmodules/luacov), and generate a `luacov.stats.out` file. It is disabled by default since it is generally used in CI/CD pipelines and unfortunately slows down testing. So feel free to enable it when you need code coverage!
+
+## `tested -r/--random`
+The `-r` will randomize the order of tests _within_ a test file.
+
 
 ## `tested -s/--show`
 By default the `tested` output shows the problematic test results, that likely need to be addressed: `fail`, `exception`, and `unknown`, but allows filtering to display other results.

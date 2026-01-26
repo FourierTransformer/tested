@@ -1,11 +1,14 @@
 # `tested`
 
-`tested` is a new unit testing framework that can be used for Lua and Teal unit tests. It is designed to be modern and generate an easy-to-read output that helps you quickly identify what the issue is.
+`tested` is a new unit testing framework that can be used for Lua and Teal unit tests. It is designed to be modern and generate an easy-to-read output that helps you quickly identify and help to resolve a faililng test!
 
 ## Installing
 
-We're not currently on LuaRocks, so pulling down this repo and running a `luarocks make` is the best way to get started!
+```bash
+luarocks install tested
+```
 
+After installing, the `tested` module will be available to your Lua code with `require("tested")` and a CLI tool, also called `tested` will be installed wherever your LuaRocks installs executables.
 
 ## A basic test
 

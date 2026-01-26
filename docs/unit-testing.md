@@ -1,7 +1,77 @@
 # Unit Testing
+`tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing scenarios and philosophies. 
+
+## Quickstart
+
+### Folder setup
+In the root of your project, you should create a `tests` folder and place all your test files (with the suffix of `_test.lua` or `_test.tl`). From there you can run the `tested` command from a it will find all the tests and run them.
+
+```
+.
+├─ tests/
+│  ├─ my_library_test.lua
+│  └─ a_different_test.lua
+└─ my_library.lua
+```
+
+### The test file
+
+Let's take a look at a basic test file:
+
+```lua title="tests/my_library_test.lua"
+local tested = require("tested")
+
+tested.test("just a test!", function()
+    tested.assert({
+        given = "4 + 4",
+        should = "return 8",
+        expected = 8,
+        actual = sum(4, 4)
+    })
+end)
+
+print("This will be printed before _any_ tests run!")
+
+tested.test("just works without given and should!", function()
+    tested.assert({
+        expected=true,
+        actual=true
+    })
+end)
+
+return tested
+```
+
+After the `tested` command loads up a test file, it goes through and finds all the various tests defined in the file (in this case there are two) and adds them to a list to be executed. In the example above, that `print` statement will execute before either tests.
+
+It does this so tests can be [shuffled](#cli-quick-reference), [skipped](#skipping-tests), or to [only](#only-tests) run a specific test within a test file!
+
+### Asserts
+The basic assert is composed of a couple of four parts:
+```lua
+    tested.assert({
+        given = "4 + 4",
+        should = "return 8",
+        expected = 8,
+        actual = sum(4, 4)
+    })
+```
+
+The `given` and `should` are optional strings that get displayed in the output to help you identify which specific assert has failed. The idea behind them is to be able to look at the testing output and know _exactly_ what and how something has failed. If your test references multiple files, placing a filename in given can be incredibly useful. Since some tests are more obvious than others (based on a test name), they are not required and can be omitted.
+
+The `expected` and `actual` take in the expected and actual values. There are a couple of other asserts builtin to `tested`, including one for [exceptions](#testing-exceptions), [truthy, and falsy](#truthyfalsy-tests)!
 
 
-## A basic test
+## CLI Quick Reference
+There are a couple CLI commands that are good to know when you get started:
+
+- `tested -c` or `--coverage` will enable luacov code coverage and generate a `luacov.stats.out` file
+- `tested -r` or `--random` will randomize the order of tests _within a test file_.
+- `tested -s` or `--show` supports displaying different status of tests. By default `tested` shows tests which require followup (so `fail`, `exception`, and `invalid`)
+    - Ex: `tested -s pass -s skip` see all passed and skipped tests
+    - Ex: `tested -s valid` 
+
+To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
 
 ## Testing tables
 
@@ -183,6 +253,3 @@ If a test file has a test that throws an unhandled exception or `tested` finds a
       No assertions run during test
 </pre>
 </code>
-
-## On randomizing the order of tests
-`tested` leaves it up to you on how you want to organize your unit tests. If you want a bunch of asserts in the same test, that's just fine!
