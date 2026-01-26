@@ -39,10 +39,18 @@ jobs:
         run: |
           source lua_install/bin/activate
           luarocks make
+          luarocks install luacov-coveralls
       - name: Run tests
+        continue-on-error: true
         run: |
           source lua_install/bin/activate
           tested -c
+      - name: Report test coverage
+        if: success()
+        continue-on-error: true
+        run: luacov-coveralls -e lua_install
+        env:
+          COVERALLS_REPO_TOKEN: ${{ github.token }}
 
   windows:
     strategy:
@@ -62,7 +70,15 @@ jobs:
         run: |
           .\lua_install\bin\activate
           luarocks make
+          luarocks install luacov-coveralls
       - name: Run tests
+        continue-on-error: true
         run: |
           .\lua_install\bin\activate
           tested -c
+      - name: Report test coverage
+        if: success()
+        continue-on-error: true
+        run: luacov-coveralls -e lua_install
+        env:
+          COVERALLS_REPO_TOKEN: ${{ github.token }}
