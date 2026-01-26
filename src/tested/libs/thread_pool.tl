@@ -24,6 +24,9 @@ end
 local _task_queue = "tasks"
 local _result_queue = "results"
 
+-- for lua 5.1 and luajit?
+global unpack: function
+local _unpack = unpack or table.unpack
 
 local record Task
    order: integer
@@ -56,7 +59,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
 
       -- Execute the task
       if run_coverage then luacov.resume() end
-      local success, result = pcall(task_data.func, table.unpack(task_data.args))
+      local success, result = pcall(task_data.func, _unpack(task_data.args))
       if run_coverage then luacov.pause() end
 
       local coverage_data = {}

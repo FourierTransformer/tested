@@ -26,6 +26,9 @@ local _result_queue = "results"
 
 
 
+local _unpack = unpack or table.unpack
+
+
 
 
 
@@ -56,7 +59,7 @@ local function worker(num, run_coverage, linda)
 
 
       if run_coverage then luacov.resume() end
-      local success, result = pcall(task_data.func, table.unpack(task_data.args))
+      local success, result = pcall(task_data.func, _unpack(task_data.args))
       if run_coverage then luacov.pause() end
 
       local coverage_data = {}
