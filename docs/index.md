@@ -14,7 +14,8 @@ After installing, the `tested` module will be available to your Lua code with `r
 Test files should be placed in a folder called `tests`, and the `tested` command should be invoked from the same directory that has the `tests` folder in it.
 
 === "Test"
-    ```lua title="tests/valid_utf8_test.lua"
+
+    ```lua
     local tested = require("tested")
     local utf8validator = require("utf8validator")
 
@@ -51,11 +52,21 @@ Test files should be placed in a folder called `tests`, and the `tested` command
        end
     end)
 
+    -- ... the other test go here!
+
     return tested
     ```
-
 === "Output"
-    Add screenshot
+    ```
+    tested v0.0.1  tests/binary_test.tl
+
+    - tests/binary_test.tl (11.05ms)
+    Test Summary for 4 tests (11.05ms):
+      Run: 4 passed, 0 failed
+    Other: 0 skipped, 0 invalid
+
+    Fully Tested!
+    ```
 
 Check out the [Unit Testing](./unit-testing.md) page for more information on how `tested` works!
 
