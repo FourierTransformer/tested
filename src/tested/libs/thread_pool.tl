@@ -24,7 +24,7 @@ end
 local _task_queue = "tasks"
 local _result_queue = "results"
 
--- for lua 5.1 and luajit?
+-- for lua 5.1 and luajit
 global unpack: function
 local _unpack = unpack or table.unpack
 
