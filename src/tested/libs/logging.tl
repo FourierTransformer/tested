@@ -11,11 +11,11 @@ local record Logging
       current_level: integer
       name: string
       set_level: function(self: Logger, log_level: level)
-      debug: function(self: Logger, message: string)
-      info: function(self: Logger, message: string)
-      warning: function(self: Logger, message: string)
-      error: function(self: Logger, message: string)
-      critical: function(self: Logger, message: string)
+      debug: function(self: Logger, message: string, ...: any)
+      info: function(self: Logger, message: string, ...: any)
+      warning: function(self: Logger, message: string, ...: any)
+      error: function(self: Logger, message: string, ...: any)
+      critical: function(self: Logger, message: string, ...: any)
    end
 
    loggers: {string: Logger}
@@ -24,7 +24,7 @@ local record Logging
    log_levels: {level: integer}
    colors: {level: string}
 
-   _logger_handler: function(message_level: level, message: string, logger_name: string, logger_log_level?: integer)
+   _logger_handler: function(message_level: level, message: string, logger_name: string, logger_log_level?: integer, ...: any)
    handler: function(log_level: Logging.level, logger_name: string, message: string)
 end
 
@@ -33,24 +33,24 @@ function LoggerBase:set_level(log_level: Logging.level)
    self.current_level = Logging.log_levels[log_level]
 end
 
-function LoggerBase:debug(message: string)
-   Logging._logger_handler("DEBUG", message, self.name, self.current_level)
+function LoggerBase:debug(message: string, ...: any)
+   Logging._logger_handler("DEBUG", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:info(message: string)
-   Logging._logger_handler("INFO", message, self.name, self.current_level)
+function LoggerBase:info(message: string, ...: any)
+   Logging._logger_handler("INFO", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:warning(message: string)
-   Logging._logger_handler("WARNING", message, self.name, self.current_level)
+function LoggerBase:warning(message: string, ...: any)
+   Logging._logger_handler("WARNING", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:error(message: string)
-   Logging._logger_handler("ERROR", message, self.name, self.current_level)
+function LoggerBase:error(message: string, ...: any)
+   Logging._logger_handler("ERROR", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:critical(message: string)
-   Logging._logger_handler("CRITICAL", message, self.name, self.current_level)
+function LoggerBase:critical(message: string, ...: any)
+   Logging._logger_handler("CRITICAL", message, self.name, self.current_level, ...)
 end
 
 Logging.loggers = {}
@@ -85,9 +85,9 @@ function Logging.set_level(log_level: Logging.level)
    Logging.current_level = Logging.log_levels[log_level]
 end
 
-function Logging._logger_handler(message_level: Logging.level, message: string, logger_name: string, logger_log_level?: integer)
+function Logging._logger_handler(message_level: Logging.level, message: string, logger_name: string, logger_log_level?: integer, ...: any)
    if Logging.log_levels[message_level] >= (logger_log_level or Logging.current_level) then
-      Logging.handler(message_level, logger_name, message)
+      Logging.handler(message_level, logger_name, string.format(message, ...))
    end
 end
 

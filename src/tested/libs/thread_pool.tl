@@ -36,7 +36,7 @@ end
 
 -- waits for a task, then executes it
 local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
-   logger:info("Starting worker " .. num)
+   logger:info("Starting worker %d", num)
    
    local luacov: luacov_type
 
@@ -52,10 +52,10 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    end
    
    while true do
-      logger:debug("Worker " .. num .. " waiting for task")
+      logger:debug("Worker %d waiting for task", num)
       -- Get a task from the queue should be a blocking call
       local _queue, task_data = linda:receive(_task_queue) as (string, Task)
-      logger:debug("Worker " .. num .. " Got task " .. task_data.order)
+      logger:debug("Worker %d  Got task %d", num, task_data.order)
 
       -- Execute the task
       if run_coverage then luacov.resume() end
@@ -70,8 +70,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
 
       if success then
          logger:debug(
-            "Worker " .. num .. " finished task " .. task_data.order .. 
-            ": " .. tostring(success) .. " " .. tostring(result)
+            "Worker %d finished task %d: %s %s", num, task_data.order, tostring(success), tostring(result)
          )
          linda:send(_result_queue, {result=result, code_coverage=coverage_data, order=task_data.order})
       else
@@ -101,7 +100,7 @@ function ThreadPool:map<T>(
 ): {ThreadPool.Result<T>}
 
    local total_calls = #args_list
-   logger:info("Sending " .. total_calls .. " tasks")
+   logger:info("Sending %d tasks", total_calls)
    for i = 1, total_calls do
       local task_data = {
          order = i, 

@@ -36,7 +36,7 @@ local _unpack = unpack or table.unpack
 
 
 local function worker(num, run_coverage, linda)
-   logger:info("Starting worker " .. num)
+   logger:info("Starting worker %d", num)
 
    local luacov
 
@@ -52,10 +52,10 @@ local function worker(num, run_coverage, linda)
    end
 
    while true do
-      logger:debug("Worker " .. num .. " waiting for task")
+      logger:debug("Worker %d waiting for task", num)
 
       local _queue, task_data = linda:receive(_task_queue)
-      logger:debug("Worker " .. num .. " Got task " .. task_data.order)
+      logger:debug("Worker %d  Got task %d", num, task_data.order)
 
 
       if run_coverage then luacov.resume() end
@@ -70,8 +70,7 @@ local function worker(num, run_coverage, linda)
 
       if success then
          logger:debug(
-         "Worker " .. num .. " finished task " .. task_data.order ..
-         ": " .. tostring(success) .. " " .. tostring(result))
+         "Worker %d finished task %d: %s %s", num, task_data.order, tostring(success), tostring(result))
 
          linda:send(_result_queue, { result = result, code_coverage = coverage_data, order = task_data.order })
       else
@@ -101,7 +100,7 @@ function ThreadPool:map(
 
 
    local total_calls = #args_list
-   logger:info("Sending " .. total_calls .. " tasks")
+   logger:info("Sending %d tasks", total_calls)
    for i = 1, total_calls do
       local task_data = {
          order = i,

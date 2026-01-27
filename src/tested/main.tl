@@ -127,7 +127,7 @@ end
 
 local function load_result_formatter(args: CLIOptions): types.ResultFormatter
    if args.custom_formatter then
-      logger:info("Loading custom formatter: " .. args.custom_formatter)
+      logger:info("Loading custom formatter: %s", args.custom_formatter)
       local formatter: types.ResultFormatter
 
       -- try loading as a module first
@@ -154,14 +154,14 @@ local function load_result_formatter(args: CLIOptions): types.ResultFormatter
          error("Unable to load custom formatter from: " .. args.custom_formatter)
       end
    else
-      logger:info("Loading builtin formatter: " .. args.display_format)
+      logger:info("Loading builtin formatter: %s", args.display_format)
       return require("tested.results." .. args.display_format) as types.ResultFormatter
    end
 end
 
 local function register_format_handler(handlers: {string})
    for _, handler in ipairs(handlers) do
-      logger:info("Registering format handler: " .. handler)
+      logger:info("Registering format handler: %s", handler)
       local ok, module_format_handler = pcall(require, handler) as (boolean, types.FileLoaderHandler)
       if ok then
           file_loader.register_handler(module_format_handler.extension, module_format_handler.loader)
@@ -176,7 +176,7 @@ local function register_format_handler(handlers: {string})
 end
 
 local function find_tests(files: {string}, test_path: string): {string}
-   logger:info("Looking for test files in " .. test_path)
+   logger:info("Looking for test files in %s", test_path)
    for file in lfs.dir(test_path) do
       local _, _, extension = file:find("^[^%.].-_test(%..-)$")
       if extension then
@@ -193,7 +193,7 @@ local function find_tests(files: {string}, test_path: string): {string}
          end
       end
    end
-   logger:info("Found " .. #files .. " test files to run in " .. test_path)
+   logger:info("Found %d test files to run in %s", #files, test_path)
 end
 
 local function get_file_extension(str: string): string

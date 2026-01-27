@@ -33,24 +33,24 @@ function LoggerBase:set_level(log_level)
    self.current_level = Logging.log_levels[log_level]
 end
 
-function LoggerBase:debug(message)
-   Logging._logger_handler("DEBUG", message, self.name, self.current_level)
+function LoggerBase:debug(message, ...)
+   Logging._logger_handler("DEBUG", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:info(message)
-   Logging._logger_handler("INFO", message, self.name, self.current_level)
+function LoggerBase:info(message, ...)
+   Logging._logger_handler("INFO", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:warning(message)
-   Logging._logger_handler("WARNING", message, self.name, self.current_level)
+function LoggerBase:warning(message, ...)
+   Logging._logger_handler("WARNING", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:error(message)
-   Logging._logger_handler("ERROR", message, self.name, self.current_level)
+function LoggerBase:error(message, ...)
+   Logging._logger_handler("ERROR", message, self.name, self.current_level, ...)
 end
 
-function LoggerBase:critical(message)
-   Logging._logger_handler("CRITICAL", message, self.name, self.current_level)
+function LoggerBase:critical(message, ...)
+   Logging._logger_handler("CRITICAL", message, self.name, self.current_level, ...)
 end
 
 Logging.loggers = {}
@@ -85,9 +85,9 @@ function Logging.set_level(log_level)
    Logging.current_level = Logging.log_levels[log_level]
 end
 
-function Logging._logger_handler(message_level, message, logger_name, logger_log_level)
+function Logging._logger_handler(message_level, message, logger_name, logger_log_level, ...)
    if Logging.log_levels[message_level] >= (logger_log_level or Logging.current_level) then
-      Logging.handler(message_level, logger_name, message)
+      Logging.handler(message_level, logger_name, string.format(message, ...))
    end
 end
 

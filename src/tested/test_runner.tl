@@ -16,7 +16,7 @@ local function fisher_yates_shuffle(t: {any})
 end
 
 function TestRunner.run(filename: string, tested: types.Tested, options: types.TestRunnerOptions): types.TestedOutput
-   logger:info(filename .. ": starting test")
+   logger:info("%s: starting test", filename)
    if options and options.random then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
@@ -118,13 +118,13 @@ function TestRunner.run(filename: string, tested: types.Tested, options: types.T
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
    end
-   logger:info(filename .. ": completed running tests!")
+   logger:info("%s: completed running tests!", filename)
    return test_results
 end
 
 function TestRunner.run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
 
-   logger:info(test_file .. ": keeping track of pre-loaded packages")
+   logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages: {string: boolean} = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
@@ -133,10 +133,10 @@ function TestRunner.run_with_cleanup(file_loader: types.FileLoader, test_file: s
 
    local test_results = TestRunner.run(test_file, test_module, options)
    
-   logger:info(test_file .. " Clearing out any packages that were loaded")
+   logger:info("%s: Clearing out any packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do 
       if not pre_test_loaded_packages[package_name] then
-         logger:debug(test_file .. ": Clearing out package: " .. package_name)
+         logger:debug("%s: Clearing out package: %s", test_file, package_name)
          package.loaded[package_name] = nil
       end
    end
