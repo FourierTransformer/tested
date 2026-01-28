@@ -183,7 +183,7 @@ local function find_tests(files, test_path)
          local f = test_path .. '/' .. file
          local attr = lfs.attributes(f)
          if attr then
-            if attr.mode == "file" and file_loader.file_loader[extension] then
+            if attr.mode == "file" and file_loader.loader[extension] then
                table.insert(files, f)
 
             elseif attr.mode == "directory" then
@@ -203,7 +203,7 @@ end
 local function get_all_test_files(args)
    local all_files = {}
    for _, test_file in ipairs(args.test_files) do
-      if file_loader.file_loader[get_file_extension(test_file)] then
+      if file_loader.loader[get_file_extension(test_file)] then
          table.insert(all_files, test_file)
       end
    end

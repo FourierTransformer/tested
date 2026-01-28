@@ -8,7 +8,7 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
-local TESTED_VERSION = "tested v0.0.1"
+local TESTED_VERSION = "tested v0.0.2"
 
 local type types = require("tested.types")
 
@@ -183,7 +183,7 @@ local function find_tests(files: {string}, test_path: string): {string}
          local f = test_path..'/'..file
          local attr = lfs.attributes(f)
          if attr then
-            if attr.mode == "file" and file_loader.file_loader[extension] then
+            if attr.mode == "file" and file_loader.loader[extension] then
                table.insert(files, f)
 
             elseif attr.mode == "directory" then
@@ -203,7 +203,7 @@ end
 local function get_all_test_files(args: CLIOptions): {string}
    local all_files = {}
    for _, test_file in ipairs(args.test_files) do
-      if file_loader.file_loader[get_file_extension(test_file)] then
+      if file_loader.loader[get_file_extension(test_file)] then
          table.insert(all_files, test_file)
       end
    end

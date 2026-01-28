@@ -1,5 +1,5 @@
 -- a sort've high performance string builder interface
--- intentionally static to even reduce table creation counts (which may going a little far...)
+-- intentionally not a class to even reduce table creation counts (which may going a little far...)
 
 local record tadd
    buffer: {string}

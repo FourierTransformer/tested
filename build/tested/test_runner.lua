@@ -1,10 +1,10 @@
-local thread_pool = require("tested.libs.thread_pool")
+local ThreadPool = require("tested.libs.ThreadPool")
 local logging = require("tested.libs.logging")
 
 
 local logger = logging.get_logger("tested.test_runner")
 
-local TestRunner = {}
+local test_runner = {}
 
 
 local function fisher_yates_shuffle(t)
@@ -15,7 +15,7 @@ local function fisher_yates_shuffle(t)
    end
 end
 
-function TestRunner.run(filename, tested, options)
+function test_runner.run(filename, tested, options)
    logger:info("%s: starting test", filename)
    if options and options.random then
       math.randomseed(os.time())
@@ -122,7 +122,7 @@ function TestRunner.run(filename, tested, options)
    return test_results
 end
 
-function TestRunner.run_with_cleanup(file_loader, test_file, options)
+function test_runner.run_with_cleanup(file_loader, test_file, options)
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages = {}
@@ -131,7 +131,7 @@ function TestRunner.run_with_cleanup(file_loader, test_file, options)
    local test_module = file_loader.load_file(test_file)
    assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .. "' returns the 'tested' module")
 
-   local test_results = TestRunner.run(test_file, test_module, options)
+   local test_results = test_runner.run(test_file, test_module, options)
 
    logger:info("%s: Clearing out any packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do
@@ -146,7 +146,7 @@ function TestRunner.run_with_cleanup(file_loader, test_file, options)
 
 end
 
-function TestRunner.run_tests(
+function test_runner.run_tests(
    test_files,
    options)
 
@@ -186,7 +186,7 @@ function TestRunner.run_tests(
       local coverage = {}
 
       if options.coverage then luacov_runner.resume() end
-      local test_output = TestRunner.run_with_cleanup(file_loader, test_files[i], options)
+      local test_output = test_runner.run_with_cleanup(file_loader, test_files[i], options)
       if options.coverage then
          coverage = luacov_runner.data
          luacov_runner.resume()
@@ -213,7 +213,7 @@ local function load_and_run_test(test_file, options)
 
 
    local file_loader = require("tested.file_loader")
-   return TestRunner.run_with_cleanup(file_loader, test_file, options)
+   return test_runner.run_with_cleanup(file_loader, test_file, options)
 end
 
 local function run_parallel_tests(
@@ -232,7 +232,7 @@ local function run_parallel_tests(
    }
    local coverage_results = {}
 
-   local pool = thread_pool.init(num_threads, options.coverage)
+   local pool = ThreadPool.init(num_threads, options.coverage)
    local input = {}
    for i = 1, #test_files do
       input[i] = { test_files[i], options }
@@ -280,4 +280,4 @@ local function run_parallel_tests(
    return output
 end
 
-return { TestRunner, run_parallel_tests }
+return { test_runner, run_parallel_tests }

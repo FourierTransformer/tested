@@ -40,7 +40,8 @@ build = {
       ["tested.libs.ansicolors"] = "build/tested/libs/ansicolors.lua",
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",
-      ["tested.libs.thread_pool"] = "build/tested/libs/thread_pool.lua",
+      ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
+      ["tested.libs.ThreadPool"] = "build/tested/libs/ThreadPool.lua",
 
       ["tested.results.plain"] = "build/tested/results/plain.lua",
       ["tested.results.terminal"] = "build/tested/results/terminal.lua",
@@ -61,7 +62,8 @@ build = {
          ["tested.libs.ansicolors"] = "src/tested/libs/ansicolors.tl",
          ["tested.libs.inspect"] = "src/tested/libs/inspect.tl",
          ["tested.libs.logging"] = "src/tested/libs/logging.tl",
-         ["tested.libs.thread_pool"] = "src/tested/libs/thread_pool.tl",
+         ["tested.libs.tadd"] = "src/tested/libs/tadd.tl",
+         ["tested.libs.ThreadPool"] = "src/tested/libs/ThreadPool.tl",
 
          ["tested.results.plain"] = "src/tested/results/plain.tl",
          ["tested.results.terminal"] = "src/tested/results/terminal.tl",
