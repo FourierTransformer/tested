@@ -4,14 +4,14 @@ local function load_lua_file(filepath: string): function(): any
    return assert(loadfile(filepath))
 end
 
-local record FileLoader is types.FileLoader
+local record file_loader is types.FileLoader
    load_file: function(filepath: string): any
-   file_loader: {string: function(filepath: string): function()}
+   loader: {string: function(filepath: string): function()}
    register_handler: function(extension: string, loader: function(filepath: string): function(): any)
    load_and_register_handler: function(filepath: string)
 end
 
-FileLoader.file_loader = {
+file_loader.loader = {
    [".lua"] = load_lua_file
 }
 
@@ -19,10 +19,10 @@ local function get_file_extension(str: string): string
    return str:match("^.+(%..+)$")
 end
 
-function FileLoader.load_file(filepath: string): any
+function file_loader.load_file(filepath: string): any
    local extension = get_file_extension(filepath)
-   if FileLoader.file_loader[extension] then
-      local loader = FileLoader.file_loader[extension](filepath)
+   if file_loader.loader[extension] then
+      local loader = file_loader.loader[extension](filepath)
       return loader() as any
    else
       error("Unable to load file of type: '" .. extension .. "'. It must be registered first")
@@ -31,13 +31,13 @@ function FileLoader.load_file(filepath: string): any
    error("No file loader found for format: " .. extension)
 end
 
-function FileLoader.register_handler(extension: string, loader: function(filepath: string): function(): any)
-   FileLoader.file_loader[extension] = loader
+function file_loader.register_handler(extension: string, loader: function(filepath: string): function(): any)
+   file_loader.loader[extension] = loader
 end
 
-function FileLoader.load_and_register_handler(filepath: string)
-   local handler = FileLoader.load_file(filepath) as types.FileLoaderHandler
-   FileLoader.register_handler(handler.extension, handler.loader) 
+function file_loader.load_and_register_handler(filepath: string)
+   local handler = file_loader.load_file(filepath) as types.FileLoaderHandler
+   file_loader.register_handler(handler.extension, handler.loader) 
 end
 
 local tl_ok, tl = pcall(require, "tl")
@@ -50,8 +50,7 @@ if tl_ok then
       if not load_function then error(errors) end
       return load_function
    end
-   FileLoader.file_loader[".tl"] = load_teal_file
+   file_loader.loader[".tl"] = load_teal_file
 end
 
--- I really only want one shared instance of this across the app, hence no metatables
-return FileLoader
+return file_loader

@@ -4,14 +4,14 @@ local function load_lua_file(filepath)
    return assert(loadfile(filepath))
 end
 
-local FileLoader = {}
+local file_loader = {}
 
 
 
 
 
 
-FileLoader.file_loader = {
+file_loader.loader = {
    [".lua"] = load_lua_file,
 }
 
@@ -19,10 +19,10 @@ local function get_file_extension(str)
    return str:match("^.+(%..+)$")
 end
 
-function FileLoader.load_file(filepath)
+function file_loader.load_file(filepath)
    local extension = get_file_extension(filepath)
-   if FileLoader.file_loader[extension] then
-      local loader = FileLoader.file_loader[extension](filepath)
+   if file_loader.loader[extension] then
+      local loader = file_loader.loader[extension](filepath)
       return loader()
    else
       error("Unable to load file of type: '" .. extension .. "'. It must be registered first")
@@ -31,13 +31,13 @@ function FileLoader.load_file(filepath)
    error("No file loader found for format: " .. extension)
 end
 
-function FileLoader.register_handler(extension, loader)
-   FileLoader.file_loader[extension] = loader
+function file_loader.register_handler(extension, loader)
+   file_loader.loader[extension] = loader
 end
 
-function FileLoader.load_and_register_handler(filepath)
-   local handler = FileLoader.load_file(filepath)
-   FileLoader.register_handler(handler.extension, handler.loader)
+function file_loader.load_and_register_handler(filepath)
+   local handler = file_loader.load_file(filepath)
+   file_loader.register_handler(handler.extension, handler.loader)
 end
 
 local tl_ok, tl = pcall(require, "tl")
@@ -50,8 +50,7 @@ if tl_ok then
       if not load_function then error(errors) end
       return load_function
    end
-   FileLoader.file_loader[".tl"] = load_teal_file
+   file_loader.loader[".tl"] = load_teal_file
 end
 
-
-return FileLoader
+return file_loader

@@ -1,10 +1,10 @@
-local thread_pool = require("tested.libs.thread_pool")
+local ThreadPool = require("tested.libs.ThreadPool")
 local logging = require("tested.libs.logging")
 local type types = require("tested.types")
 
 local logger = logging.get_logger("tested.test_runner")
 
-local record TestRunner end
+local record test_runner end
 
 
 local function fisher_yates_shuffle(t: {any})
@@ -15,8 +15,8 @@ local function fisher_yates_shuffle(t: {any})
    end
 end
 
-function TestRunner.run(filename: string, tested: types.Tested, options: types.TestRunnerOptions): types.TestedOutput
-   logger:info(filename .. ": starting test")
+function test_runner.run(filename: string, tested: types.Tested, options: types.TestRunnerOptions): types.TestedOutput
+   logger:info("%s: starting test", filename)
    if options and options.random then
       math.randomseed(os.time())
       fisher_yates_shuffle(tested.tests)
@@ -118,25 +118,25 @@ function TestRunner.run(filename: string, tested: types.Tested, options: types.T
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
    end
-   logger:info(filename .. ": completed running tests!")
+   logger:info("%s: completed running tests!", filename)
    return test_results
 end
 
-function TestRunner.run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
+function test_runner.run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
 
-   logger:info(test_file .. ": keeping track of pre-loaded packages")
+   logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages: {string: boolean} = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
    local test_module = file_loader.load_file(test_file) as types.Tested
    assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .."' returns the 'tested' module")
 
-   local test_results = TestRunner.run(test_file, test_module, options)
+   local test_results = test_runner.run(test_file, test_module, options)
    
-   logger:info(test_file .. " Clearing out any packages that were loaded")
+   logger:info("%s: Clearing out any packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do 
       if not pre_test_loaded_packages[package_name] then
-         logger:debug(test_file .. ": Clearing out package: " .. package_name)
+         logger:debug("%s: Clearing out package: %s", test_file, package_name)
          package.loaded[package_name] = nil
       end
    end
@@ -146,7 +146,7 @@ function TestRunner.run_with_cleanup(file_loader: types.FileLoader, test_file: s
 
 end
 
-function TestRunner.run_tests(
+function test_runner.run_tests(
    test_files: {string},
    options: types.TestRunnerOptions
 ): function(): (types.TestedOutput, types.TestRunnerOutput)
@@ -186,7 +186,7 @@ function TestRunner.run_tests(
       local coverage = {}
 
       if options.coverage then luacov_runner.resume() end
-      local test_output = TestRunner.run_with_cleanup(file_loader, test_files[i], options)
+      local test_output = test_runner.run_with_cleanup(file_loader, test_files[i], options)
       if options.coverage then 
          coverage = luacov_runner.data
          luacov_runner.resume()
@@ -213,7 +213,7 @@ local function load_and_run_test(test_file: string, options: types.TestRunnerOpt
    -- Notably, it needs to be added to lanes _after_ any language registration,
    -- because I think lanes will copy it somewhere?
    local file_loader = require("tested.file_loader")
-   return TestRunner.run_with_cleanup(file_loader, test_file, options)
+   return test_runner.run_with_cleanup(file_loader, test_file, options)
 end
 
 local function run_parallel_tests(
@@ -232,7 +232,7 @@ local function run_parallel_tests(
    }
    local coverage_results = {}
 
-   local pool = thread_pool.init(num_threads, options.coverage)
+   local pool = ThreadPool.init(num_threads, options.coverage)
    local input = {}
    for i = 1, #test_files do
       input[i] = {test_files[i], options}
@@ -280,4 +280,4 @@ local function run_parallel_tests(
    return output
 end
 
-return {TestRunner, run_parallel_tests}
+return {test_runner, run_parallel_tests}
