@@ -34,7 +34,7 @@ local cli_to_display: {DisplayOptions:types.TestResult} = {
 }
 
 local enum DisplayFormat
-   "terminal" "plain"
+   "terminal" "plain" "tap"
 end
 
 local record CLIOptions
@@ -69,7 +69,7 @@ local function parse_args(): CLIOptions
    parser:mutex(
       parser:option("-f --display-format")
          :description("What format to output the results in (default: 'terminal')")
-         :choices({"terminal", "plain"})
+         :choices({"terminal", "plain", "tap"})
          :default("terminal"),
       parser:option("-z --custom-formatter")
          :description("File that loads a custom formatter to use for output")

@@ -8,7 +8,7 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
-local TESTED_VERSION = "tested v0.0.1"
+local TESTED_VERSION = "tested v0.0.2"
 
 
 
@@ -69,7 +69,7 @@ local function parse_args()
    parser:mutex(
    parser:option("-f --display-format"):
    description("What format to output the results in (default: 'terminal')"):
-   choices({ "terminal", "plain" }):
+   choices({ "terminal", "plain", "tap" }):
    default("terminal"),
    parser:option("-z --custom-formatter"):
    description("File that loads a custom formatter to use for output"))
