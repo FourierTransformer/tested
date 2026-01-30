@@ -33,7 +33,7 @@ function tap.results(tested_result, _test_types_to_display)
             else
                tap_result = "    not ok - "
             end
-            tadd.add(tap_result, tostring(j))
+            tadd.add(tap_result, tostring(j), "  ", tostring(assertion.line_number), ":")
             if assertion.given then
                tadd.add("  Given: ", assertion.given)
             end

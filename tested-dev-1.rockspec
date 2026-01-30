@@ -44,6 +44,7 @@ build = {
       ["tested.libs.ThreadPool"] = "build/tested/libs/ThreadPool.lua",
 
       ["tested.results.plain"] = "build/tested/results/plain.lua",
+      ["tested.results.tap"] = "build/tested/results/tap.lua",
       ["tested.results.terminal"] = "build/tested/results/terminal.lua",
    },
    install = {
@@ -66,6 +67,7 @@ build = {
          ["tested.libs.ThreadPool"] = "src/tested/libs/ThreadPool.tl",
 
          ["tested.results.plain"] = "src/tested/results/plain.tl",
+         ["tested.results.tap"] = "build/tested/results/tap.tl",
          ["tested.results.terminal"] = "src/tested/results/terminal.tl",
       }
    }
