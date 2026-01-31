@@ -8,7 +8,7 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
-local TESTED_VERSION = "tested v0.0.1"
+local TESTED_VERSION = "tested v0.1.0"
 
 
 
@@ -69,7 +69,7 @@ local function parse_args()
    parser:mutex(
    parser:option("-f --display-format"):
    description("What format to output the results in (default: 'terminal')"):
-   choices({ "terminal", "plain" }):
+   choices({ "terminal", "plain", "tap" }):
    default("terminal"),
    parser:option("-z --custom-formatter"):
    description("File that loads a custom formatter to use for output"))
@@ -273,7 +273,7 @@ local function main()
    validate_args(args)
    local formatter = load_result_formatter(args)
    if args.specified_show and formatter.allow_filtering == false then
-      logger:warning("It appears the formatter you selected does not allow filtering. Please remove the '-s, --show' paramters from the CLI invocation")
+      logger:warning("It appears the formatter you selected does not allow filtering. Please remove the '-s, --show' parameters from the CLI invocation")
    end
    if args.format_handler then
       register_format_handler(args.format_handler)
