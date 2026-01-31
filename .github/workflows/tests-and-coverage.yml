@@ -34,7 +34,7 @@ jobs:
         with:
           path: |
             lua_install
-          key: ${{ matrix.lua }}-lua_install
+          key: ${{ matrix.lua }}-${{ matrix.os }}-lua_install
 
       - name: Install Lua (${{ matrix.lua }})
         run: |
@@ -59,7 +59,7 @@ jobs:
         with:
           path: |
             lua_install
-          key: ${{ matrix.lua }}-lua_install
+          key: ${{ matrix.lua }}-${{ matrix.os }}-lua_install
 
       - name: Report test coverage
         if: success()
@@ -78,10 +78,19 @@ jobs:
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v6
+
+      - name: Cache Restore
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            lua_install
+          key: ${{ matrix.lua }}-${{ matrix.target }}-lua_install
+
       - name: Install Lua (${{ matrix.lua }})
         run: |
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --${{ matrix.lua }} --target ${{ matrix.target }}
+      
       - name: Build tested
         run: |
           .\lua_install\bin\activate
@@ -92,6 +101,14 @@ jobs:
         run: |
           .\lua_install\bin\activate
           tested -c
+
+      - name: Save Cache
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            lua_install
+          key: ${{ matrix.lua }}-${{ matrix.target }}-lua_install
+
       - name: Report test coverage
         if: success()
         continue-on-error: true
