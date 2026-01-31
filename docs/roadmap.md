@@ -4,7 +4,7 @@ I'm planning to start off by seeing if `tested` catches on, and see what feature
 
 Things that I am one day planning to add:
 
-- [ ] A couple more formatters (TAP and maybe a condensed one) [#21](https://github.com/FourierTransformer/tested/issues/21)
+- [x] A TAP formatter [#21](https://github.com/FourierTransformer/tested/issues/21)
 - [ ] A [pure Lua](./pure-lua.md) single-file distribution [#20](https://github.com/FourierTransformer/tested/issues/20)
 - [ ] File output (alongside terminal)
     - A cool fancy HTML output with the tests and coverage could be fun [#14](https://github.com/FourierTransformer/tested/issues/14)

@@ -8,7 +8,7 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
-local TESTED_VERSION = "tested v0.0.2"
+local TESTED_VERSION = "tested v0.1.0"
 
 local type types = require("tested.types")
 
