@@ -67,7 +67,7 @@ build = {
          ["tested.libs.ThreadPool"] = "src/tested/libs/ThreadPool.tl",
 
          ["tested.results.plain"] = "src/tested/results/plain.tl",
-         ["tested.results.tap"] = "build/tested/results/tap.tl",
+         ["tested.results.tap"] = "src/tested/results/tap.tl",
          ["tested.results.terminal"] = "src/tested/results/terminal.tl",
       }
    }
