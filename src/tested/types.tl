@@ -124,6 +124,7 @@ local record types
       skip: function(name: string, fn: function())
       only: function(name: string, fn: function())
       conditional_test: function(name: string, condition: boolean, fn: function())
+      run: function(self: types.Tested, filename: string, options: types.TestRunnerOptions): types.TestedOutput
    end
 end
 
