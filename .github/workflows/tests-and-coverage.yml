@@ -52,7 +52,7 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          tested -c
+          tested -c -n 0
       
       - name: Save Cache
         uses: actions/cache/save@v5
