@@ -37,6 +37,9 @@ function test_runner.run_tests(
 
 
 
+   local tl_ok, tl_mod = pcall(require, "tl")
+   if tl_ok then tl_mod.loader() end
+
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")

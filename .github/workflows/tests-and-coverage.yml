@@ -101,7 +101,14 @@ jobs:
           .\lua_install\bin\activate
           luarocks make
           luarocks install luacov-coveralls
-      - name: Run tests
+
+      - name: Run tests (sequentially)
+        continue-on-error: true
+        run: |
+          .\lua_install\bin\activate
+          tested -c -n 0
+
+      - name: Run tests (parallel)
         continue-on-error: true
         run: |
           .\lua_install\bin\activate

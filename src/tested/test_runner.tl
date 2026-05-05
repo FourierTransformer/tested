@@ -38,7 +38,7 @@ function test_runner.run_tests(
    -- these get called in here to avoid weirdness with lanes
    -- if they are called outside, the lanes will sometimes hang.
    local tl_ok, tl_mod = pcall(require, "tl")
-   if tl_ok then (tl_mod as any).loader() end
+   if tl_ok then tl_mod.loader() end
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
