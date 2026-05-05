@@ -40,32 +40,35 @@ local function worker(num, run_coverage, linda)
 
 
 
-   local tl_ok, tl_mod = pcall(require, "tl")
-   if tl_ok then
-      local tl_load = tl_mod.load
-      local function tl_fallback_loader(modname)
-         local modpath = modname:gsub("%.", "/")
-         for template in package.path:gmatch("[^;]+") do
-            local basepath = template:gsub("%?", modpath)
-            local tlpath = basepath:gsub("%.lua$", ".tl")
-            if tlpath ~= basepath then
-               local f = io.open(tlpath, "rb")
-               if f then
-                  local code = f:read("*all")
-                  f:close()
-                  local fn, err = tl_load(code, "@" .. tlpath)
-                  if fn then return fn end
-                  return nil, "Error compiling '" .. tlpath .. "': " .. tostring(err)
-               end
-            end
-         end
-      end
-      if package.searchers then
-         table.insert(package.searchers, tl_fallback_loader)
-      else
-         table.insert(package.loaders, tl_fallback_loader)
-      end
-   end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
    local luacov
 
@@ -115,7 +118,7 @@ function ThreadPool.init(workers, run_coverage)
 
    for i = 1, workers do
 
-      local worker_lane = lanes.gen("*", worker)
+      local worker_lane = lanes.gen("*", { required = { "compat54" } }, worker)
       instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance
