@@ -43,32 +43,26 @@ local function worker(num, run_coverage, linda)
 
 
 
+   local tl_ok, tl_mod = pcall(require, "tl")
+   if tl_ok then
+      local tl_load = tl_mod.load
+      local function tl_fallback_loader(modname)
 
+         local found, fd = tl_mod.search_module(modname, false)
+         if not found then return end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+         local code = fd:read("*all")
+         fd:close()
+         local fn, err = (tl_load)(code, "@" .. found)
+         if fn then return fn end
+         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
+      end
+      if package.searchers then
+         table.insert(package.searchers, tl_fallback_loader)
+      else
+         table.insert(package.loaders, tl_fallback_loader)
+      end
+   end
 
    local luacov
 
@@ -118,7 +112,7 @@ function ThreadPool.init(workers, run_coverage)
 
    for i = 1, workers do
 
-      local worker_lane = lanes.gen("*", { required = { "compat53" } }, worker)
+      local worker_lane = lanes.gen("*", worker)
       instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance

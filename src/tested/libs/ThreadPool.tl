@@ -43,32 +43,26 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    -- package.loaders (not position 2 like tl.loader() does) so that compiled .lua
    -- versions of framework modules are still found first, avoiding expensive
    -- tl.new_env()+tl.check() calls on framework internals across all worker threads.
-   -- local tl_ok, tl_mod = pcall(require, "tl")
-   -- if tl_ok then
-   --    local tl_load = (tl_mod as any).load
-   --    local function tl_fallback_loader(modname: string): function, string
-   --       local modpath = modname:gsub("%.", "/")
-   --       for template in package.path:gmatch("[^;]+") do
-   --          local basepath = template:gsub("%?", modpath)
-   --          local tlpath = basepath:gsub("%.lua$", ".tl")
-   --          if tlpath ~= basepath then
-   --             local f = io.open(tlpath, "rb")
-   --             if f then
-   --                local code = f:read("*all")
-   --                f:close()
-   --                local fn, err = (tl_load as function(string, string): (function, string))(code, "@" .. tlpath)
-   --                if fn then return fn end
-   --                return nil, "Error compiling '" .. tlpath .. "': " .. tostring(err)
-   --             end
-   --          end
-   --       end
-   --    end
-   --    if (package as any).searchers then
-   --       table.insert((package as any).searchers, tl_fallback_loader)
-   --    else
-   --       table.insert((package as any).loaders, tl_fallback_loader)
-   --    end
-   -- end
+   local tl_ok, tl_mod = pcall(require, "tl")
+   if tl_ok then
+      local tl_load = tl_mod.load
+      local function tl_fallback_loader(modname: string): function, string
+         -- search_all=false: finds only .tl files (not .lua), and respects TL_PATH
+         local found, fd = tl_mod.search_module(modname, false)
+         if not found then return end
+
+         local code = fd:read("*all")
+         fd:close()
+         local fn, err = (tl_load as function(string, string): (function, string))(code, "@" .. found)
+         if fn then return fn end
+         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
+      end
+      if package.searchers then
+         table.insert(package.searchers, tl_fallback_loader)
+      else
+         table.insert(package.loaders, tl_fallback_loader)
+      end
+   end
 
    local luacov: luacov_type
 
@@ -118,7 +112,7 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
 
    for i = 1, workers do
       -- Create worker lanes with separate state
-      local worker_lane = lanes.gen("*", {required = {"compat53"}}, worker)
+      local worker_lane = lanes.gen("*", worker)
       instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance
