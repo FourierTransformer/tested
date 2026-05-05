@@ -16,9 +16,9 @@ function test_runner.run_with_cleanup(file_loader: types.FileLoader, test_file: 
    assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .."' returns the 'tested' module")
 
    local test_results = test_module:run(test_file, options)
-   
+
    logger:info("%s: Clearing out any packages that were loaded", test_file)
-   for package_name, _ in pairs(package.loaded) do 
+   for package_name, _ in pairs(package.loaded) do
       if not pre_test_loaded_packages[package_name] then
          logger:debug("%s: Clearing out package: %s", test_file, package_name)
          package.loaded[package_name] = nil
@@ -37,6 +37,9 @@ function test_runner.run_tests(
 
    -- these get called in here to avoid weirdness with lanes
    -- if they are called outside, the lanes will sometimes hang.
+   local tl_ok, tl = pcall(require, "tl")
+   if tl_ok then tl.loader() end
+
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
@@ -71,7 +74,7 @@ function test_runner.run_tests(
 
       if options.coverage then luacov_runner.resume() end
       local test_output = test_runner.run_with_cleanup(file_loader, test_files[i], options)
-      if options.coverage then 
+      if options.coverage then
          coverage = luacov_runner.data
          luacov_runner.resume()
       end
@@ -129,11 +132,11 @@ local function run_parallel_tests(
    end
    pool:shutdown()
 
-   -- future note: should probably save off the individual coverage results 
+   -- future note: should probably save off the individual coverage results
    -- before running the combine stats, or do a deep copy or something.
    -- since the old stats get destroyed during the merge
    if options.coverage then
-      
+
       -- mostly code from luacov to help merge stats together.
       local luacov = require("luacov.runner")
       luacov.data = {}

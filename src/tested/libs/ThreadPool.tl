@@ -37,7 +37,32 @@ end
 -- waits for a task, then executes it
 local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    logger:info("Starting worker %d", num)
-   
+
+   -- Unfortunately have to handle this as more of a special case than I was hoping for...
+   -- To be able to have teal files depend on other teal files, a package loader needs to be added
+   -- I can't just use tl.load() to handle this here, because it causes the concurrent tests to hang
+   -- (similar to the luacov problems below). Still not entirely sure why, but appending this loader
+   -- does appear to solve the issue
+   local tl_ok, tl = pcall(require, "tl")
+   if tl_ok then
+      local function tl_fallback_loader(modname: string): function, string
+         -- search_all=false: finds only .tl files (not .lua), and respects TL_PATH
+         local found, fd = tl.search_module(modname, false)
+         if not found then return end
+
+         local code = fd:read("*all")
+         fd:close()
+         local fn, err = tl.load(code, "@" .. found)
+         if fn then return fn end
+         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
+      end
+      if package.searchers then
+         table.insert(package.searchers, tl_fallback_loader)
+      else
+         table.insert(package.loaders, tl_fallback_loader)
+      end
+   end
+
    local luacov: luacov_type
 
    if run_coverage then
@@ -50,7 +75,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
       luacov_runner.pause()
       luacov = luacov_runner
    end
-   
+
    while true do
       logger:debug("Worker %d waiting for task", num)
       -- Get a task from the queue should be a blocking call
@@ -63,9 +88,9 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
       if run_coverage then luacov.pause() end
 
       local coverage_data = {}
-      if run_coverage then 
-         coverage_data = luacov.data 
-         luacov.data = {} 
+      if run_coverage then
+         coverage_data = luacov.data
+         luacov.data = {}
       end
 
       if success then
@@ -93,9 +118,9 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
 end
 
 function ThreadPool:map<T>(
-   func: function(...: any): T, 
-   args_list: {{any}}, 
-   display_func: function(T), 
+   func: function(...: any): T,
+   args_list: {{any}},
+   display_func: function(T),
    _timeout?: number
 ): {ThreadPool.Result<T>}
 
@@ -103,7 +128,7 @@ function ThreadPool:map<T>(
    logger:info("Sending %d tasks", total_calls)
    for i = 1, total_calls do
       local task_data = {
-         order = i, 
+         order = i,
          func = func,
          args = args_list[i]
       }
@@ -126,7 +151,7 @@ function ThreadPool:map<T>(
          return output
       end
    end
-   
+
 end
 
 function ThreadPool:shutdown(timeout?: number)

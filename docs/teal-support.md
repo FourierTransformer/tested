@@ -32,4 +32,6 @@ Assuming I had multiple unit test files that all pull in `utf8validator`, every 
 
 For example, if you are doing TDD, you may want to accept the performance loss and use Teal unit test files so that `tested` is _always_ using the Teal files as a source. If you have a large test suite where Lua benchmarking matters, it may make more sense to compile and then test.
 
-In the future, I may consider adding in some way to avoid that additional compilation, so any Teal modules only get compiled once, but it sort've goes against the ethos of unit testing should be isolated if `require`'d modules start being shared across files.
+Another thing to keep in mind, if there is a Lua and Teal file in the Lua's instance search path with the same `require`-able name, the Lua file will be pulled in first.
+
+In the future, I may consider adding in some way to avoid that additional compilation, so any Teal modules only get compiled once, but it sort've goes against the ethos of unit testing (ie: tests should be isolated from one another) if `require`'d modules start being shared across files.

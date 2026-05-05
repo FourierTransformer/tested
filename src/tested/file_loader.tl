@@ -37,7 +37,7 @@ end
 
 function file_loader.load_and_register_handler(filepath: string)
    local handler = file_loader.load_file(filepath) as types.FileLoaderHandler
-   file_loader.register_handler(handler.extension, handler.loader) 
+   file_loader.register_handler(handler.extension, handler.loader)
 end
 
 local tl_ok, tl = pcall(require, "tl")
