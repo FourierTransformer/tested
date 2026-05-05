@@ -38,6 +38,11 @@ local _unpack = unpack or table.unpack
 local function worker(num, run_coverage, linda)
    logger:info("Starting worker %d", num)
 
+
+
+   local tl_ok, tl = pcall(require, "tl")
+   if tl_ok then tl.loader() end
+
    local luacov
 
    if run_coverage then

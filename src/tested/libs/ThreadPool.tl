@@ -37,7 +37,12 @@ end
 -- waits for a task, then executes it
 local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    logger:info("Starting worker %d", num)
-   
+
+   -- also not a fan of having to call this over here, but likely required to ensure that
+   -- each lane loads the tl loader stuff correctly.
+   local tl_ok, tl = pcall(require, "tl")
+   if tl_ok then tl.loader() end
+
    local luacov: luacov_type
 
    if run_coverage then
@@ -50,7 +55,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
       luacov_runner.pause()
       luacov = luacov_runner
    end
-   
+
    while true do
       logger:debug("Worker %d waiting for task", num)
       -- Get a task from the queue should be a blocking call
@@ -63,9 +68,9 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
       if run_coverage then luacov.pause() end
 
       local coverage_data = {}
-      if run_coverage then 
-         coverage_data = luacov.data 
-         luacov.data = {} 
+      if run_coverage then
+         coverage_data = luacov.data
+         luacov.data = {}
       end
 
       if success then
@@ -93,9 +98,9 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
 end
 
 function ThreadPool:map<T>(
-   func: function(...: any): T, 
-   args_list: {{any}}, 
-   display_func: function(T), 
+   func: function(...: any): T,
+   args_list: {{any}},
+   display_func: function(T),
    _timeout?: number
 ): {ThreadPool.Result<T>}
 
@@ -103,7 +108,7 @@ function ThreadPool:map<T>(
    logger:info("Sending %d tasks", total_calls)
    for i = 1, total_calls do
       local task_data = {
-         order = i, 
+         order = i,
          func = func,
          args = args_list[i]
       }
@@ -126,7 +131,7 @@ function ThreadPool:map<T>(
          return output
       end
    end
-   
+
 end
 
 function ThreadPool:shutdown(timeout?: number)
