@@ -29,7 +29,7 @@ function tested.assert(assertion)
    local errors = {}
    if assertion.expected == nil then table.insert(errors, "'expected'") end
    if assertion.actual == nil then table.insert(errors, "'actual'") end
-   assert(#errors == 0, "The assertion table must include 'expected' and 'actual' whose values cannot be 'nil'. Invalid fields: " .. table.concat(errors, ", "))
+   assert(#errors == 0, "The assertion table must include 'expected' and 'actual' whose values cannot be 'nil'. Missing (or 'nil') fields: " .. table.concat(errors, ", "))
    if assertion.given and type(assertion.given) ~= "string" then
       table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given))
    end
