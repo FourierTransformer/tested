@@ -29,8 +29,8 @@ function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
    local errors = {}
    if assertion.expected == nil then table.insert(errors, "'expected'") end
    if assertion.actual == nil then table.insert(errors, "'actual'") end
-   assert(#errors == 0, "The assertion table must include 'expected' and 'actual'. Missing: " .. table.concat(errors, ", "))
-   if assertion.given and type(assertion.given) ~= "string" then 
+   assert(#errors == 0, "The assertion table must include 'expected' and 'actual' whose values cannot be 'nil'. Missing (or 'nil') fields: " .. table.concat(errors, ", "))
+   if assertion.given and type(assertion.given) ~= "string" then
       table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given))
    end
    if assertion.should and type(assertion.should) ~= "string" then
@@ -39,9 +39,9 @@ function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
    assert(#errors == 0, table.concat(errors, ". "))
    local expected_type = type(assertion.expected)
    local actual_type = type(assertion.actual)
-   
+
    if actual_type ~= expected_type then
-      return false, "Actual: " .. tostring(assertion.actual) .. " (as '" .. 
+      return false, "Actual: " .. tostring(assertion.actual) .. " (as '" ..
       actual_type .."'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
    end
 
@@ -78,15 +78,15 @@ function tested.assert_throws_exception(assertion: types.ExceptionAssertion): bo
       return tested.assert({
          given=assertion.given,
          should=assertion.should or "throw exception with error message",
-         expected={false, assertion.expected}, 
+         expected={false, assertion.expected},
          actual=wrapped_pcall()
       })
    else
       return tested.assert({
          given=assertion.given,
          should=assertion.should or "throw exception",
-         expected=false, 
-         actual=pcall(function() assertion.actual() end) 
+         expected=false,
+         actual=pcall(function() assertion.actual() end)
       })
    end
 end
@@ -110,8 +110,8 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
    end
 
    local test_results: types.TestedOutput = {
-      counts = {passed=0, failed=0, skipped=0, invalid=0}, 
-      tests = {}, 
+      counts = {passed=0, failed=0, skipped=0, invalid=0},
+      tests = {},
       filename = filename,
       fully_tested = false,
       total_time = 0
@@ -186,7 +186,7 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
             test_results.tests[i].message = "No assertions run during test"
             test_results.counts.invalid = test_results.counts.invalid + 1
 
-         elseif assert_failed_count == 0 then 
+         elseif assert_failed_count == 0 then
             test_results.tests[i].result = "PASS"
             test_results.tests[i].message = "All assertions have passed"
             test_results.counts.passed = test_results.counts.passed + 1
