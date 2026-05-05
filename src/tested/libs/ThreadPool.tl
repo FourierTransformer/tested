@@ -38,22 +38,21 @@ end
 local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    logger:info("Starting worker %d", num)
 
-   -- Register a low-priority Teal fallback loader so nested `require()` calls inside
-   -- test files can find .tl modules. We intentionally append to the END of
-   -- package.loaders (not position 2 like tl.loader() does) so that compiled .lua
-   -- versions of framework modules are still found first, avoiding expensive
-   -- tl.new_env()+tl.check() calls on framework internals across all worker threads.
-   local tl_ok, tl_mod = pcall(require, "tl")
+   -- Unfortunately have to handle this as more of a special case than I was hoping for...
+   -- To be able to have teal files depend on other teal files, a package loader needs to be added
+   -- I can't just use tl.load() to handle this here, because it causes the concurrent tests to hang
+   -- (similar to the luacov problems below). Still not entirely sure why, but appending this loader
+   -- does appear to solve the issue
+   local tl_ok, tl = pcall(require, "tl")
    if tl_ok then
-      local tl_load = tl_mod.load
       local function tl_fallback_loader(modname: string): function, string
          -- search_all=false: finds only .tl files (not .lua), and respects TL_PATH
-         local found, fd = tl_mod.search_module(modname, false)
+         local found, fd = tl.search_module(modname, false)
          if not found then return end
 
          local code = fd:read("*all")
          fd:close()
-         local fn, err = (tl_load as function(string, string): (function, string))(code, "@" .. found)
+         local fn, err = tl.load(code, "@" .. found)
          if fn then return fn end
          return nil, "Error compiling '" .. found .. "': " .. tostring(err)
       end

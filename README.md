@@ -52,6 +52,7 @@ You can see more tests in this repo's [tests](https://github.com/FourierTransfor
 - AI was used to help research Lua internals (mostly around file loading and the debug module)
 - AI helped generate a prettier terminal output.
   - I fed it my [original terminal output](./docs/original-output.txt), and it re-formatted it to something that looks a lot closer to the final terminal output.
+- AI has been used to help debug issues
 
 ## Licenses
 Parts of the following are included in the source code present in this repo:

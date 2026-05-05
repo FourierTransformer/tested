@@ -43,17 +43,16 @@ local function worker(num, run_coverage, linda)
 
 
 
-   local tl_ok, tl_mod = pcall(require, "tl")
+   local tl_ok, tl = pcall(require, "tl")
    if tl_ok then
-      local tl_load = tl_mod.load
       local function tl_fallback_loader(modname)
 
-         local found, fd = tl_mod.search_module(modname, false)
+         local found, fd = tl.search_module(modname, false)
          if not found then return end
 
          local code = fd:read("*all")
          fd:close()
-         local fn, err = (tl_load)(code, "@" .. found)
+         local fn, err = tl.load(code, "@" .. found)
          if fn then return fn end
          return nil, "Error compiling '" .. found .. "': " .. tostring(err)
       end

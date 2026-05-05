@@ -51,7 +51,6 @@ if tl_ok then
       return load_function
    end
    file_loader.loader[".tl"] = load_teal_file
-
 end
 
 return file_loader
