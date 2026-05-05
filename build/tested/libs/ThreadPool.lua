@@ -118,7 +118,7 @@ function ThreadPool.init(workers, run_coverage)
 
    for i = 1, workers do
 
-      local worker_lane = lanes.gen("*", { required = { "compat54" } }, worker)
+      local worker_lane = lanes.gen("*", { required = { "compat53" } }, worker)
       instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance

@@ -118,7 +118,7 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
 
    for i = 1, workers do
       -- Create worker lanes with separate state
-      local worker_lane = lanes.gen("*", {required = {"compat54"}}, worker)
+      local worker_lane = lanes.gen("*", {required = {"compat53"}}, worker)
       instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
    end
    return instance
