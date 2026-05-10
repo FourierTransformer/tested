@@ -33,7 +33,11 @@ To pass multiple values:
 - `tested -s pass -s fail -s skip`
 
 ## `tested -f/--display-format`
-Currently, `tested` has two display formats. The default is `terminal` which displays all the output with ansicolors to the terminal and `plain`, which is the same output as `terminal` but without any ansicoloring. There are some plans to add more in the future!
+Currently, `tested` has a couple display formats:
+
+- `tested -f terminal` (default) - which displays all the output with ansicolors to the terminal
+- `tested -f plain` - the same output as `terminal` but without any ansicoloring
+- `tested -f tap` - output in the [TAP v14 format](https://testanything.org/)
 
 
 ## `tested -n/--threads`
