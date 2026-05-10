@@ -3,27 +3,35 @@ local assert_table = require("tested.assert_table")
 
 local tested = { tests = {}, run_only_tests = false }
 
-function tested.test(name, fn)
-   table.insert(tested.tests, { name = name, fn = fn, kind = "test" })
-end
+local function extract_fn_and_options(fn_or_options, fn)
+   local options = {}
+   if type(fn_or_options) == "function" then
+      fn = fn_or_options
 
-function tested.skip(name, fn)
-   table.insert(tested.tests, { name = name, fn = fn, kind = "skip" })
-end
-
-function tested.only(name, fn)
-   tested.run_only_tests = true
-   table.insert(tested.tests, { name = name, fn = fn, kind = "only" })
-end
-
-function tested.conditional_test(name, condition, fn)
-   if condition then
-      table.insert(tested.tests, { name = name, fn = fn, kind = "conditional_test" })
-   else
-      table.insert(tested.tests, { name = name, fn = fn, kind = "conditional_skip" })
+   elseif type(fn_or_options) == "table" then
+      options = fn_or_options
+      if not fn then error("a function must be provided to run a unit test") end
+      fn = fn
    end
+
+   return fn, options
 end
 
+
+function tested.test(name, fn_or_options, fn)
+   local func, options = extract_fn_and_options(fn_or_options, fn)
+   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "test" })
+end
+
+function tested.skip(name, fn_or_options, fn)
+   local func, options = extract_fn_and_options(fn_or_options, fn)
+   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "skip" })
+end
+
+function tested.only(name, fn_or_options, fn)
+   local func, options = extract_fn_and_options(fn_or_options, fn)
+   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "only" })
+end
 
 function tested.assert(assertion)
    local errors = {}
@@ -135,7 +143,7 @@ function tested:run(filename, options)
          test_results.tests[i].time = 0
          test_results.counts.skipped = test_results.counts.skipped + 1
 
-      elseif test.kind == "conditional_skip" then
+      elseif test.options.run_when ~= nil and test.options.run_when == false then
          test_results.tests[i].result = "CONDITIONAL_SKIP"
          test_results.tests[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
          test_results.tests[i].time = 0

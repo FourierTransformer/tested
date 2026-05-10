@@ -31,7 +31,7 @@ tested.test("sum()", function()
     tested.assert(thing)
 end)
 
-tested.conditional_test("conditional guy over here", true, function()
+tested.test("conditional guy over here", {run_when=true}, function()
     tested.assert({
         given = "4 + 4",
         should = "8",
@@ -40,7 +40,7 @@ tested.conditional_test("conditional guy over here", true, function()
     })
 end)
 
-tested.conditional_test("conditional guy should be skipped", false, function()
+tested.test("conditional guy should be skipped", {run_when=false}, function()
     tested.assert({
         given = "4 and 4",
         should = "return 8",

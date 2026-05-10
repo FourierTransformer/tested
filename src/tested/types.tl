@@ -93,6 +93,7 @@ local record types
       kind: TestType
       name: string
       fn: function()
+      options: TestedOptions
    end
 
    interface BaseAssertion
@@ -113,6 +114,13 @@ local record types
       expected: any
    end
 
+   interface TestedOptions
+      -- retries: integer
+      -- retry_timeout: number
+      -- expected_output: TestResult
+      run_when: boolean
+   end
+
    interface Tested
       tests: {Test}
       run_only_tests: boolean
@@ -120,10 +128,10 @@ local record types
       assert_truthy: function(assertion: TruthyAssertion): boolean, string
       assert_falsy: function(assertion: FalsyAssertion): boolean, string
       assert_throws_exception: function(assertion: ExceptionAssertion): boolean, string
-      test: function(name: string, fn: function())
-      skip: function(name: string, fn: function())
-      only: function(name: string, fn: function())
-      conditional_test: function(name: string, condition: boolean, fn: function())
+      -- teal currently doesn't support polymorphism, so we gotta kinda handle it ourselves
+      test: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
+      skip: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
+      only: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       run: function(self: types.Tested, filename: string, options: types.TestRunnerOptions): types.TestedOutput
    end
 end

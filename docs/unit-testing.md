@@ -221,27 +221,20 @@ end)
 ```
 
 
-## Skipping tests
+## Skipping & Only tests
 
-If you need to have a test be skipped (for something is known broken) or want to _conditionally_ skip tests based on something that can be determined at runtime (LuaJIT, operating system, dependency present or not), there is `tested.skip` and `tested.conditional_test`:
+For quick debugging purposes, there are `tested.skip` and `tested.only`. These allow you to quickly isolate testing when running selective tests a particular file. For things that are going to broken longer term, we're planning to add `expected_result`.
 
+
+`tested.skip`:
 ```lua
 tested.skip("skipping because tested.skip", function()
     tested.assert({expected = 8, actual = sum(4, 4)})
 end)
-
--- the second argument to `conditional_test` takes in a boolean
--- true runs the test, false will skip it
-tested.conditional_test("luajit only test", (type("jit") == "table"), function()
-    tested.assert({expected = 8, actual = sum(5, 3) })
-end)
-
 ```
 
-## Only tests
-There is also a `tested.only` which will only cause the tests marked with `tested.only` _in a test file_ to be run. This can be helpful if you need to debug a handful of tests and don't want to see the output of the other tests in the file (they will be marked as skipped). 
+There is also a `tested.only` which will only cause the tests marked with `tested.only` _in a test file_ to be run. This can be helpful if you need to debug a handful of tests and don't want to see the output of the other tests in the file (they will be marked as skipped).
 
-Since this only works on a _per-test file_ basis, it may also be useful to pass the specific test file to `tested` as well: `tested ./tests/file_with_only_test.lua`
 ```lua
 -- this will be marked as skipped
 tested.test("skipping because others are tested.only", function()
@@ -258,6 +251,23 @@ tested.only("this will also run!", function()
     tested.assert({expected = 8, actual = sum(2, 6) })
 end)
 ```
+
+Both of these work on a _per-test file_ basis, so it may also be useful to pass the specific test file that you are working with to `tested` as well: `tested ./tests/file_with_only_test.lua`
+
+## Options
+
+### Conditional Skipping
+If you want to _conditionally_ skip tests based on something that can be determined at runtime (LuaJIT, operating system, dependency present or not), there is the `run_when` options
+
+```lua
+-- the `run_when` option takes in a boolean where true runs the test, false will skip it
+tested.test("luajit only test", {run_when=(type("jit") == "table")}, function()
+    tested.assert({expected = 8, actual = sum(5, 3) })
+end)
+
+```
+
+
 
 ## Invalid tests
 If a test file has a test that throws an unhandled exception or `tested` finds a test without any asserts, they are considered "invalid", and will display as such in the results and will be listed in the summary as "invalid":
