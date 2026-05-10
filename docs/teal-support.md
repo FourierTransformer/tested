@@ -3,7 +3,7 @@
 `tested` is built from the ground up with with Teal and makes it a first class citizen. Unit tests can be written in Teal and all the functionality (including code coverage!) works across both languages wonderfully. However, there are a couple of things to keep in mind when using `tested` with Teal projects. 
 
 ## Build, then test if perf matters
-If you have a Teal project and are writing your unit tests in Teal, _every_ test file will compile the Teal as it gets loaded.
+If you have a Teal project and are writing your unit tests in Teal, _every_ test file will compile the Teal as it gets loaded. However, it is worth knowing that `tested` will attmept to run the Teal files even if they are not typed correctly.
 
 Example Teal unit test:
 ```lua

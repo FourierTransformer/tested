@@ -76,11 +76,17 @@ local function get_shared_eq_function(a, b)
    end
 end
 
-local function deep_compare(prefix, expected, actual, visited)
-
-   if visited[expected] and visited[expected][actual] then return end
-   if not visited[expected] then visited[expected] = {} end
-   visited[expected][actual] = true
+local function deep_compare(prefix, expected, actual, ancestors_expected, ancestors_actual)
+   local expected_is_ancestor = ancestors_expected[expected]
+   local actual_is_ancestor = ancestors_actual[actual]
+   if expected_is_ancestor or actual_is_ancestor then
+      if not (expected_is_ancestor and actual_is_ancestor) then
+         tadd.add("~ ", prefix, ": Cycle structure mismatch\n")
+      end
+      return
+   end
+   ancestors_expected[expected] = true
+   ancestors_actual[actual] = true
 
    local keys, _key_length, sequence = inspect.getKeys(expected)
    for i = 1, sequence do
@@ -94,7 +100,7 @@ local function deep_compare(prefix, expected, actual, visited)
                add_index_eq_error(prefix, i)
             end
          else
-            deep_compare(prefix .. "[" .. tostring(i) .. "]", expected[i], actual[i], visited)
+            deep_compare(prefix .. "[" .. tostring(i) .. "]", expected[i], actual[i], ancestors_expected, ancestors_actual)
          end
 
       elseif actual[i] ~= expected[i] then
@@ -112,7 +118,7 @@ local function deep_compare(prefix, expected, actual, visited)
                add_key_eq_error(prefix, k)
             end
          else
-            deep_compare(prefix .. "." .. tostring(k), expected[k], actual[k], visited)
+            deep_compare(prefix .. "." .. tostring(k), expected[k], actual[k], ancestors_expected, ancestors_actual)
          end
 
       elseif actual[k] ~= expected[k] then
@@ -128,6 +134,9 @@ local function deep_compare(prefix, expected, actual, visited)
    for _i, k in ipairs(keys) do
       if expected[k] == nil then add_key_error(prefix, k, "additional_key") end
    end
+
+   ancestors_expected[expected] = nil
+   ancestors_actual[actual] = nil
 end
 
 local function assert_tables(expected, actual)
@@ -140,7 +149,7 @@ local function assert_tables(expected, actual)
       end
 
    else
-      deep_compare("", expected, actual, {})
+      deep_compare("", expected, actual, {}, {})
 
    end
 
