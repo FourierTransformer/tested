@@ -45,12 +45,14 @@ function tested.assert(assertion)
       actual_type .. "'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
    end
 
-   if assertion.actual == assertion.expected then
-      return true, ""
-   end
+
 
    if actual_type == "table" and expected_type == "table" then
       return assert_table(assertion.expected, assertion.actual)
+   end
+
+   if assertion.actual == assertion.expected then
+      return true, ""
    end
 
    return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)

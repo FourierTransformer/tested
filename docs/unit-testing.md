@@ -78,7 +78,7 @@ To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
 
 ## Testing tables
 
-`tested.assert` can also deep compare tables, and will generate a little summary of the differences as well as print out the expected and actual table.
+`tested.assert` will also deep compare tables, and will generate a little summary of the differences as well as print out the expected and actual table.
 
 === "Test"
 
@@ -143,6 +143,28 @@ To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
             scores = { 10, 20, 30 }
           }
     ```
+
+### Table cycle compare
+`tested` can also check for cycles within a table. It performs a basic structural check to ensure the _structure_ of the cycles are the same. So, if you're writing an assertion that compares tables, you should mirror the cycle in the `expected` table. If you instead reference the `actual` table's cycle it will be considerd a failure.
+
+Example of a working cycle test:
+```lua
+tested.test("tables with self-cycles, but the same structure should be equal", function()
+   local cycle_a: {any:any} = {}
+   cycle_a["self"] = cycle_a
+
+   local cycle_b: {any:any} = {}
+   cycle_b["self"] = cycle_b
+
+   tested.assert({
+      given = "two tables that each contain a reference to themselves",
+      should = "be considered structurally equal",
+      expected = cycle_a,
+      actual = cycle_b
+   })
+end)
+```
+    
 ## Truthy/Falsy tests
 
 Sometimes in Lua you want to check if _anything_ returned (like a `string.match` or that a value exists in a table), we've added in an `assert_truthy` and `assert_falsy` to help out in those cases.

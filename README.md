@@ -48,11 +48,7 @@ Running the tests are as simple as placing the file in a `tests` folder and then
 You can see more tests in this repo's [tests](https://github.com/FourierTransformer/tested/tree/main/tests) folder!
 
 ## AI Disclosure
-- AI was not used to write any of this code. It's all been hand written over the course of 2-3 weeks.
-- AI was used to help research Lua internals (mostly around file loading and the debug module)
-- AI helped generate a prettier terminal output.
-  - I fed it my [original terminal output](./docs/original-output.txt), and it re-formatted it to something that looks a lot closer to the final terminal output.
-- AI has been used to help debug issues
+As of version 0.0.3, AI has been used to help implement features, research Lua/Teal internals, debug issues, and make more readable output. Before this version, the code was hand-written, but some research was done with the help of AI. The docs will remain hand-written for now. I am personally still a little skeptical of AI and its place in open source, but at the moment am willing to evaluate it.
 
 ## Licenses
 Parts of the following are included in the source code present in this repo:
@@ -60,4 +56,4 @@ Parts of the following are included in the source code present in this repo:
 - Also bundles a slightly modified [ansicolors.lua](https://github.com/kikito/ansicolors.lua) - MIT
 - A function from [Luacov](https://github.com/lunarmodules/luacov) code to help merge stats files in process - MIT
 
-Major thanks to hishamhm, kikito, and benoit-germain for their work in the Lua space. Without them, tested wouldn't be possible.
+Major thanks to hishamhm, kikito, and benoit-germain for their work in the Lua space. Without them, `tested` wouldn't be possible.

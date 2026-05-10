@@ -45,12 +45,14 @@ function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
       actual_type .."'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
    end
 
-   if assertion.actual == assertion.expected then
-      return true, ""
-   end
-
+   -- perform table comparison first, so we can explicitly handle __eq
+   -- as opposed to it being handles in the assertion compare below
    if actual_type == "table" and expected_type == "table" then
       return assert_table(assertion.expected as table, assertion.actual as table)
+   end
+
+   if assertion.actual == assertion.expected then
+      return true, ""
    end
 
    return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
