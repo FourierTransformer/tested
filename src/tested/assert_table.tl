@@ -60,16 +60,42 @@ local function add_key_error(prefix: string, key: any, error_type: TableDiff, ex
    tadd.add("\n")
 end
 
-local function deep_compare(prefix: string, expected: table, actual: table)
-   -- not cycle safe, but might be good enough to get us started?
+local function add_index_eq_error(prefix: string, index: integer)
+   tadd.add("~ ", prefix, "[", tostring(index), "]: Not equal according to __eq\n")
+end
+
+local function add_key_eq_error(prefix: string, key: any)
+   tadd.add("~ ", prefix, ".", tostring(key), ": Not equal according to __eq\n")
+end
+
+-- returns the shared __eq function if both tables use the same metatable that defines it
+local function get_shared_eq_function(a: table, b: table): function(any, any): boolean
+   local mt = getmetatable(a)
+   if mt and mt == getmetatable(b) then
+      return mt.__eq
+   end
+end
+
+local function deep_compare(prefix: string, expected: table, actual: table, visited: {table: {table: boolean}})
+   -- if we've already started comparing this exact pair, we're in a cycle — assume equal
+   if visited[expected] and visited[expected][actual] then return end
+   if not visited[expected] then visited[expected] = {} end
+   visited[expected][actual] = true
+
    local keys, _key_length, sequence = inspect.getKeys(expected)
    for i = 1, sequence do
       if actual[i] == nil then
          add_index_error(prefix, i, "missing_key")
 
       elseif type(expected[i]) == "table" and type(actual[i]) == "table" then
-         -- DESCEND!
-         deep_compare(prefix .. "[" .. tostring(i) .."]", expected[i] as {any:any}, actual[i] as {any:any})
+         local eq_fn = get_shared_eq_function(expected[i] as table, actual[i] as table)
+         if eq_fn then
+            if not eq_fn(expected[i], actual[i]) then
+               add_index_eq_error(prefix, i)
+            end
+         else
+            deep_compare(prefix .. "[" .. tostring(i) .."]", expected[i] as {any:any}, actual[i] as {any:any}, visited)
+         end
 
       elseif actual[i] ~= expected[i] then
          add_index_error(prefix, i, "different_value", expected[i], actual[i])
@@ -80,8 +106,14 @@ local function deep_compare(prefix: string, expected: table, actual: table)
          add_key_error(prefix, k, "missing_key")
 
       elseif type(expected[k]) == "table" and type(actual[k]) == "table" then
-         -- DESCEND!
-         deep_compare(prefix .. "." .. tostring(k), expected[k] as {any:any}, actual[k] as {any:any})
+         local eq_fn = get_shared_eq_function(expected[k] as table, actual[k] as table)
+         if eq_fn then
+            if not eq_fn(expected[k], actual[k]) then
+               add_key_eq_error(prefix, k)
+            end
+         else
+            deep_compare(prefix .. "." .. tostring(k), expected[k] as {any:any}, actual[k] as {any:any}, visited)
+         end
 
       elseif actual[k] ~= expected[k] then
          add_key_error(prefix, k, "different_value", expected[k], actual[k])
@@ -90,7 +122,7 @@ local function deep_compare(prefix: string, expected: table, actual: table)
 
    -- check if there are any additional keys floating around
    keys, _key_length, sequence = inspect.getKeys(actual)
-   for i = 1, sequence do 
+   for i = 1, sequence do
       if expected[i] == nil then add_index_error(prefix, i, "additional_key") end
    end
    for _i, k in ipairs(keys) do
@@ -99,7 +131,18 @@ local function deep_compare(prefix: string, expected: table, actual: table)
 end
 
 local function assert_tables(expected: table, actual: table): (boolean, string)
-   deep_compare("", expected, actual)
+   local eq_fn = get_shared_eq_function(expected, actual)
+   if eq_fn then
+      if eq_fn(expected, actual) then
+         return true, ""
+      else
+         tadd.add("Not equal according to __eq at root\n")
+      end
+
+   else
+      deep_compare("", expected, actual, {})
+
+   end
 
    -- since change table starts off in there.
    -- using tadd here feels super risky to me... might switch to a bool or something?
