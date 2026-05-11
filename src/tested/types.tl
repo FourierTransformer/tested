@@ -21,6 +21,16 @@ local record types
       "EXCEPTION"
       "TIMEOUT"
       "UNKNOWN"
+      "EXPECTED_FAIL"
+      "EXPECTED_EXCEPTION"
+      "EXPECTED_UNKNOWN"
+      "UNEXPECTED"
+   end
+
+   enum ExpectedTestResult
+      "FAIL"
+      "EXCEPTION"
+      "UNKNOWN"
    end
 
    interface AssertionResult
@@ -43,6 +53,7 @@ local record types
    interface TestCounts
       passed: integer
       failed: integer
+      expected: integer
       skipped: integer
       invalid: integer
    end
@@ -117,7 +128,7 @@ local record types
    interface TestedOptions
       -- retries: integer
       -- retry_timeout: number
-      -- expected_output: TestResult
+      expected: ExpectedTestResult
       run_when: boolean
    end
 

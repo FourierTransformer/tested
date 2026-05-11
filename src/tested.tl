@@ -120,7 +120,7 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
    end
 
    local test_results: types.TestedOutput = {
-      counts = {passed=0, failed=0, skipped=0, invalid=0},
+      counts = {passed=0, failed=0, expected=0, skipped=0, invalid=0},
       tests = {},
       filename = filename,
       fully_tested = false,
@@ -189,22 +189,49 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
          if ok == false then
             test_results.tests[i].result = "EXCEPTION"
             test_results.tests[i].message = err .. "\n" .. debug.traceback()
-            test_results.counts.invalid = test_results.counts.invalid + 1
 
          elseif total_assertions == 0 then
             test_results.tests[i].result = "UNKNOWN"
             test_results.tests[i].message = "No assertions run during test"
-            test_results.counts.invalid = test_results.counts.invalid + 1
 
          elseif assert_failed_count == 0 then
             test_results.tests[i].result = "PASS"
             test_results.tests[i].message = "All assertions have passed"
-            test_results.counts.passed = test_results.counts.passed + 1
 
          else
             test_results.tests[i].result = "FAIL"
             test_results.tests[i].message = assert_failed_count .. " assertions have failed"
+         end
+
+         -- adjust for expected-ness
+         if test.options.expected ~= nil then
+            if test_results.tests[i].result == test.options.expected as types.TestResult then
+               if test.options.expected == "EXCEPTION" then
+                  test_results.tests[i].result = "EXPECTED_EXCEPTION"
+               elseif test.options.expected == "UNKNOWN" then
+                  test_results.tests[i].result = "EXPECTED_UNKNOWN"
+               elseif test.options.expected == "FAIL" then
+                  test_results.tests[i].result = "EXPECTED_FAIL"
+               end
+            else
+               test_results.tests[i].message = "Expected test result to be " .. test.options.expected .. ", but came back as " .. test_results.tests[i].result .. "\n" .. test_results.tests[i].message
+               test_results.tests[i].result = "UNEXPECTED"
+            end
+         end
+
+         -- count based on final result
+         if test_results.tests[i].result == "PASS" then
+            test_results.counts.passed = test_results.counts.passed + 1
+
+         elseif test_results.tests[i].result == "FAIL" then
             test_results.counts.failed = test_results.counts.failed + 1
+
+         elseif test_results.tests[i].result == "EXPECTED_FAIL" or test_results.tests[i].result == "EXPECTED_EXCEPTION" or test_results.tests[i].result == "EXPECTED_UNKNOWN" then
+            test_results.counts.expected = test_results.counts.expected + 1
+
+         elseif test_results.tests[i].result == "EXCEPTION" or test_results.tests[i].result == "UNKNOWN" or test_results.tests[i].result == "UNEXPECTED" then
+            test_results.counts.invalid = test_results.counts.invalid + 1
+
          end
       end
    end

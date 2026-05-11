@@ -10,6 +10,10 @@ local symbol_map = {
    EXCEPTION = " !",
    TIMEOUT = " ⏱",
    UNKNOWN = " ?",
+   EXPECTED_FAIL = "(✗)",
+   EXPECTED_EXCEPTION = "(!)",
+   EXPECTED_UNKNOWN = "(?)",
+   UNEXPECTED = " ‽",
 }
 
 local color_map = {
@@ -20,6 +24,10 @@ local color_map = {
    EXCEPTION = " %{cyan}",
    TIMEOUT = " %{blue}",
    UNKNOWN = " %{magenta}",
+   EXPECTED_FAIL = " %{dim red}",
+   EXPECTED_EXCEPTION = " %{dim cyan}",
+   EXPECTED_UNKNOWN = " %{dim magenta}",
+   UNEXPECTED = " %{bright red}",
 }
 
 local terminal = {}
@@ -78,7 +86,7 @@ function terminal.results(tested_result, test_types_to_display)
       if test_types_to_display[test_result.result] then
          tadd.add(color_map[test_result.result], symbol_map[test_result.result], " ", test_result.name, to_ms(test_result.time, false), "%{reset}\n")
          local extra_newline = false
-         if test_result.result == "FAIL" or test_result.result == "PASS" then
+         if test_result.result == "FAIL" or test_result.result == "PASS" or test_result.result == "EXPECTED_FAIL" then
             for _, assertion_result in ipairs(test_result.assertion_results) do
                if (assertion_result.result == "FAIL" and test_types_to_display["FAIL"]) or assertion_result.result == "PASS" and test_types_to_display["PASS"] then
                   format_assertion_result(assertion_result)
@@ -92,7 +100,7 @@ function terminal.results(tested_result, test_types_to_display)
             if extra_newline then tadd.add("\n") end
          end
 
-         if test_result.result == "EXCEPTION" or test_result.result == "UNKNOWN" then
+         if test_result.result == "EXCEPTION" or test_result.result == "UNKNOWN" or test_result.result == "UNEXPECTED" or test_result.result == "EXPECTED_EXCEPTION" or test_result.result == "EXPECTED_UNKNOWN" then
             tadd.add("      ", (test_result.message:gsub("\n", "\n      ")), "\n")
             tadd.add("\n")
          end
@@ -118,7 +126,9 @@ function terminal.summary(output)
    tostring(output.total_counts.passed),
    " passed%{reset}, %{red}",
    tostring(output.total_counts.failed),
-   " failed%{reset}\n")
+   " failed%{reset}, ",
+   tostring(output.total_counts.expected),
+   " expected\n")
 
 
    tadd.add(

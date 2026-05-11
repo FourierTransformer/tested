@@ -24,12 +24,15 @@ local TESTED_VERSION = "tested v0.1.0"
 
 
 
+
+
 local cli_to_display = {
    ["skip"] = "SKIP",
    ["pass"] = "PASS",
    ["fail"] = "FAIL",
    ["exception"] = "EXCEPTION",
    ["unknown"] = "UNKNOWN",
+   ["unexpected"] = "UNEXPECTED",
 
 }
 
@@ -64,7 +67,7 @@ local function parse_args()
    default(false)
    parser:option("-s --show"):
    description("What test results to display (default: '-s fail -s exception -s unknown')"):
-   choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown" }):
+   choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" }):
    count("*")
    parser:mutex(
    parser:option("-f --display-format"):
@@ -100,7 +103,7 @@ end
 local function set_defaults(args)
    logger:info("Setting Defaults...")
    if #args.show == 0 then
-      args.show = { "fail", "exception", "unknown" }
+      args.show = { "fail", "exception", "unknown", "unexpected" }
       args.specified_show = false
    else
       args.specified_show = true
@@ -111,7 +114,7 @@ local function set_defaults(args)
 
    local show_all = false
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true; break end end
-   if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown" } end
+   if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" } end
 end
 
 local function validate_args(args)
@@ -221,6 +224,7 @@ local function display_types(options)
       if cli_to_display[cli_option] then
          to_display[cli_to_display[cli_option]] = true
          if cli_option == "skip" then
+            to_display["SKIP"] = true
             to_display["CONDITIONAL_SKIP"] = true
          end
       else
@@ -228,11 +232,19 @@ local function display_types(options)
             to_display["EXCEPTION"] = true
             to_display["UNKNOWN"] = true
             to_display["TIMEOUT"] = true
+            to_display["UNEXPECTED"] = true
          elseif cli_option == "valid" then
             to_display["PASS"] = true
             to_display["SKIP"] = true
             to_display["CONDITIONAL_SKIP"] = true
             to_display["FAIL"] = true
+            to_display["EXPECTED_FAIL"] = true
+            to_display["EXPECTED_EXCEPTION"] = true
+            to_display["EXPECTED_UNKNOWN"] = true
+         elseif cli_option == "expected" then
+            to_display["EXPECTED_FAIL"] = true
+            to_display["EXPECTED_EXCEPTION"] = true
+            to_display["EXPECTED_UNKNOWN"] = true
          end
       end
    end
