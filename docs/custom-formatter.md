@@ -25,7 +25,7 @@ function custom_formatter.results(
 ) 
 end
 
--- 
+-- Outputs a summary at the end
 function custom_formatter.summary(output: types.TestRunnerOutput) end
 
 return custom_formatter
@@ -123,6 +123,7 @@ An example of what `types.TestRunnerOutput` looks like. `types.TestedOutput` is 
   total_counts = {
     failed = 2,
     invalid = 0,
+    expected = 0,
     passed = 3,
     skipped = 0
   },
@@ -141,6 +142,10 @@ enum TestResult
   "EXCEPTION"
   "TIMEOUT"
   "UNKNOWN"
+  "EXPECTED_FAIL"
+  "EXPECTED_EXCEPTION"
+  "EXPECTED_UNKNOWN"
+  "UNEXPECTED"
 end
 
 interface AssertionResult
@@ -163,6 +168,7 @@ end
 interface TestCounts
   passed: integer
   failed: integer
+  expected: integer
   skipped: integer
   invalid: integer
 end

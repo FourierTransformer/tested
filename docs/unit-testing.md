@@ -1,81 +1,6 @@
 # Unit Testing
 `tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing scenarios and philosophies.
 
-## Quickstart
-
-### Folder setup
-In the root of your project, you should create a `tests` folder and place all your test files (with the suffix of `_test.lua` or `_test.tl`). From there you can run the `tested` command from a it will find all the tests and run them.
-
-```
-.
-├─ tests/
-│  ├─ my_library_test.lua
-│  └─ a_different_test.lua
-└─ my_library.lua
-```
-
-### The test file
-
-Let's take a look at a basic test file:
-
-```lua title="tests/my_library_test.lua"
-local tested = require("tested")
-
-tested.test("just a test!", function()
-    tested.assert({
-        given = "4 + 4",
-        should = "return 8",
-        expected = 8,
-        actual = sum(4, 4)
-    })
-end)
-
-print("This will be printed before _any_ tests run!")
-
-tested.test("just works without given and should!", function()
-    tested.assert({
-        expected=true,
-        actual=true
-    })
-end)
-
-return tested
-```
-
-After the `tested` command loads up a test file, it goes through and finds all the various tests defined in the file (in this case there are two) and adds them to a list to be executed. In the example above, that `print` statement will execute before either tests.
-
-It does this so tests can be [shuffled](#cli-quick-reference), [skipped](#skipping-tests), or to [only](#only-tests) run a specific test within a test file!
-
-### Asserts
-The basic assert is composed of a couple of four parts:
-```lua
-    tested.assert({
-        given = "4 + 4",
-        should = "return 8",
-        expected = 8,
-        actual = sum(4, 4)
-    })
-```
-
-The `given` and `should` are optional strings that get displayed in the output to help you identify which specific assert has failed. The idea behind them is to be able to look at the testing output and know _exactly_ what and how something has failed. If your test references multiple files, placing a filename in given can be incredibly useful. Since some tests are more obvious than others (based on a test name), they are not required and can be omitted.
-
-The `expected` and `actual` take in the expected and actual values. There are a couple of other asserts builtin to `tested`, including one for [exceptions](#testing-exceptions), [truthy, and falsy](#truthyfalsy-tests)!
-
-
-### CLI Quick Reference
-There are a couple CLI commands that are good to know when you get started:
-
-- `tested -c` or `--coverage` will enable luacov code coverage and generate a `luacov.stats.out` file
-- `tested -r` or `--random` will randomize the order of tests _within a test file_.
-- `tested -s` or `--show` supports displaying different status of tests. By default `tested` shows tests which require followup (so `fail`, `exception`, and `invalid`)
-    - Ex: `tested -s pass -s skip` see all passed and skipped tests
-    - Ex: `tested -s valid` 
-
-To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
-
-### Teal Support
-`tested` has builtin Teal support, be sure to check out the [Teal Support](./teal-support.md) page for some of the considerations around its usage with Teal.
-
 ## Testing tables
 
 `tested.assert` will also deep compare tables, and will generate a little summary of the differences as well as print out the expected and actual table.
@@ -164,7 +89,7 @@ tested.test("tables with self-cycles, but the same structure should be equal", f
    })
 end)
 ```
-    
+
 ## Truthy/Falsy tests
 
 Sometimes in Lua you want to check if _anything_ returned (like a `string.match` or that a value exists in a table), we've added in an `assert_truthy` and `assert_falsy` to help out in those cases.
@@ -223,7 +148,7 @@ end)
 
 ## Skipping & Only tests
 
-For quick debugging purposes, there are `tested.skip` and `tested.only`. These allow you to quickly isolate testing when running selective tests a particular file. For things that are going to broken longer term, we're planning to add `expected_result`.
+For quick debugging purposes, there are `tested.skip` and `tested.only`. These allow you to quickly isolate testing when running selective tests a particular file. For things that are going to broken longer term, you should set the `expected` option.
 
 
 `tested.skip`:
@@ -261,16 +186,46 @@ If you want to _conditionally_ skip tests based on something that can be determi
 
 ```lua
 -- the `run_when` option takes in a boolean where true runs the test, false will skip it
-tested.test("luajit only test", {run_when=(type("jit") == "table")}, function()
+tested.test("luajit only test", {run_when=(type(jit) == "table")}, function()
     tested.assert({expected = 8, actual = sum(5, 3) })
 end)
 
 ```
 
+### Expected Results
+If there are tests that are going to be broken for an extended period of time (ex: dependencies outside of your control, waaayy out future feature, a bug fix in a future sprint) you can set the `expected` option:
+
+```lua
+tested.test("expected exception: throws as expected", {expected="EXCEPTION"}, function()
+   error("this exception is expected")
+end)
+```
+
+The values `expected` can be are:
+- `FAIL`  - for tests that will simply just fail
+- `EXCEPTION` - for tests that raise an error
+- `UNKNOWN` - for tests with no assertions written
+
+This will hide the test result from the default output, _however_, if the value of the test differs from the `expected` value, it **will** show up in the testing output and is considered `UNEXPECTED`:
+
+```lua
+-- this will show up in the tested output with an error message indicating that it's passed but has expected to fail.
+tested.test("unexpected: expected fail but test passes", {expected="FAIL"}, function()
+   tested.assert({
+      given = "1 + 1",
+      should = "equal 2",
+      expected = 2,
+      actual = 1 + 1
+   })
+end)
+```
+
 
 
 ## Invalid tests
-If a test file has a test that throws an unhandled exception or `tested` finds a test without any asserts, they are considered "invalid", and will display as such in the results and will be listed in the summary as "invalid":
+If a test file has a test that throws an unhandled exception, `tested` finds a test without any asserts, or a test with `expected` set returns without that result, they are considered "invalid", and will display as such in the results and will be listed in the summary as "invalid".
+
+
 
 <code class="highlight md-code__content md-typeset overflow-auto">
 <pre>
