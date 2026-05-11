@@ -13,7 +13,9 @@ function test_runner.run_with_cleanup(file_loader: types.FileLoader, test_file: 
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
    local test_module = file_loader.load_file(test_file) as types.Tested
-   assert(type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean", "It does not appear that '" .. test_file .."' returns the 'tested' module")
+   if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
+      error(test_file ..": does not 'return tested' at end of file - unable to run tests", 0)
+   end
 
    local test_results = test_module:run(test_file, options)
 
