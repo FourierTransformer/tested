@@ -3,7 +3,25 @@ local assert_table = require("tested.assert_table")
 
 local tested = { tests = {}, run_only_tests = false }
 
-local function extract_fn_and_options(fn_or_options, fn)
+local function validate_options(test_name, options, test_src)
+   local error_prefix = test_src .. " in \"" .. test_name .. "\": "
+   if options.expected ~= nil then
+      if type(options.expected) ~= "string" then
+         error(error_prefix .. "options.expected takes in a 'string', but received '" .. type(options.expected) .. "'", 0)
+      end
+      if not (options.expected == "FAIL" or options.expected == "EXCEPTION" or options.expected == "UNKNOWN") then
+         error(error_prefix .. "options.expected should be one of 'FAIL', 'EXCEPTION', or 'UNKNOWN'", 0)
+      end
+   end
+
+   if options.run_when ~= nil then
+      if type(options.run_when) ~= "boolean" then
+         error(error_prefix .. "options.run_when takes in a 'boolean', but received '" .. type(options.run_when) .. "'", 0)
+      end
+   end
+end
+
+local function extract_fn_and_options(test_name, fn_or_options, fn, test_src)
    local options = {}
    if type(fn_or_options) == "function" then
       fn = fn_or_options
@@ -14,22 +32,27 @@ local function extract_fn_and_options(fn_or_options, fn)
       fn = fn
    end
 
+   validate_options(test_name, options, test_src or "?")
+
    return fn, options
 end
 
 
 function tested.test(name, fn_or_options, fn)
-   local func, options = extract_fn_and_options(fn_or_options, fn)
+   local test_src = debug.getinfo(2, "S").short_src
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
    table.insert(tested.tests, { name = name, fn = func, options = options, kind = "test" })
 end
 
 function tested.skip(name, fn_or_options, fn)
-   local func, options = extract_fn_and_options(fn_or_options, fn)
+   local test_src = debug.getinfo(2, "S").short_src
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
    table.insert(tested.tests, { name = name, fn = func, options = options, kind = "skip" })
 end
 
 function tested.only(name, fn_or_options, fn)
-   local func, options = extract_fn_and_options(fn_or_options, fn)
+   local test_src = debug.getinfo(2, "S").short_src
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
    table.insert(tested.tests, { name = name, fn = func, options = options, kind = "only" })
 end
 
@@ -37,14 +60,14 @@ function tested.assert(assertion)
    local errors = {}
    if assertion.expected == nil then table.insert(errors, "'expected'") end
    if assertion.actual == nil then table.insert(errors, "'actual'") end
-   assert(#errors == 0, "The assertion table must include 'expected' and 'actual' whose values cannot be 'nil'. Missing (or 'nil') fields: " .. table.concat(errors, ", "))
+   if #errors ~= 0 then error("The assertion table must include 'expected' and 'actual' whose values cannot be 'nil'. Missing (or 'nil') fields: " .. table.concat(errors, ", "), 0) end
    if assertion.given and type(assertion.given) ~= "string" then
       table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given))
    end
    if assertion.should and type(assertion.should) ~= "string" then
       table.insert(errors, "In assertion, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should))
    end
-   assert(#errors == 0, table.concat(errors, ". "))
+   if #errors ~= 0 then error(table.concat(errors, ". "), 0) end
    local expected_type = type(assertion.expected)
    local actual_type = type(assertion.actual)
 

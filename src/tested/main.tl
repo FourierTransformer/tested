@@ -122,7 +122,7 @@ local function validate_args(args: CLIOptions)
    for _, path in ipairs(args.paths) do
       local info, err = lfs.attributes(path)
       if err then error("The file or directory '" .. path .. "' does not appear to exist. Unable to run tests") end
-      assert(info.mode == "directory" or info.mode == "file", "tested requires the paths passed in to be a directory or file")
+      if not (info.mode == "directory" or info.mode == "file") then error("tested requires the paths passed in to be a directory or file", 0) end
       if info.mode == "directory" then table.insert(args.test_directories, path) end
       if info.mode == "file" then table.insert(args.test_files, path) end
    end
@@ -144,14 +144,14 @@ local function load_result_formatter(args: CLIOptions): types.ResultFormatter
          logger:info("Unable to load as module, attempting to load from filepath")
          local info, err = lfs.attributes(args.custom_formatter)
          if err then error("Unable to load custom formatter, the file/module '" .. args.custom_formatter .. "' could not be loaded.") end
-         assert(info.mode == "file", "The custom formatter should point to a file, but currently appears to be a: " .. info.mode)
+         if info.mode ~= "file" then error("The custom formatter should point to a file, but currently appears to be a: " .. info.mode, 0) end
          formatter = file_loader.load_file(args.custom_formatter) as types.ResultFormatter
       end
 
       if formatter then
-         assert(formatter.header and type(formatter.header) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.")
-         assert(formatter.results and type(formatter.results) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'results'.")
-         assert(formatter.summary and type(formatter.summary) == "function", "Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'summary'.")
+         if not (formatter.header and type(formatter.header) == "function") then error("Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'header'.", 0) end
+         if not (formatter.results and type(formatter.results) == "function") then error("Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'results'.", 0) end
+         if not (formatter.summary and type(formatter.summary) == "function") then error("Custom formatter must include a 'header', 'results', and 'summary' section. Missing 'summary'.", 0) end
          return formatter
       else
          error("Unable to load custom formatter from: " .. args.custom_formatter)
@@ -172,7 +172,7 @@ local function register_format_handler(handlers: {string})
 
       local info, err = lfs.attributes(handler)
       if err then error("Unable to load format handler, the file/module '" .. handler .."' was not able to be loaded.") end
-      assert(info.mode == "file", "The custom format loader should point to a file, but currently appears to be a: " .. info.mode)
+      if info.mode ~= "file" then error("The custom format loader should point to a file, but currently appears to be a: " .. info.mode, 0) end
 
       file_loader.load_and_register_handler(handler)
    end
@@ -293,7 +293,7 @@ local function main()
    
    -- finding all the files
    local test_files = get_all_test_files(args)
-   assert(#test_files > 0, "Unable to find any tests to run in: " .. table.concat(args.paths, ", "))
+   if #test_files == 0 then error("Unable to find any tests to run in: " .. table.concat(args.paths, ", "), 0) end
    
    -- running the tests
    formatter.header(TESTED_VERSION, args.paths)
