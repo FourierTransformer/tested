@@ -18,14 +18,14 @@ The `-r` will randomize the order of tests _within_ a test file.
 
 
 ## `tested -s/--show`
-By default the `tested` output shows the problematic test results, that likely need to be addressed: `fail`, `exception`, and `unknown`, but allows filtering to display other results.
+By default the `tested` output shows the problematic test results, that likely need to be addressed: `fail`, `exception`, `unknown`, and `unexpected` but allows filtering to display other results.
 
-Current Values: `pass fail skip exception unknown valid invalid all`
+Current Values: `pass fail skip exception unknown expected unexpected valid invalid all`
 
 There are three groupings that can also be used:
 
-- `tested -s valid` - will show `pass`, `fail`, and `skip`
-- `tested -s invalid` - will show `exception` and `unknown`
+- `tested -s valid` - will show `pass`, `fail`, `expected`, and `skip`
+- `tested -s invalid` - will show `exception`, `unknown`, and `unexpected`
 - `tested -s all` - shows all tests
 
 To pass multiple values:
@@ -52,10 +52,9 @@ Specify the number of threads `tested` should use. If set to `0`, will not use a
 ## `tested -h` - Reference
 
 ```
-$ tested -h
-Usage: tested ([-f {terminal,plain}] | [-z <custom_formatter>]) [-h]
-       [-c] [-r]
-       [-s {all,valid,invalid,skip,pass,fail,exception,unknown}]
+Usage: tested ([-f {terminal,plain,tap}] | [-z <custom_formatter>])
+       [-h] [-c] [-r]
+       [-s {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected}]
        [-n <threads>] [-x <format_handler>] [-d {DEBUG,INFO,WARNING}]
        [--version] [<paths>] ...
 
@@ -68,11 +67,11 @@ Options:
    -h, --help            Show this help message and exit.
    -c, --coverage        Enable code coverage - will generate luacov.stats.out (default: not-set)
    -r, --random          Randomize the order of the tests (default: not-set)
-       -s {all,valid,invalid,skip,pass,fail,exception,unknown},
-   --show {all,valid,invalid,skip,pass,fail,exception,unknown}
+       -s {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected},
+   --show {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected}
                          What test results to display (default: '-s fail -s exception -s unknown')
-                 -f {terminal,plain},
-   --display-format {terminal,plain}
+                 -f {terminal,plain,tap},
+   --display-format {terminal,plain,tap}
                          What format to output the results in (default: 'terminal') (default: terminal)
                    -z <custom_formatter>,
    --custom-formatter <custom_formatter>

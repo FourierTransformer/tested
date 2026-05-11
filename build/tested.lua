@@ -3,27 +3,35 @@ local assert_table = require("tested.assert_table")
 
 local tested = { tests = {}, run_only_tests = false }
 
-function tested.test(name, fn)
-   table.insert(tested.tests, { name = name, fn = fn, kind = "test" })
-end
+local function extract_fn_and_options(fn_or_options, fn)
+   local options = {}
+   if type(fn_or_options) == "function" then
+      fn = fn_or_options
 
-function tested.skip(name, fn)
-   table.insert(tested.tests, { name = name, fn = fn, kind = "skip" })
-end
-
-function tested.only(name, fn)
-   tested.run_only_tests = true
-   table.insert(tested.tests, { name = name, fn = fn, kind = "only" })
-end
-
-function tested.conditional_test(name, condition, fn)
-   if condition then
-      table.insert(tested.tests, { name = name, fn = fn, kind = "conditional_test" })
-   else
-      table.insert(tested.tests, { name = name, fn = fn, kind = "conditional_skip" })
+   elseif type(fn_or_options) == "table" then
+      options = fn_or_options
+      if not fn then error("a function must be provided to run a unit test") end
+      fn = fn
    end
+
+   return fn, options
 end
 
+
+function tested.test(name, fn_or_options, fn)
+   local func, options = extract_fn_and_options(fn_or_options, fn)
+   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "test" })
+end
+
+function tested.skip(name, fn_or_options, fn)
+   local func, options = extract_fn_and_options(fn_or_options, fn)
+   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "skip" })
+end
+
+function tested.only(name, fn_or_options, fn)
+   local func, options = extract_fn_and_options(fn_or_options, fn)
+   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "only" })
+end
 
 function tested.assert(assertion)
    local errors = {}
@@ -112,7 +120,7 @@ function tested:run(filename, options)
    end
 
    local test_results = {
-      counts = { passed = 0, failed = 0, skipped = 0, invalid = 0 },
+      counts = { passed = 0, failed = 0, expected = 0, skipped = 0, invalid = 0 },
       tests = {},
       filename = filename,
       fully_tested = false,
@@ -135,7 +143,7 @@ function tested:run(filename, options)
          test_results.tests[i].time = 0
          test_results.counts.skipped = test_results.counts.skipped + 1
 
-      elseif test.kind == "conditional_skip" then
+      elseif test.options.run_when ~= nil and test.options.run_when == false then
          test_results.tests[i].result = "CONDITIONAL_SKIP"
          test_results.tests[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
          test_results.tests[i].time = 0
@@ -181,22 +189,49 @@ function tested:run(filename, options)
          if ok == false then
             test_results.tests[i].result = "EXCEPTION"
             test_results.tests[i].message = err .. "\n" .. debug.traceback()
-            test_results.counts.invalid = test_results.counts.invalid + 1
 
          elseif total_assertions == 0 then
             test_results.tests[i].result = "UNKNOWN"
             test_results.tests[i].message = "No assertions run during test"
-            test_results.counts.invalid = test_results.counts.invalid + 1
 
          elseif assert_failed_count == 0 then
             test_results.tests[i].result = "PASS"
             test_results.tests[i].message = "All assertions have passed"
-            test_results.counts.passed = test_results.counts.passed + 1
 
          else
             test_results.tests[i].result = "FAIL"
             test_results.tests[i].message = assert_failed_count .. " assertions have failed"
+         end
+
+
+         if test.options.expected ~= nil then
+            if test_results.tests[i].result == test.options.expected then
+               if test.options.expected == "EXCEPTION" then
+                  test_results.tests[i].result = "EXPECTED_EXCEPTION"
+               elseif test.options.expected == "UNKNOWN" then
+                  test_results.tests[i].result = "EXPECTED_UNKNOWN"
+               elseif test.options.expected == "FAIL" then
+                  test_results.tests[i].result = "EXPECTED_FAIL"
+               end
+            else
+               test_results.tests[i].message = "Expected test result to be " .. test.options.expected .. ", but came back as " .. test_results.tests[i].result .. "\n" .. test_results.tests[i].message
+               test_results.tests[i].result = "UNEXPECTED"
+            end
+         end
+
+
+         if test_results.tests[i].result == "PASS" then
+            test_results.counts.passed = test_results.counts.passed + 1
+
+         elseif test_results.tests[i].result == "FAIL" then
             test_results.counts.failed = test_results.counts.failed + 1
+
+         elseif test_results.tests[i].result == "EXPECTED_FAIL" or test_results.tests[i].result == "EXPECTED_EXCEPTION" or test_results.tests[i].result == "EXPECTED_UNKNOWN" then
+            test_results.counts.expected = test_results.counts.expected + 1
+
+         elseif test_results.tests[i].result == "EXCEPTION" or test_results.tests[i].result == "UNKNOWN" or test_results.tests[i].result == "UNEXPECTED" then
+            test_results.counts.invalid = test_results.counts.invalid + 1
+
          end
       end
    end
