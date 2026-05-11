@@ -126,10 +126,19 @@ function terminal.summary(output)
    tostring(output.total_counts.passed),
    " passed%{reset}, %{red}",
    tostring(output.total_counts.failed),
-   " failed%{reset}, ",
-   tostring(output.total_counts.expected),
-   " expected\n")
+   " failed%{reset}")
 
+
+
+   if output.total_counts.expected > 0 then
+      tadd.add(
+      ", ",
+      tostring(output.total_counts.expected),
+      " expected")
+
+   end
+
+   tadd.add("\n")
 
    tadd.add(
    "Other: %{yellow}",
