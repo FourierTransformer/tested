@@ -56,6 +56,22 @@ function tested.only(name: string, fn_or_options: function() | types.TestedOptio
    table.insert(tested.tests, {name=name, fn=func, options=options, kind="only"})
 end
 
+function tested.before(fn: function())
+   tested.before_fn = fn
+end
+
+function tested.after(fn: function())
+   tested.after_fn = fn
+end
+
+function tested.before_each(fn: function())
+   tested.before_each_fn = fn
+end
+
+function tested.after_each(fn: function())
+   tested.after_each_fn = fn
+end
+
 function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
    local errors = {}
    if assertion.expected == nil then table.insert(errors, "'expected'") end
@@ -218,6 +234,10 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
       total_time = 0
    }
 
+   if tested.before_fn then
+      tested.before_fn()
+   end
+
    for i, test in ipairs(self.tests) do
 
       test_results.tests[i] = {assertion_results = {}, name = test.name}
@@ -229,6 +249,10 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
          test_results.tests[i].time = 0
 
       else
+         if tested.before_each_fn then
+            tested.before_each_fn()
+         end
+
          local assert_failed_count = 0
          local total_assertions = 0
 
@@ -269,6 +293,10 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
 
          -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
          adjust_for_expected(test.options.expected, test_results.tests[i])
+
+         if tested.after_each_fn then
+            tested.after_each_fn()
+         end
       end
 
       -- always add up at the end!
@@ -277,6 +305,11 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
    end
+
+   if tested.after_fn then
+      tested.after_fn()
+   end
+
    return test_results
 end
 

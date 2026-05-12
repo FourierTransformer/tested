@@ -56,6 +56,22 @@ function tested.only(name, fn_or_options, fn)
    table.insert(tested.tests, { name = name, fn = func, options = options, kind = "only" })
 end
 
+function tested.before(fn)
+   tested.before_fn = fn
+end
+
+function tested.after(fn)
+   tested.after_fn = fn
+end
+
+function tested.before_each(fn)
+   tested.before_each_fn = fn
+end
+
+function tested.after_each(fn)
+   tested.after_each_fn = fn
+end
+
 function tested.assert(assertion)
    local errors = {}
    if assertion.expected == nil then table.insert(errors, "'expected'") end
@@ -218,6 +234,10 @@ function tested:run(filename, options)
       total_time = 0,
    }
 
+   if tested.before_fn then
+      tested.before_fn()
+   end
+
    for i, test in ipairs(self.tests) do
 
       test_results.tests[i] = { assertion_results = {}, name = test.name }
@@ -229,6 +249,10 @@ function tested:run(filename, options)
          test_results.tests[i].time = 0
 
       else
+         if tested.before_each_fn then
+            tested.before_each_fn()
+         end
+
          local assert_failed_count = 0
          local total_assertions = 0
 
@@ -269,6 +293,10 @@ function tested:run(filename, options)
 
 
          adjust_for_expected(test.options.expected, test_results.tests[i])
+
+         if tested.after_each_fn then
+            tested.after_each_fn()
+         end
       end
 
 
@@ -277,6 +305,11 @@ function tested:run(filename, options)
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
    end
+
+   if tested.after_fn then
+      tested.after_fn()
+   end
+
    return test_results
 end
 
