@@ -131,6 +131,74 @@ local function fisher_yates_shuffle(t: {any})
    end
 end
 
+local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestRunnerOptions): types.TestResult, string
+   if run_only and test.kind ~= "only" then
+      return "SKIP", "Only running 'tested.only' tests"
+   elseif test.kind == "skip" then
+      return "SKIP", "Test marked with 'tested.skip'"
+   elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
+      return "CONDITIONAL_SKIP", "Test name does not match filter pattern '" .. options.filter .. "'"
+   elseif test.options.run_when ~= nil and test.options.run_when == false then
+      return "CONDITIONAL_SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
+   end
+   return nil, nil  -- not a skip
+end
+
+local function set_result(ok: boolean, err: string, total_assertions: integer, assert_failed_count: integer, test_output: types.TestOutput)
+   if ok == false then
+      test_output.result = "EXCEPTION"
+      test_output.message = err .. "\n" .. debug.traceback()
+
+   elseif total_assertions == 0 then
+      test_output.result = "UNKNOWN"
+      test_output.message = "No assertions run during test"
+
+   elseif assert_failed_count == 0 then
+      test_output.result = "PASS"
+      test_output.message = "All assertions have passed"
+
+   else
+      test_output.result = "FAIL"
+      test_output.message = assert_failed_count .. " assertions have failed"
+   end
+end
+
+local function adjust_for_expected(expected: types.ExpectedTestResult, test_output: types.TestOutput)
+   if expected ~= nil then
+      if test_output.result == expected as types.TestResult then
+         if expected == "EXCEPTION" then
+            test_output.result = "EXPECTED_EXCEPTION"
+         elseif expected == "UNKNOWN" then
+            test_output.result = "EXPECTED_UNKNOWN"
+         elseif expected == "FAIL" then
+            test_output.result = "EXPECTED_FAIL"
+         end
+      else
+         test_output.message = "Expected test result to be " .. expected .. ", but came back as " .. test_output.result .. "\n" .. test_output.message
+         test_output.result = "UNEXPECTED"
+      end
+   end
+end
+
+local function add_up_test_results(test_output: types.TestOutput, test_counts: types.TestCounts)
+   if test_output.result == "PASS" then
+      test_counts.passed = test_counts.passed + 1
+
+   elseif test_output.result == "FAIL" then
+      test_counts.failed = test_counts.failed + 1
+
+   elseif test_output.result == "EXPECTED_FAIL" or test_output.result == "EXPECTED_EXCEPTION" or test_output.result == "EXPECTED_UNKNOWN" then
+      test_counts.expected = test_counts.expected + 1
+
+   elseif test_output.result == "EXCEPTION" or test_output.result == "UNKNOWN" or test_output.result == "UNEXPECTED" then
+      test_counts.invalid = test_counts.invalid + 1
+
+   elseif test_output.result == "SKIP" or test_output.result == "CONDITIONAL_SKIP" then
+      test_counts.skipped = test_counts.skipped + 1
+
+   end
+end
+
 -- moved in here for hopes of one day being able to run a test from here directly
 function tested:run(filename: string, options: types.TestRunnerOptions): types.TestedOutput
    if options and options.random then
@@ -154,29 +222,11 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
 
       test_results.tests[i] = {assertion_results = {}, name = test.name}
 
-      if self.run_only_tests and test.kind ~= "only" then
-         test_results.tests[i].result = "SKIP"
-         test_results.tests[i].message = "Only running 'tested.only' tests"
+      local skip_result, skip_message = should_skip_test(test, self.run_only_tests, options)
+      if skip_result then
+         test_results.tests[i].result = skip_result
+         test_results.tests[i].message = skip_message
          test_results.tests[i].time = 0
-         test_results.counts.skipped = test_results.counts.skipped + 1
-
-      elseif test.kind == "skip" then
-         test_results.tests[i].result = "SKIP"
-         test_results.tests[i].message = "Test marked with 'tested.skip'"
-         test_results.tests[i].time = 0
-         test_results.counts.skipped = test_results.counts.skipped + 1
-
-      elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
-         test_results.tests[i].result = "CONDITIONAL_SKIP"
-         test_results.tests[i].message = "Test name does not match filter pattern '" .. options.filter .. "'"
-         test_results.tests[i].time = 0
-         test_results.counts.skipped = test_results.counts.skipped + 1
-
-      elseif test.options.run_when ~= nil and test.options.run_when == false then
-         test_results.tests[i].result = "CONDITIONAL_SKIP"
-         test_results.tests[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
-         test_results.tests[i].time = 0
-         test_results.counts.skipped = test_results.counts.skipped + 1
 
       else
          local assert_failed_count = 0
@@ -215,54 +265,14 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
          test_results.total_time = test_results.total_time + test_results.tests[i].time
          self.assert = original_assert
 
-         if ok == false then
-            test_results.tests[i].result = "EXCEPTION"
-            test_results.tests[i].message = err .. "\n" .. debug.traceback()
+         set_result(ok, err, total_assertions, assert_failed_count, test_results.tests[i])
 
-         elseif total_assertions == 0 then
-            test_results.tests[i].result = "UNKNOWN"
-            test_results.tests[i].message = "No assertions run during test"
-
-         elseif assert_failed_count == 0 then
-            test_results.tests[i].result = "PASS"
-            test_results.tests[i].message = "All assertions have passed"
-
-         else
-            test_results.tests[i].result = "FAIL"
-            test_results.tests[i].message = assert_failed_count .. " assertions have failed"
-         end
-
-         -- adjust for expected-ness
-         if test.options.expected ~= nil then
-            if test_results.tests[i].result == test.options.expected as types.TestResult then
-               if test.options.expected == "EXCEPTION" then
-                  test_results.tests[i].result = "EXPECTED_EXCEPTION"
-               elseif test.options.expected == "UNKNOWN" then
-                  test_results.tests[i].result = "EXPECTED_UNKNOWN"
-               elseif test.options.expected == "FAIL" then
-                  test_results.tests[i].result = "EXPECTED_FAIL"
-               end
-            else
-               test_results.tests[i].message = "Expected test result to be " .. test.options.expected .. ", but came back as " .. test_results.tests[i].result .. "\n" .. test_results.tests[i].message
-               test_results.tests[i].result = "UNEXPECTED"
-            end
-         end
-
-         -- count based on final result
-         if test_results.tests[i].result == "PASS" then
-            test_results.counts.passed = test_results.counts.passed + 1
-
-         elseif test_results.tests[i].result == "FAIL" then
-            test_results.counts.failed = test_results.counts.failed + 1
-
-         elseif test_results.tests[i].result == "EXPECTED_FAIL" or test_results.tests[i].result == "EXPECTED_EXCEPTION" or test_results.tests[i].result == "EXPECTED_UNKNOWN" then
-            test_results.counts.expected = test_results.counts.expected + 1
-
-         elseif test_results.tests[i].result == "EXCEPTION" or test_results.tests[i].result == "UNKNOWN" or test_results.tests[i].result == "UNEXPECTED" then
-            test_results.counts.invalid = test_results.counts.invalid + 1
-
-         end
+         -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
+         adjust_for_expected(test.options.expected, test_results.tests[i])
       end
+
+      -- always add up at the end!
+      add_up_test_results(test_results.tests[i], test_results.counts)
    end
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
