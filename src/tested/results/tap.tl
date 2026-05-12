@@ -6,7 +6,7 @@ local record tap is types.ResultFormatter where self.format == "tap" end
 tap.allow_filtering = false
 tap.format = "tap"
 
-function tap.header(_version_info: string, _filepaths: {string})
+function tap.header(_version_info: string, _filepaths: {string}, _comments: {string})
    print("TAP version 14")
 end
 

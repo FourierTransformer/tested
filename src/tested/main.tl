@@ -8,7 +8,7 @@ local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.main")
 
-local TESTED_VERSION = "tested v0.1.0"
+local TESTED_VERSION = "tested v0.2.0"
 
 local type types = require("tested.types")
 
@@ -50,6 +50,7 @@ local record CLIOptions
    paths: {string}
    debug: logging.level
    threads: integer
+   filter: string
 
    -- derived from above values
    test_files: {string}
@@ -65,6 +66,8 @@ local function parse_args(): CLIOptions
    parser:flag("-r --random")
       :description("Randomize the order of the tests (default: not-set)")
       :default(false)
+   parser:option("-F --filter")
+      :description("Only run tests whose name matches this Lua pattern (default: not-set)")
    parser:option("-s --show")
       :description("What test results to display (default: '-s fail -s exception -s unknown')")
       :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected"})
@@ -125,6 +128,12 @@ local function validate_args(args: CLIOptions)
       if not (info.mode == "directory" or info.mode == "file") then error("tested requires the paths passed in to be a directory or file", 0) end
       if info.mode == "directory" then table.insert(args.test_directories, path) end
       if info.mode == "file" then table.insert(args.test_files, path) end
+   end
+   if args.filter then
+      local ok, err = pcall(string.find, "", args.filter)
+      if not ok then
+         error("Invalid --filter pattern '" .. args.filter .. "': " .. tostring(err), 0)
+      end
    end
 end
 
@@ -254,7 +263,8 @@ end
 local function run_tests(formatter: types.ResultFormatter, args: CLIOptions, test_files: {string}): types.TestRunnerOutput
    local options: types.TestRunnerOptions = {
       random = args.random,
-      coverage = args.coverage
+      coverage = args.coverage,
+      filter = args.filter
    }
 
    local display_results = function(test_output: types.TestedOutput)
@@ -295,8 +305,14 @@ local function main()
    local test_files = get_all_test_files(args)
    if #test_files == 0 then error("Unable to find any tests to run in: " .. table.concat(args.paths, ", "), 0) end
    
+   local header_comments: {string} = {}
+   if args.filter ~= nil then
+      table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
+   end
+
    -- running the tests
-   formatter.header(TESTED_VERSION, args.paths)
+   formatter.header(TESTED_VERSION, args.paths, header_comments)
+
    local runner_output = run_tests(formatter, args, test_files)
    formatter.summary(runner_output)
    

@@ -16,6 +16,8 @@ The `-c` flag will enable [luacov](https://github.com/lunarmodules/luacov), and 
 ## `tested -r/--random`
 The `-r` will randomize the order of tests _within_ a test file.
 
+## `tested -F/--filter`
+Will only run tests that match the Lua pattern that applies to the **test name** using `string.find`. Useful for debugging specific tests.
 
 ## `tested -s/--show`
 By default the `tested` output shows the problematic test results, that likely need to be addressed: `fail`, `exception`, `unknown`, and `unexpected` but allows filtering to display other results.
@@ -53,7 +55,7 @@ Specify the number of threads `tested` should use. If set to `0`, will not use a
 
 ```
 Usage: tested ([-f {terminal,plain,tap}] | [-z <custom_formatter>])
-       [-h] [-c] [-r]
+       [-h] [-c] [-r] [-F <filter>]
        [-s {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected}]
        [-n <threads>] [-x <format_handler>] [-d {DEBUG,INFO,WARNING}]
        [--version] [<paths>] ...
@@ -67,6 +69,8 @@ Options:
    -h, --help            Show this help message and exit.
    -c, --coverage        Enable code coverage - will generate luacov.stats.out (default: not-set)
    -r, --random          Randomize the order of the tests (default: not-set)
+         -F <filter>,    Only run tests whose name matches this Lua pattern (default: not-set)
+   --filter <filter>
        -s {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected},
    --show {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected}
                          What test results to display (default: '-s fail -s exception -s unknown')

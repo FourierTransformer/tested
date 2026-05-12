@@ -166,6 +166,12 @@ function tested:run(filename, options)
          test_results.tests[i].time = 0
          test_results.counts.skipped = test_results.counts.skipped + 1
 
+      elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
+         test_results.tests[i].result = "CONDITIONAL_SKIP"
+         test_results.tests[i].message = "Test name does not match filter pattern '" .. options.filter .. "'"
+         test_results.tests[i].time = 0
+         test_results.counts.skipped = test_results.counts.skipped + 1
+
       elseif test.options.run_when ~= nil and test.options.run_when == false then
          test_results.tests[i].result = "CONDITIONAL_SKIP"
          test_results.tests[i].message = "Condition in `tested.conditional_skip` returned false. Skipping test."
