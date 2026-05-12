@@ -1,9 +1,9 @@
 # Unit Testing
 `tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing scenarios and philosophies.
 
-## Testing tables
+## Tests
 
-`tested.assert` will also deep compare tables, and will generate a little summary of the differences as well as print out the expected and actual table.
+Below is an example of basic test comparing two tables, `tested.assert` will deep compare the tables, and generate a little summary of the differences as well as print out the expected and actual table.
 
 === "Test"
 
@@ -15,7 +15,7 @@
         scores = {10, 20, 30},
         config = { debug = true, port = 8080, crazy_table = {"hello", "world"} }
       }
-    
+
       local t2 = {
         name = 'Bob',
         age = 30,
@@ -23,7 +23,7 @@
         config = { debug = false, port = 8080 },
         email = 'bob@example.com'
       }
-    
+
       tested.assert({
         given = "a basic table",
         should = "not be the same as the other table",
@@ -55,7 +55,7 @@
             name = "Bob",
             scores = { 10, 25, 30 }
           }
-    
+
           Expected:
           {
             age = 30,
@@ -90,63 +90,8 @@ tested.test("tables with self-cycles, but the same structure should be equal", f
 end)
 ```
 
-## Truthy/Falsy tests
 
-Sometimes in Lua you want to check if _anything_ returned (like a `string.match` or that a value exists in a table), we've added in an `assert_truthy` and `assert_falsy` to help out in those cases.
-
-We would recommend if you're looking for explicitly looking for `true` or `false`, maybe stick with the regular `assert` so your tests are more semantically correct, but if checking "exists" and "not exists", `assert_truthy` and `assert_falsy` are good candidates.
-
-```lua
-tested.test("truthy", function()
-   tested.assert_truthy({given="empty string", actual=""})
-   tested.assert_truthy({given="a number", actual=0})
-   tested.assert_truthy({given="a function", actual=function() end})
-   tested.assert_truthy({given="a table", actual={}})
-   tested.assert_truthy({given="an unpack", actual=table.unpack({"a", "b"})})
-   tested.assert_truthy({given="true boolean", actual=true})
-   tested.assert_truthy({given="not false", actual=not false})
-   tested.assert_truthy({given="not nil", actual=not nil})
-   tested.assert_truthy({given="string.find he in hello", actual=string.find("hello", "he")})
-end)
-
-tested.test("falsy", function()
-   local b
-   tested.assert_falsy({given="nil", actual=nil})
-   tested.assert_falsy({given="false", actual=false})
-   tested.assert_falsy({given="unset variable", actual=b})
-end)
-```
-
-## Testing exceptions
-When writing assertions that check that an exception has been thrown, the `actual` should be a function taking no arguments, that when run raises an exception. `tested` also has the ability to capture an error (using `pcall` under the hood) and check if that returns as expected as well.
-
-```lua
--- simple check that exception will be raised
-tested.test("assert_throws_exception handles exception in assert", function()
-    tested.assert_throws_exception({
-        given = "an explicit error",
-        actual = function() error("gets raised, but handled!") end
-    })
-end)
-
--- check that a specific exception was thrown
-tested.test("example with exceptions and error checking", function()
-
-    -- will throw the specific exception in "expected" below
-    local function_that_throws = function()
-        local options = {loadFromString=true, headers=false, fieldsToKeep={1, 2}}
-        ftcsv.parse("apple>banana>carrot\ndiamond>emerald>pearl", ">", options)
-    end
-    tested.assert_throws_exception({
-        given="no headers and no renaming takes place",
-        expected="ftcsv: fieldsToKeep only works with header-less files when using the 'rename' functionality",
-        actual=function_that_throws
-    })
-end)
-```
-
-
-## Skipping & Only tests
+### Skipping & Only tests
 
 For quick debugging purposes, there are `tested.skip` and `tested.only`. These allow you to quickly isolate testing when running selective tests a particular file. For things that are going to broken longer term, you should set the `expected` option.
 
@@ -179,7 +124,9 @@ end)
 
 Both of these work on a _per-test file_ basis, so it may also be useful to pass the specific test file that you are working with to `tested` as well: `tested ./tests/file_with_only_test.lua`
 
-## Options
+
+
+## Test Options
 
 ### Conditional Skipping
 If you want to _conditionally_ skip tests based on something that can be determined at runtime (LuaJIT, operating system, dependency present or not), there is the `run_when` options
@@ -222,10 +169,96 @@ end)
 
 
 
+## Assertions
+
+### Truthy/Falsy tests
+
+Sometimes in Lua you want to check if _anything_ returned (like a `string.match` or that a value exists in a table), we've added in an `assert_truthy` and `assert_falsy` to help out in those cases.
+
+We would recommend if you're looking for explicitly looking for `true` or `false`, maybe stick with the regular `assert` so your tests are more semantically correct, but if checking "exists" and "not exists", `assert_truthy` and `assert_falsy` are good candidates.
+
+```lua
+tested.test("truthy", function()
+   tested.assert_truthy({given="empty string", actual=""})
+   tested.assert_truthy({given="a number", actual=0})
+   tested.assert_truthy({given="a function", actual=function() end})
+   tested.assert_truthy({given="a table", actual={}})
+   tested.assert_truthy({given="an unpack", actual=table.unpack({"a", "b"})})
+   tested.assert_truthy({given="true boolean", actual=true})
+   tested.assert_truthy({given="not false", actual=not false})
+   tested.assert_truthy({given="not nil", actual=not nil})
+   tested.assert_truthy({given="string.find he in hello", actual=string.find("hello", "he")})
+end)
+
+tested.test("falsy", function()
+   local b
+   tested.assert_falsy({given="nil", actual=nil})
+   tested.assert_falsy({given="false", actual=false})
+   tested.assert_falsy({given="unset variable", actual=b})
+end)
+```
+
+### Testing exceptions
+When writing assertions that check that an exception has been thrown, the `actual` should be a function taking no arguments, that when run raises an exception. `tested` also has the ability to capture an error (using `pcall` under the hood) and check if that returns as expected as well.
+
+```lua
+-- simple check that exception will be raised
+tested.test("assert_throws_exception handles exception in assert", function()
+    tested.assert_throws_exception({
+        given = "an explicit error",
+        actual = function() error("gets raised, but handled!") end
+    })
+end)
+
+-- check that a specific exception was thrown
+tested.test("example with exceptions and error checking", function()
+
+    -- will throw the specific exception in "expected" below
+    local function_that_throws = function()
+        local options = {loadFromString=true, headers=false, fieldsToKeep={1, 2}}
+        ftcsv.parse("apple>banana>carrot\ndiamond>emerald>pearl", ">", options)
+    end
+    tested.assert_throws_exception({
+        given="no headers and no renaming takes place",
+        expected="ftcsv: fieldsToKeep only works with header-less files when using the 'rename' functionality",
+        actual=function_that_throws
+    })
+end)
+```
+
+## Test Lifecycle
+`tested` has support for a couple of test lifecycle methods. They allow you to register a function to run `before` any tests within the file have fun, `after` all tests have run, `before_each` test, and `after_each` test. If a test is skipped for any reason (`test.skip`, `run_when` is `false`, filtering, etc) the `before_each` and `after_each` will **not** be run. Test lifecycle hooks can be useful if you want to setup/teardown connections/services/configs, create or clean up temporary files, or even one day setup stubs and mocks!
+
+Here's a simple example of what can be done:
+
+```lua
+local counts = { before = 0, after = 0, before_each = 0, after_each = 0 }
+
+tested.before(function() counts.before = counts.before + 1 end)
+tested.after(function() counts.after = counts.after + 1 end)
+tested.before_each(function() counts.before_each = counts.before_each + 1 end)
+tested.after_each(function() counts.after_each = counts.after_each + 1 end)
+
+tested.test("before runs once before first test", function()
+    tested.assert({ given = "before count",       should = "be 1",  expected = 1, actual = counts.before })
+    tested.assert({ given = "after count",         should = "be 0",  expected = 0, actual = counts.after })
+    tested.assert({ given = "before_each count",   should = "be 1",  expected = 1, actual = counts.before_each })
+    tested.assert({ given = "after_each count",    should = "be 0",  expected = 0, actual = counts.after_each })
+end)
+
+tested.test("after_each runs after first test, before_each runs again", function()
+    tested.assert({ given = "before count",       should = "still be 1", expected = 1, actual = counts.before })
+    tested.assert({ given = "after count",         should = "still be 0", expected = 0, actual = counts.after })
+    tested.assert({ given = "before_each count",   should = "be 2",       expected = 2, actual = counts.before_each })
+    tested.assert({ given = "after_each count",    should = "be 1",       expected = 1, actual = counts.after_each })
+end)
+
+-- before_each and after_each will not run on skipped tests!
+tested.test("this test is skipped", { run_when = false }, function() end)
+```
+
 ## Invalid tests
 If a test file has a test that throws an unhandled exception, `tested` finds a test without any asserts, or a test with `expected` set returns without that result, they are considered "invalid", and will display as such in the results and will be listed in the summary as "invalid".
-
-
 
 <code class="highlight md-code__content md-typeset overflow-auto">
 <pre>
