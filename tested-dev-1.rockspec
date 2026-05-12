@@ -32,6 +32,7 @@ build = {
       tested = "build/tested.lua",
 
       ["tested.assert_table"] = "build/tested/assert_table.lua",
+      ["tested.cli"] = "build/tested/cli.lua",
       ["tested.file_loader"] = "build/tested/file_loader.lua",
       ["tested.main"] = "build/tested/main.lua",
       ["tested.test_runner"] = "build/tested/test_runner.lua",
@@ -55,6 +56,7 @@ build = {
          "src/tested.tl",
 
          ["tested.assert_table"] = "src/tested/assert_table.tl",
+         ["tested.cli"] = "src/tested/cli.tl",
          ["tested.file_loader"] = "src/tested/file_loader.tl",
          ["tested.main"] = "src/tested/main.tl",
          ["tested.test_runner"] = "src/tested/test_runner.tl",
