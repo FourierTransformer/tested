@@ -136,6 +136,12 @@ local record types
    interface Tested
       tests: {Test}
       run_only_tests: boolean
+
+      before_fn: function()
+      after_fn: function()
+      before_each_fn: function()
+      after_each_fn: function()
+
       assert: function<T>(assertion: Assertion<T>): boolean, string
       assert_truthy: function(assertion: TruthyAssertion): boolean, string
       assert_falsy: function(assertion: FalsyAssertion): boolean, string
@@ -145,6 +151,10 @@ local record types
       skip: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       only: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       run: function(self: types.Tested, filename: string, options: types.TestRunnerOptions): types.TestedOutput
+      before: function(fn: function())
+      after: function(fn: function())
+      before_each: function(fn: function())
+      after_each: function(fn: function())
    end
 end
 

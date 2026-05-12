@@ -9,7 +9,7 @@ Things that I am one day planning to add (in no particular order):
     - [x] `run_when` for conditional running tests
     - [ ] `retries` and (maybe) `retry_timeout` for automatically retrying failing tests
     - [ ] tags for filtering
-- [ ] Lifecycle management (`before`, `after`, `before_each`, `after_each`)
+- [x] Lifecycle management (`before`, `after`, `before_each`, `after_each`)
 - [ ] Table driven assertion (no more for loops around asserts!)
 - [ ] Stubbing
 - [ ] Mocking
