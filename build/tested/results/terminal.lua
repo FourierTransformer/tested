@@ -41,8 +41,11 @@ terminal.allow_filtering = true
 
 terminal.colors = colors
 
-function terminal.header(version_info, filepaths)
+function terminal.header(version_info, filepaths, comments)
    print(colors("%{bright}" .. version_info .. "  " .. table.concat(filepaths, " ")))
+   for _, comment in ipairs(comments) do
+      print(comment)
+   end
    print()
 end
 

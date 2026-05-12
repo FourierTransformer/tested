@@ -6,7 +6,7 @@ local tap = {}
 tap.allow_filtering = false
 tap.format = "tap"
 
-function tap.header(_version_info, _filepaths)
+function tap.header(_version_info, _filepaths, _comments)
    print("TAP version 14")
 end
 

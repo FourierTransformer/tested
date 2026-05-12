@@ -11,6 +11,7 @@ local record types
    interface TestRunnerOptions
       random: boolean
       coverage: boolean
+      filter: string
    end
 
    enum TestResult
@@ -80,7 +81,7 @@ local record types
    interface ResultFormatter
       format: string
       allow_filtering: boolean
-      header: function(version: string, filepaths: {string})
+      header: function(version: string, filepaths: {string}, comments: {string})
       results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
       summary: function(runner_output: types.TestRunnerOutput)
    end

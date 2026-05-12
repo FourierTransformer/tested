@@ -41,8 +41,11 @@ terminal.allow_filtering = true
 -- used to disable the colors in the "plain" formatter
 terminal.colors = colors
 
-function terminal.header(version_info: string, filepaths: {string})
+function terminal.header(version_info: string, filepaths: {string}, comments: {string})
    print(colors("%{bright}" .. version_info .. "  " .. table.concat(filepaths, " ")))
+   for _, comment in ipairs(comments) do
+      print(comment)
+   end
    print()
 end
 
