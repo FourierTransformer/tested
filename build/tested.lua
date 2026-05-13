@@ -163,7 +163,7 @@ end
 local function set_result(ok, err, total_assertions, assert_failed_count, test_output)
    if ok == false then
       test_output.result = "EXCEPTION"
-      test_output.message = err .. "\n" .. debug.traceback()
+      test_output.message = err
 
    elseif total_assertions == 0 then
       test_output.result = "UNKNOWN"
@@ -238,6 +238,11 @@ function tested:run(filename, options)
       tested.before_fn()
    end
 
+   local function xpcall_handler(e)
+      local msg = type(e) == "string" and (e) or tostring(e)
+      return msg .. debug.traceback("", 2)
+   end
+
    for i, test in ipairs(self.tests) do
 
       test_results.tests[i] = { assertion_results = {}, name = test.name }
@@ -283,11 +288,19 @@ function tested:run(filename, options)
             return ok, err
          end
 
+         local original_os_exit = os.exit
+         os.exit = function(code)
+            local prefix = "os.exit()"
+            if code then prefix = "os.exit(" .. tostring(code) .. ")" end
+            error(prefix .. " intercepted — something tried to exit out of the process", 0)
+         end
+
          local start = os.clock()
-         local ok, err = pcall(test.fn)
+         local ok, err = xpcall(test.fn, xpcall_handler)
          test_results.tests[i].time = os.clock() - start
          test_results.total_time = test_results.total_time + test_results.tests[i].time
          self.assert = original_assert
+         os.exit = original_os_exit
 
          set_result(ok, err, total_assertions, assert_failed_count, test_results.tests[i])
 
