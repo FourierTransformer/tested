@@ -1,16 +1,16 @@
 local lfs = require("lfs")
-local file_loader = require("tested.file_loader")
-
-local test_runner = require("tested.test_runner")
-local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
-
-local logging = require("tested.libs.logging")
-local logger = logging.get_logger("tested.main")
-
-local TESTED_VERSION = "tested v0.2.0"
-
 
 local cli = require("tested.cli")
+local file_loader = require("tested.file_loader")
+local logging = require("tested.libs.logging")
+local test_runner = require("tested.test_runner")
+
+local util = require("tested.util")
+
+local logger = logging.get_logger("tested.main")
+local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
+
+local TESTED_VERSION = "tested v0.2.0"
 
 local function load_result_formatter(args)
    if args.custom_formatter then
@@ -52,13 +52,13 @@ local function register_format_handler(handlers)
       local ok, module_format_handler = pcall(require, handler)
       if ok then
          file_loader.register_handler(module_format_handler.extension, module_format_handler.loader)
+      else
+         local info, err = lfs.attributes(handler)
+         if err then error("Unable to load format handler, the file/module '" .. handler .. "' was not able to be loaded.") end
+         if info.mode ~= "file" then error("The custom format loader should point to a file, but currently appears to be a: " .. info.mode, 0) end
+
+         file_loader.load_and_register_handler(handler)
       end
-
-      local info, err = lfs.attributes(handler)
-      if err then error("Unable to load format handler, the file/module '" .. handler .. "' was not able to be loaded.") end
-      if info.mode ~= "file" then error("The custom format loader should point to a file, but currently appears to be a: " .. info.mode, 0) end
-
-      file_loader.load_and_register_handler(handler)
    end
 end
 
@@ -83,14 +83,10 @@ local function find_tests(files, test_path)
    logger:info("Found %d test files to run in %s", #files, test_path)
 end
 
-local function get_file_extension(str)
-   return str:match("^.+(%..+)$")
-end
-
 local function get_all_test_files(args)
    local all_files = {}
    for _, test_file in ipairs(args.test_files) do
-      if file_loader.loader[get_file_extension(test_file)] then
+      if file_loader.loader[util.get_file_extension(test_file)] then
          table.insert(all_files, test_file)
       end
    end
@@ -110,7 +106,7 @@ local function run_tests(formatter, args, test_files)
    }
 
    local display_results = function(test_output)
-      formatter.results(test_output, cli.display_types(args.show))
+      print(formatter.results(test_output, cli.display_types(args.show)))
    end
 
    if args.threads == 0 or #test_files <= 1 then
@@ -127,6 +123,24 @@ local function run_tests(formatter, args, test_files)
    local runner_output = run_parallel_tests(test_files, args.threads, options, display_results)
 
    return runner_output
+end
+
+local function write_output_files(args, header_comments, runner_output)
+
+   for _, file_output in ipairs(args.output) do
+      local extension = util.get_file_extension(file_output)
+      local output_formatter = require("tested.file_output" .. extension)
+      local file_to_write, err = io.open(file_output, "w")
+      if not file_to_write then error("Unable to open file for writing: " .. err, 0) end
+      file_to_write:write(output_formatter.header(TESTED_VERSION, args.paths, header_comments))
+
+      for _, test_output in ipairs(runner_output.module_results) do
+         file_to_write:write(output_formatter.results(test_output, cli.display_types(args.show)))
+      end
+
+      file_to_write:write(output_formatter.summary(runner_output))
+      file_to_write:close()
+   end
 end
 
 local function main()
@@ -153,10 +167,13 @@ local function main()
    end
 
 
-   formatter.header(TESTED_VERSION, args.paths, header_comments)
+   print(formatter.header(TESTED_VERSION, args.paths, header_comments))
 
    local runner_output = run_tests(formatter, args, test_files)
-   formatter.summary(runner_output)
+   runner_output.tested_version = TESTED_VERSION
+   print(formatter.summary(runner_output))
+
+   write_output_files(args, header_comments, runner_output)
 
 
    if runner_output.all_fully_tested then

@@ -1,9 +1,7 @@
 local terminal = require("tested.results.terminal")
 local type types = require("tested.types")
 
-local record plain is types.ResultFormatter where self.format == "plain"
-
-end
+local record plain is types.ResultFormatter where self.format == "plain" end
 
 plain.format = "plain"
 

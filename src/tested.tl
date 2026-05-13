@@ -288,6 +288,7 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
             return ok, err
          end
 
+         -- also wrap os.exit before running
          local original_os_exit = os.exit
          os.exit = function(code: integer | boolean | nil)
             local prefix = "os.exit()"
@@ -295,10 +296,13 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
             error(prefix .. " intercepted — something tried to exit out of the process", 0)
          end
 
+         -- run the test
          local start = os.clock()
          local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
          test_results.tests[i].time = os.clock() - start
          test_results.total_time = test_results.total_time + test_results.tests[i].time
+
+         -- put things back
          self.assert = original_assert
          os.exit = original_os_exit
 

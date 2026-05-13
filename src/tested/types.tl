@@ -75,15 +75,16 @@ local record types
       total_time: number
       total_tests: integer
       all_fully_tested: boolean
+      tested_version: string
    end
 
    -- needed for result handling
    interface ResultFormatter
       format: string
       allow_filtering: boolean
-      header: function(version: string, filepaths: {string}, comments: {string})
-      results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
-      summary: function(runner_output: types.TestRunnerOutput)
+      header: function(version: string, filepaths: {string}, comments: {string}): string
+      results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean}): string
+      summary: function(runner_output: types.TestRunnerOutput): string
    end
 
    -- needed for registering new file types

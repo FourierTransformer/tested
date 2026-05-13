@@ -288,6 +288,7 @@ function tested:run(filename, options)
             return ok, err
          end
 
+
          local original_os_exit = os.exit
          os.exit = function(code)
             local prefix = "os.exit()"
@@ -295,10 +296,13 @@ function tested:run(filename, options)
             error(prefix .. " intercepted — something tried to exit out of the process", 0)
          end
 
+
          local start = os.clock()
          local ok, err = xpcall(test.fn, xpcall_handler)
          test_results.tests[i].time = os.clock() - start
          test_results.total_time = test_results.total_time + test_results.tests[i].time
+
+
          self.assert = original_assert
          os.exit = original_os_exit
 

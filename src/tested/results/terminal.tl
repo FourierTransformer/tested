@@ -41,12 +41,13 @@ terminal.allow_filtering = true
 -- used to disable the colors in the "plain" formatter
 terminal.colors = colors
 
-function terminal.header(version_info: string, filepaths: {string}, comments: {string})
-   print(colors("%{bright}" .. version_info .. "  " .. table.concat(filepaths, " ")))
+function terminal.header(version_info: string, filepaths: {string}, comments: {string}): string
+   tadd.new("%{bright}", version_info, "  ", table.concat(filepaths, " "), "\n")
    for _, comment in ipairs(comments) do
-      print(comment)
+      tadd.add(comment, "\n")
    end
-   print()
+   tadd.add("\n")
+   return colors(tadd.tostring())
 end
 
 local function to_ms(time: number, add_color?: boolean): string
@@ -81,7 +82,7 @@ local function format_assertion_result(assertion_result: types.AssertionResult):
    tadd.add("\n")
 end
 
-function terminal.results(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
+function terminal.results(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean}): string
    tadd.new("%{bright}- ", tested_result.filename, to_ms(tested_result.total_time), "%{reset}\n")
    for _, test_result in ipairs(tested_result.tests) do
 
@@ -103,13 +104,13 @@ function terminal.results(tested_result: types.TestedOutput, test_types_to_displ
             if extra_newline then tadd.add("\n") end
          end
 
-         if test_result.result == "EXCEPTION" or test_result.result == "UNKNOWN" or test_result.result == "UNEXPECTED" or test_result.result == "EXPECTED_EXCEPTION" or test_result.result == "EXPECTED_UNKNOWN"then
+         if test_result.result == "EXCEPTION" or test_result.result == "UNKNOWN" or test_result.result == "UNEXPECTED" or test_result.result == "EXPECTED_EXCEPTION" or test_result.result == "EXPECTED_UNKNOWN" then
             tadd.add("      ", (test_result.message:gsub("\n", "\n      ")), "\n")
             tadd.add("\n")
          end
       end
    end
-   print(colors(tadd.tostring()))
+   return colors(tadd.tostring())
 end
 
 -- just being particular!
@@ -121,7 +122,7 @@ local function test_counts_s(test_count: integer): string
    end
 end
 
-function terminal.summary(output: types.TestRunnerOutput)
+function terminal.summary(output: types.TestRunnerOutput): string
    tadd.new("%{bright}Test Summary for ", test_counts_s(output.total_tests), to_ms(output.total_time, false), ":%{reset}\n")
    
    tadd.add(
@@ -155,7 +156,7 @@ function terminal.summary(output: types.TestRunnerOutput)
       tadd.add("\n%{bright}Fully Tested!%{reset}\n")
    end
 
-   print(colors(tadd.tostring()))
+   return colors(tadd.tostring())
 end
 
 return terminal
