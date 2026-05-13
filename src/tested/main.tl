@@ -127,7 +127,7 @@ end
 
 local function write_output_files(args: cli.CLIOptions, header_comments: {string}, runner_output: types.TestRunnerOutput)
    -- write out all the files at the end
-   for _, file_output in ipairs(args.output) do
+   for _, file_output in ipairs(args.output_file) do
       local extension = util.get_file_extension(file_output)
       local output_formatter = require("tested.file_output" .. extension) as types.ResultFormatter
       local file_to_write, err = io.open(file_output, "w")

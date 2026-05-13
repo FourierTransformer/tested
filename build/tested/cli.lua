@@ -81,9 +81,9 @@ function cli.parse_args(version)
    choices({ "terminal", "plain", "tap" }):
    default("terminal"),
    parser:option("-z --custom-formatter"):
-   description("File that loads a custom formatter to use for output"))
+   description("File that loads a custom formatter to use for terminal output"))
 
-   parser:option("-o --output"):
+   parser:option("-o --output-file"):
    description("Output file to save test results in (currently supported extensions: '.txt' and '.json')"):
    count("*")
    parser:option("-n --threads"):
@@ -125,8 +125,8 @@ function cli.set_defaults(args)
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true; break end end
    if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" } end
 
-   if #args.output > 0 then
-      for _, output_file in ipairs(args.output) do
+   if #args.output_file > 0 then
+      for _, output_file in ipairs(args.output_file) do
          if not (util.get_file_extension(output_file) == ".txt" or util.get_file_extension(output_file) == ".json") then
             error("The given output file does not have a supported file extension: '" .. output_file .. "'. Supported file extensions are: '.txt', '.json'", 0)
          end

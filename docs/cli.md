@@ -48,6 +48,18 @@ Specify the number of threads `tested` should use. If set to `0`, will not use a
 ## `tested -z/--custom-formatter`
 `tested` supports loading a [custom result formatter](./custom-formatter.md) from the commandline. It tries to load what's passed in initially as a Lua module, and then as filepath, doing some basic checks to ensure the object returned appears to be a formatter. Only one custom formatter can be loaded and will be used to display results.
 
+## `tested -o/--output-file`
+Output file to save results to a specified file. It loads a formatter based on the file extension of the file that's passed in. The currently supported extensions are:
+
+- `.txt` - Outputs _exactly_ what is shown in the terminal (includes any filtering)
+- `.json` - Outputs the full [TestRunnerOutput](./custom-formatter.md#testrunneroutput). Everything - it does not filter anything. We're still pre v1, so the output here _could_ change.
+
+Multiple files can be specified and all will be written to at the end of the test run:
+
+```bash
+tested -o ./terminal_output.txt -o ./full_output.json
+```
+
 ## `tested -x/--format-handler`
 `tested` also supports loading [custom format handlers](./additional-formats.md). These are used to extend the functionality of tested and tap into other languages that can embed into Lua. Similar to custom output formatters, the format handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support a custom format. Multiple format handlers can be loaded, and afterward can be used for custom formatters or the tests themselves.
 
@@ -57,8 +69,8 @@ Specify the number of threads `tested` should use. If set to `0`, will not use a
 Usage: tested ([-f {terminal,plain,tap}] | [-z <custom_formatter>])
        [-h] [-c] [-r] [-F <filter>]
        [-s {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected}]
-       [-n <threads>] [-x <format_handler>] [-d {DEBUG,INFO,WARNING}]
-       [--version] [<paths>] ...
+       [-o <output_file>] [-n <threads>] [-x <format_handler>]
+       [-d {DEBUG,INFO,WARNING}] [--version] [<paths>] ...
 
 A Lua/Teal Unit Testing Framework
 
@@ -79,14 +91,17 @@ Options:
                          What format to output the results in (default: 'terminal') (default: terminal)
                    -z <custom_formatter>,
    --custom-formatter <custom_formatter>
-                         File that loads a custom formatter to use for output
-          -n <threads>,  Set the number of threads to run the tests with (default: 4). Set to 0 to disable.
+                         File that loads a custom formatter to use for terminal output
+              -o <output_file>,
+   --output-file <output_file>
+                         Output file to save test results in (currently supported extensions: '.txt' and '.json')
+          -n <threads>,  Set the number of threads to run the tests with (default: 4). Set to 0 to disable. Test files are split amongst the threads.
    --threads <threads>
                  -x <format_handler>,
    --format-handler <format_handler>
                          File that loads custom formats that are Lua-compatible
         -d {DEBUG,INFO,WARNING},
    --debug {DEBUG,INFO,WARNING}
-                         Set the log level - mostly for debugging purposes (default: 'WARNING') (default: WARNING)
+                         Set the log level - mostly for debugging issues with tested (default: 'WARNING') (default: WARNING)
    --version             Show version information
 ```

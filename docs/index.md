@@ -137,7 +137,8 @@ There are a couple CLI commands that are good to know when you get started:
 - `tested -F <pattern>` or `--filter <pattern>` will filter tests based on a `string.find` pattern. It can just be the test name, a couple words from the test name (in order), or a full on Lua pattern!
 - `tested -s <option>` or `--show <option>` supports displaying different status of tests. By default `tested` shows tests which require followup (so `fail`, `exception`, and `invalid`)
     - Ex: `tested -s pass -s skip` see all passed and skipped tests
-    - Ex: `tested -s valid`
+- `tested -o <output_file>` - save off the reuslts in a `.txt` or `.json`
+    - Ex: `tested -o ./results.json`
 
 To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
 

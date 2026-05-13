@@ -127,7 +127,7 @@ end
 
 local function write_output_files(args, header_comments, runner_output)
 
-   for _, file_output in ipairs(args.output) do
+   for _, file_output in ipairs(args.output_file) do
       local extension = util.get_file_extension(file_output)
       local output_formatter = require("tested.file_output" .. extension)
       local file_to_write, err = io.open(file_output, "w")
