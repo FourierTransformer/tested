@@ -10,7 +10,7 @@ tested.test("doesn't work with given and should being not strings!", function()
 end)
 
 
-tested.test("output should clearly show just given", function()
+tested.test("output should clearly show just given", {tags={"demo"}}, function()
 	tested.assert({
 		given="true",
 		expected=false,
@@ -18,7 +18,7 @@ tested.test("output should clearly show just given", function()
 	})
 end)
 
-tested.test("output should clearly show just should", function()
+tested.test("output should clearly show just should", {tags={"demo"}}, function()
 	tested.assert({
 		should="true",
 		expected=true,

@@ -23,7 +23,7 @@ local t3 = {
   config = { debug = true, port = 8080, crazy_table = {"hello", "world"} }
 }
 
-tested.test("table compare will error", function()
+tested.test("table compare will error", {expected="FAIL"}, function()
   tested.assert({
     given = "a basic table",
     should = "not be the same as the other table",
@@ -58,7 +58,7 @@ tested.test("tables with self-cycles, but the same structure should be equal", f
    })
 end)
 
-tested.test("slightly complicated tables with self-cycles, but with different structures should not be equal", function()
+tested.test("slightly complicated tables with self-cycles, but with different structures should not be equal", {expected="FAIL"}, function()
 
    local cycle_a: {any:any} = {}
    cycle_a[1] = "first"
@@ -161,7 +161,7 @@ tested.test("tables with matching __eq should be considered equal", function()
    })
 end)
 
-tested.test("tables with non-matching __eq should be considered not equal", function()
+tested.test("tables with non-matching __eq should not be considered not equal", {expected="FAIL"}, function()
    -- __eq returning false should still produce a failure, not a deep-field diff
    local p3 = setmetatable({x=1, y=2} as Point, point_mt)
    local p4 = setmetatable({x=9, y=9} as Point, point_mt)
@@ -194,7 +194,7 @@ tested.test("container table whose nested field has matching __eq should be equa
    })
 end)
 
-tested.test("container table whose nested field has non-matching __eq should not be equal", function()
+tested.test("container table whose nested field has non-matching __eq should not be equal", {expected="FAIL"}, function()
    tested.assert({
       given = "two shapes whose center Points have different coordinates",
       should = "not be equal because the nested Point's __eq returns false",

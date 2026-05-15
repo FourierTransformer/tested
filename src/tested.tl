@@ -168,10 +168,16 @@ end
 local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestRunnerOptions): types.TestResult, string
    if run_only and test.kind ~= "only" then
       return "SKIP", "Only running 'tested.only' tests"
+
    elseif test.kind == "skip" then
       return "SKIP", "Test marked with 'tested.skip'"
+
+   elseif test.options.run_when ~= nil and test.options.run_when == false then
+      return "CONDITIONAL_SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
+
    elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
       return "CONDITIONAL_SKIP", "Test name does not match filter pattern '" .. options.filter .. "'"
+
    elseif options and options.tags_filter ~= nil then
       -- only need to create if tags have been set
       local tag_set: {string: boolean} = {}
@@ -182,9 +188,6 @@ local function should_skip_test(test: types.Test, run_only: boolean, options: ty
       if not options.tags_filter(tag_set) then
          return "CONDITIONAL_SKIP", "Test tags do not match tag filter expression"
       end
-
-   elseif test.options.run_when ~= nil and test.options.run_when == false then
-      return "CONDITIONAL_SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
    end
    return nil, nil  -- not a skip
 end
