@@ -57,27 +57,8 @@ build = {
          'src/bin/tested'
       },
       lua = {
+         -- could also maybe swap out with a .d.tl for _unlimited speed_
          "src/tested.tl",
-
-         ["tested.assert_table"] = "src/tested/assert_table.tl",
-         ["tested.cli"] = "src/tested/cli.tl",
-         ["tested.file_loader"] = "src/tested/file_loader.tl",
-         ["tested.main"] = "src/tested/main.tl",
-         ["tested.test_runner"] = "src/tested/test_runner.tl",
-         ["tested.types"] = "src/tested/types.tl",
-
-         ["tested.libs.ansicolors"] = "src/tested/libs/ansicolors.tl",
-         ["tested.libs.inspect"] = "src/tested/libs/inspect.tl",
-         ["tested.libs.logging"] = "src/tested/libs/logging.tl",
-         ["tested.libs.tadd"] = "src/tested/libs/tadd.tl",
-         ["tested.libs.ThreadPool"] = "src/tested/libs/ThreadPool.tl",
-
-         ["tested.file_output.txt"] = "src/tested/file_output/txt.tl",
-         ["tested.file_output.json"] = "src/tested/file_output/json.tl",
-
-         ["tested.results.plain"] = "src/tested/results/plain.tl",
-         ["tested.results.tap"] = "src/tested/results/tap.tl",
-         ["tested.results.terminal"] = "src/tested/results/terminal.tl",
       }
    }
 }
