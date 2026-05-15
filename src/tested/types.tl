@@ -137,6 +137,7 @@ local record types
    interface Tested
       tests: {Test}
       run_only_tests: boolean
+      filename: string
 
       before_fn: function()
       after_fn: function()

@@ -16,17 +16,17 @@ local custom_formatter = {
 -- Runs after performing all the setups and tests are about to run!
 -- version: "tested v0.0.0"
 -- filepaths: list of filepaths passed into tested.
-function custom_formatter.header(version: string, filepaths: {string}) end
+function custom_formatter.header(version: string, filepaths: {string}): string end
 
 -- Displays results after a test has been run
 function custom_formatter.results(
 	tested_result: types.TestedOutput,
 	test_types_to_display: {types.TestResult: boolean}
-) 
+): string
 end
 
 -- Outputs a summary at the end
-function custom_formatter.summary(output: types.TestRunnerOutput) end
+function custom_formatter.summary(output: types.TestRunnerOutput): string end
 
 return custom_formatter
 

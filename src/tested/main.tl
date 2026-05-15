@@ -52,13 +52,14 @@ local function register_format_handler(handlers: {string})
       local ok, module_format_handler = pcall(require, handler) as (boolean, types.FileLoaderHandler)
       if ok then
           file_loader.register_handler(module_format_handler.extension, module_format_handler.loader)
-      else
-         local info, err = lfs.attributes(handler)
-         if err then error("Unable to load format handler, the file/module '" .. handler .."' was not able to be loaded.") end
-         if info.mode ~= "file" then error("The custom format loader should point to a file, but currently appears to be a: " .. info.mode, 0) end
-
-         file_loader.load_and_register_handler(handler)
       end
+
+      -- let people override an installed handler if desired
+      local info, err = lfs.attributes(handler)
+      if err then error("Unable to load format handler, the file/module '" .. handler .."' was not able to be loaded.") end
+      if info.mode ~= "file" then error("The custom format loader should point to a file, but currently appears to be a: " .. info.mode, 0) end
+
+      file_loader.load_and_register_handler(handler)
    end
 end
 

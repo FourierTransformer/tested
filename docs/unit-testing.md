@@ -258,7 +258,7 @@ tested.test("this test is skipped", { run_when = false }, function() end)
 ```
 
 ## Data/table driven tests
-Since `tested` is designed to be inherently composable, so data driven or parametric tests just work with standard Lua conventions. Either entire `tested.test` or `tested.assert` can be wrapped, and as long as a good test name (for `tested.test`) or `given` (for `tested.assert`) are provided, the output will show exactly where things have failed.
+Since `tested` is designed to be inherently composable, so data driven or parametric tests just work with standard Lua conventions. Either entire `tested.test` or `tested.assert` can be wrapped, and as long as a good test name (for `tested.test`) or `given` (for `tested.assert`) are provided, the output will show exactly what has failed.
 
 === "Test"
 
