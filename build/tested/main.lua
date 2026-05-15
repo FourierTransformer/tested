@@ -66,17 +66,18 @@ end
 local function find_tests(files, test_path)
    logger:info("Looking for test files in %s", test_path)
    for file in lfs.dir(test_path) do
-      local _, _, extension = file:find("^[^%.].-_test(%..-)$")
-      if extension then
+      if not file:find("^%.") then
          local f = test_path .. '/' .. file
          local attr = lfs.attributes(f)
          if attr then
-            if attr.mode == "file" and file_loader.loader[extension] then
-               table.insert(files, f)
-
-            elseif attr.mode == "directory" then
+            if attr.mode == "directory" then
                find_tests(files, f)
 
+            else
+               local _, _, extension = file:find("^[^%.].-_test(%..-)$")
+               if extension and attr.mode == "file" and file_loader.loader[extension] then
+                  table.insert(files, f)
+               end
             end
          end
       end

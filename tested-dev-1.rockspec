@@ -57,8 +57,8 @@ build = {
          'src/bin/tested'
       },
       lua = {
-         -- could also maybe swap out with a .d.tl for _unlimited speed_
-         "src/tested.tl",
+         -- swapping to a .d.tl to avoid tested.tl compilation on test run
+         ["types/tested/tested.tl"] = "./types/tested.d.tl",
       }
    }
 }
