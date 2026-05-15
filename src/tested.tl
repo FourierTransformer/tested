@@ -308,6 +308,7 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
             getfenv(test.fn).os.exit = captured_os_exit
          else
             original_os_exit = os.exit
+            os.exit = captured_os_exit
          end
 
 
