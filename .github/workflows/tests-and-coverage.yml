@@ -49,15 +49,23 @@ jobs:
           luarocks make
           luarocks install luacov-coveralls
 
-      - name: Run tests (sequentially)
+      - name: Run demo tests (sequentially)
         continue-on-error: true
         run: |
-          tested -c -n 0
+          tested -c -n 0 -t "demo"
+
+      - name: Run demo tests (parallel)
+        continue-on-error: true
+        run: |
+          tested -c -t "demo"
+
+      - name: Run tests (sequentially)
+        run: |
+          tested -c -n 0 -t "not demo"
 
       - name: Run tests (parallel)
-        continue-on-error: true
         run: |
-          tested -c
+          tested -c -t "not demo"
 
       - name: Save Cache
         uses: actions/cache/save@v5
@@ -102,17 +110,27 @@ jobs:
           luarocks make
           luarocks install luacov-coveralls
 
-      - name: Run tests (sequentially)
+      - name: Run demo tests (sequentially)
         continue-on-error: true
         run: |
           .\lua_install\bin\activate
-          tested -c -n 0
+          tested -c -n 0 -t "demo"
+
+      - name: Run demo tests (parallel)
+        continue-on-error: true
+        run: |
+          .\lua_install\bin\activate
+          tested -c -t "demo"
+
+      - name: Run tests (sequentially)
+        run: |
+          .\lua_install\bin\activate
+          tested -c -n 0 -t "not demo"
 
       - name: Run tests (parallel)
-        continue-on-error: true
         run: |
           .\lua_install\bin\activate
-          tested -c
+          tested -c -t "not demo"
 
       - name: Save Cache
         uses: actions/cache/save@v5

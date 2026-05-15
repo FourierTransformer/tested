@@ -104,6 +104,7 @@ local function run_tests(formatter, args, test_files)
       random = args.random,
       coverage = args.coverage,
       filter = args.filter,
+      tags_filter = args.tags_filter,
    }
 
    local display_results = function(test_output)
@@ -165,6 +166,9 @@ local function main()
    local header_comments = {}
    if args.filter ~= nil then
       table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
+   end
+   if args.tags ~= nil then
+      table.insert(header_comments, "Filtering tests with tag expression: '" .. args.tags .. "'")
    end
 
 

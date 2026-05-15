@@ -21,6 +21,20 @@ local function validate_options(test_name: string, options: types.TestedOptions,
          error(error_prefix .. "options.run_when takes in a 'boolean', but received '" .. type(options.run_when) .. "'", 0)
       end
    end
+
+   if options.tags ~= nil then
+      if type(options.tags) ~= "table" then
+         error(error_prefix .. "options.tags takes in a '{string}', but received '" .. type(options.tags) .. "'", 0)
+      end
+      for i, tag in ipairs(options.tags as {string}) do
+         if type(tag) ~= "string" then
+            error(error_prefix .. "options.tags[" .. i .. "] should be a 'string', but received '" .. type(tag) .. "'", 0)
+         end
+         if tag == "and" or tag == "or" or tag == "not" then
+            error(error_prefix .. "options.tags[" .. i .. "] appears to be a reserved keyword: 'and', 'or', or 'not'. Please change to a different tag name", 0)
+         end
+      end
+   end
 end
 
 local function extract_fn_and_options(test_name: string, fn_or_options: function() | types.TestedOptions, fn?: function(), test_src?: string): function(), types.TestedOptions
@@ -154,12 +168,26 @@ end
 local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestRunnerOptions): types.TestResult, string
    if run_only and test.kind ~= "only" then
       return "SKIP", "Only running 'tested.only' tests"
+
    elseif test.kind == "skip" then
       return "SKIP", "Test marked with 'tested.skip'"
-   elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
-      return "CONDITIONAL_SKIP", "Test name does not match filter pattern '" .. options.filter .. "'"
+
    elseif test.options.run_when ~= nil and test.options.run_when == false then
       return "CONDITIONAL_SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
+
+   elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
+      return "CONDITIONAL_SKIP", "Test name does not match filter pattern '" .. options.filter .. "'"
+
+   elseif options and options.tags_filter ~= nil then
+      -- only need to create if tags have been set
+      local tag_set: {string: boolean} = {}
+      if test.options.tags then
+         for _, tag in ipairs(test.options.tags) do tag_set[tag] = true end
+      end
+
+      if not options.tags_filter(tag_set) then
+         return "CONDITIONAL_SKIP", "Test tags do not match tag filter expression"
+      end
    end
    return nil, nil  -- not a skip
 end

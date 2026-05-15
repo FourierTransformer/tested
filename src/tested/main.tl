@@ -103,7 +103,8 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
    local options: types.TestRunnerOptions = {
       random = args.random,
       coverage = args.coverage,
-      filter = args.filter
+      filter = args.filter,
+      tags_filter = args.tags_filter
    }
 
    local display_results = function(test_output: types.TestedOutput)
@@ -165,6 +166,9 @@ local function main()
    local header_comments: {string} = {}
    if args.filter ~= nil then
       table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
+   end
+   if args.tags ~= nil then
+      table.insert(header_comments, "Filtering tests with tag expression: '" .. args.tags .. "'")
    end
 
    -- running the tests

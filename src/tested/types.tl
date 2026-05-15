@@ -12,6 +12,7 @@ local record types
       random: boolean
       coverage: boolean
       filter: string
+      tags_filter: function(tags: {string:boolean}): boolean
    end
 
    enum TestResult
@@ -132,6 +133,7 @@ local record types
       -- retry_timeout: number
       expected: ExpectedTestResult
       run_when: boolean
+      tags: {string}
    end
 
    interface Tested

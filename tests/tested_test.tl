@@ -5,7 +5,7 @@ local function sum(a: number, b: number): number
 end
 
 -- Your test code (unchanged)
-tested.test("sum()", function()
+tested.test("sum()", {tags={"demo"}}, function()
     
     -- some setup could go here!
     -- this should be run before every assert!
@@ -58,7 +58,7 @@ tested.test("just a test!", function()
     })
 end)
 
-tested.test("Throws exception in assert", function()
+tested.test("Throws exception in assert", {tags={"demo"}}, function()
     tested.assert({
         given = "2 + 2",
         should = "raise unhandled excpetion!",
@@ -83,6 +83,6 @@ tested.test("assert_throws_exception handles exception in assert", function()
     })
 end)
 
-tested.test("should return unknown since no tested.assert called", function() end)
+tested.test("should return unknown since no tested.assert called", {tags={"demo"}}, function() end)
 
 return tested

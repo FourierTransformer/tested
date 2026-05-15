@@ -51,6 +51,8 @@ local cli = { CLIOptions = {} }
 
 
 
+
+
 local cli_to_display = {
    ["skip"] = "SKIP",
    ["pass"] = "PASS",
@@ -71,6 +73,8 @@ function cli.parse_args(version)
    default(false)
    parser:option("-F --filter"):
    description("Only run tests whose name matches this Lua pattern (default: not-set)")
+   parser:option("-t --tags"):
+   description("Only run tests matching a tag expression, e.g. 'integration' or '(unit or integration) and not slow' (default: not-set)")
    parser:option("-s --show"):
    description("What test results to display (default: '-s fail -s exception -s unknown')"):
    choices({ "all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" }):
@@ -148,6 +152,24 @@ function cli.validate_args(args)
       if not ok then
          error("Invalid --filter pattern '" .. args.filter .. "': " .. tostring(err), 0)
       end
+   end
+   if args.tags then
+      if args.tags:match("[^a-zA-Z0-9_ ()]") then
+         error("Invalid --tags expression: only letters, digits, underscores, spaces, and parentheses are allowed", 0)
+      end
+      local lua_expr = (args.tags:gsub("([a-zA-Z_][a-zA-Z0-9_]*)", function(word)
+         if word == "and" or word == "or" or word == "not" then return word end
+         return 'tags["' .. word .. '"]'
+      end))
+      local tag_filter = "local tags = ... \nreturn " .. lua_expr
+
+
+      local string_loader = loadstring or load
+      local loaded = string_loader(tag_filter)
+      if not loaded then
+         error("Invalid --tags expression '" .. args.tags .. "': Be sure to use boolean expressions ('or', 'and', 'not', etc) when combining tags", 0)
+      end
+      args.tags_filter = loaded
    end
 end
 
