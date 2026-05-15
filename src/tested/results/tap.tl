@@ -6,11 +6,11 @@ local record tap is types.ResultFormatter where self.format == "tap" end
 tap.allow_filtering = false
 tap.format = "tap"
 
-function tap.header(_version_info: string, _filepaths: {string}, _comments: {string})
-   print("TAP version 14")
+function tap.header(_version_info: string, _filepaths: {string}, _comments: {string}): string
+   return "TAP version 14"
 end
 
-function tap.results(tested_result: types.TestedOutput, _test_types_to_display: {types.TestResult: boolean})
+function tap.results(tested_result: types.TestedOutput, _test_types_to_display: {types.TestResult: boolean}): string
    tadd.new("# ", tested_result.filename, "\n")
    local tap_result: string
    
@@ -23,7 +23,7 @@ function tap.results(tested_result: types.TestedOutput, _test_types_to_display: 
       tadd.add(tap_result, test.name)
       
       if test.result == "SKIP" or test.result == "CONDITIONAL_SKIP" then
-         tadd.add(" # SKIP" or "", "\n")
+         tadd.add(" # SKIP", "\n")
       else
          tadd.add("\n")
       
@@ -48,11 +48,11 @@ function tap.results(tested_result: types.TestedOutput, _test_types_to_display: 
       end
    end
 
-   print(tadd.tostring())
+   return tadd.tostring()
 end
 
-function tap.summary(output: types.TestRunnerOutput)
-   print("1.." .. output.total_tests)
+function tap.summary(output: types.TestRunnerOutput): string
+   return "1.." .. output.total_tests
 end
 
 return tap

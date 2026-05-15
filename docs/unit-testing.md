@@ -257,6 +257,136 @@ end)
 tested.test("this test is skipped", { run_when = false }, function() end)
 ```
 
+## Data/table driven tests
+Since `tested` is designed to be inherently composable, so data driven or parametric tests just work with standard Lua conventions. Either entire `tested.test` or `tested.assert` can be wrapped, and as long as a good test name (for `tested.test`) or `given` (for `tested.assert`) are provided, the output will show exactly what has failed.
+
+=== "Test"
+
+    ```lua
+    local tested = require("tested")
+
+    -- 1000 individual tests: most pass, a few fail sporadically (multiples of 97)
+    for i = 1, 1000 do
+        tested.test("test #" .. i, function()
+            local expected = i * 2
+            -- fail at multiples of 97 by returning wrong value
+            local actual = (i % 97 == 0) and (expected + 1) or expected
+            tested.assert({
+                given = "i = " .. i,
+                should = "double i",
+                expected = expected,
+                actual = actual,
+            })
+        end)
+    end
+
+    -- single test with 1000 asserts: fails sporadically (multiples of 113)
+    tested.test("1000 asserts with sporadic failures", function()
+        for i = 1, 1000 do
+            local expected = i * i
+            -- fail at multiples of 113 by returning a wrong value
+            local actual = (i % 113 == 0) and (expected - 1) or expected
+            tested.assert({
+                given = "i = " .. i,
+                should = "square i",
+                expected = expected,
+                actual = actual,
+            })
+        end
+    end)
+
+    return tested
+
+    ```
+
+=== "Output"
+    ```
+    tested v0.2.0  tests/litmus_test.tl
+
+    - tests/litmus_test.tl (3.14ms)
+      ✗ test #97 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 97  Should: double i
+          Actual: 195
+          Expected: 194
+
+      ✗ test #194 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 194  Should: double i
+          Actual: 389
+          Expected: 388
+
+      ✗ test #291 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 291  Should: double i
+          Actual: 583
+          Expected: 582
+
+      ✗ test #388 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 388  Should: double i
+          Actual: 777
+          Expected: 776
+
+      ✗ test #485 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 485  Should: double i
+          Actual: 971
+          Expected: 970
+
+      ✗ test #582 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 582  Should: double i
+          Actual: 1165
+          Expected: 1164
+
+      ✗ test #679 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 679  Should: double i
+          Actual: 1359
+          Expected: 1358
+
+      ✗ test #776 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 776  Should: double i
+          Actual: 1553
+          Expected: 1552
+
+      ✗ test #873 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 873  Should: double i
+          Actual: 1747
+          Expected: 1746
+
+      ✗ test #970 (0.00ms)
+       ✗ tests/litmus_test.tl:9 - Given: i = 970  Should: double i
+          Actual: 1941
+          Expected: 1940
+
+      ✗ 1000 asserts with sporadic failures (1.88ms)
+       ✗ tests/litmus_test.tl:24 - Given: i = 113  Should: square i
+          Actual: 12768
+          Expected: 12769
+       ✗ tests/litmus_test.tl:24 - Given: i = 226  Should: square i
+          Actual: 51075
+          Expected: 51076
+       ✗ tests/litmus_test.tl:24 - Given: i = 339  Should: square i
+          Actual: 114920
+          Expected: 114921
+       ✗ tests/litmus_test.tl:24 - Given: i = 452  Should: square i
+          Actual: 204303
+          Expected: 204304
+       ✗ tests/litmus_test.tl:24 - Given: i = 565  Should: square i
+          Actual: 319224
+          Expected: 319225
+       ✗ tests/litmus_test.tl:24 - Given: i = 678  Should: square i
+          Actual: 459683
+          Expected: 459684
+       ✗ tests/litmus_test.tl:24 - Given: i = 791  Should: square i
+          Actual: 625680
+          Expected: 625681
+       ✗ tests/litmus_test.tl:24 - Given: i = 904  Should: square i
+          Actual: 817215
+          Expected: 817216
+
+
+    Test Summary for 1001 tests (3.14ms):
+      Run: 990 passed, 11 failed
+    Other: 0 skipped, 0 invalid
+    ```
+
+
 ## Invalid tests
 If a test file has a test that throws an unhandled exception, `tested` finds a test without any asserts, or a test with `expected` set returns without that result, they are considered "invalid", and will display as such in the results and will be listed in the summary as "invalid".
 

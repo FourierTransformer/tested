@@ -42,11 +42,12 @@ terminal.allow_filtering = true
 terminal.colors = colors
 
 function terminal.header(version_info, filepaths, comments)
-   print(colors("%{bright}" .. version_info .. "  " .. table.concat(filepaths, " ")))
+   tadd.new("%{bright}", version_info, "  ", table.concat(filepaths, " "), "\n")
    for _, comment in ipairs(comments) do
-      print(comment)
+      tadd.add(comment, "\n")
    end
-   print()
+   tadd.add("\n")
+   return colors(tadd.tostring())
 end
 
 local function to_ms(time, add_color)
@@ -109,7 +110,7 @@ function terminal.results(tested_result, test_types_to_display)
          end
       end
    end
-   print(colors(tadd.tostring()))
+   return colors(tadd.tostring())
 end
 
 
@@ -155,7 +156,7 @@ function terminal.summary(output)
       tadd.add("\n%{bright}Fully Tested!%{reset}\n")
    end
 
-   print(colors(tadd.tostring()))
+   return colors(tadd.tostring())
 end
 
 return terminal

@@ -10,14 +10,14 @@ Things that I am one day planning to add (in no particular order):
     - [ ] `retries` and (maybe) `retry_timeout` for automatically retrying failing tests
     - [ ] tags for filtering
 - [x] Lifecycle management (`before`, `after`, `before_each`, `after_each`)
-- [ ] Table driven assertion (no more for loops around asserts!)
+- [ ] Spies
 - [ ] Stubbing
 - [ ] Mocking
 - [ ] A [pure Lua](./pure-lua.md) single-file (maybe two files) distribution [#20](https://github.com/FourierTransformer/tested/issues/20)
     - Should allow for embedding (on devices, maybe with Neovim and Love2d? )
-- [ ] File output (alongside terminal)
+- [x] File output (alongside terminal)
     - A cool fancy HTML output with the tests and coverage could be fun [#14](https://github.com/FourierTransformer/tested/issues/14)
-    - Likely JSON as well
+    - [x] Likely JSON as well
 - [ ] Test timeouts [#3](https://github.com/FourierTransformer/tested/issues/3)
 
 If there are any things you would really want to see added to a Unit testing framework, feel free to [open up a discussion](https://github.com/FourierTransformer/tested/discussions/new/choose). I'm currently open to new ideas!

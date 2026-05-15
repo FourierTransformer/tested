@@ -1,5 +1,5 @@
 # Custom Formatters
-As of now (1/2026), `tested` currently supports a "terminal" output and a "plain" output (which is just the terminal output without colors), with plans for a few more [in the future](https://github.com/FourierTransformer/tested/issues/21)! But we've tried to make it easy to create your own formatter for `tested`.
+As of now (1/2026), `tested` currently supports printing out a "terminal", "plain" (which is just the terminal output without colors), and "tap" output. We've tried to make it easy to create your own formatter for `tested`. You can only create a custom formatter for _display_ purposes. If you want to create a custom formatter for _file saving_ purposes, please [create an issue](https://github.com/FourierTransformer/tested/issues)!
 
 ## A basic formatter
 
@@ -16,17 +16,17 @@ local custom_formatter = {
 -- Runs after performing all the setups and tests are about to run!
 -- version: "tested v0.0.0"
 -- filepaths: list of filepaths passed into tested.
-function custom_formatter.header(version: string, filepaths: {string}) end
+function custom_formatter.header(version: string, filepaths: {string}): string end
 
 -- Displays results after a test has been run
 function custom_formatter.results(
 	tested_result: types.TestedOutput,
 	test_types_to_display: {types.TestResult: boolean}
-) 
+): string
 end
 
 -- Outputs a summary at the end
-function custom_formatter.summary(output: types.TestRunnerOutput) end
+function custom_formatter.summary(output: types.TestRunnerOutput): string end
 
 return custom_formatter
 
@@ -128,7 +128,8 @@ An example of what `types.TestRunnerOutput` looks like. `types.TestedOutput` is 
     skipped = 0
   },
   total_tests = 5,
-  total_time = 2.1999999999966e-05
+  total_time = 2.1999999999966e-05,
+  tested_version = "tested v0.2.0"
 }
 ```
 
@@ -140,7 +141,7 @@ enum TestResult
   "SKIP"
   "CONDITIONAL_SKIP"
   "EXCEPTION"
-  "TIMEOUT"
+  -- "TIMEOUT" -- NYI
   "UNKNOWN"
   "EXPECTED_FAIL"
   "EXPECTED_EXCEPTION"
@@ -187,14 +188,15 @@ interface TestRunnerOutput
   total_time: number
   total_tests: integer
   all_fully_tested: boolean
+  tested_version: string
 end
 
 -- The actual formatter itself
 interface ResultFormatter
   format: string
   allow_filtering: boolean
-  header: function(version: string, filepaths: {string})
-  results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean})
-  summary: function(runner_output: types.TestRunnerOutput)
+  header: function(version: string, filepaths: {string}, comments: {string}): string
+  results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean}): string
+  summary: function(runner_output: types.TestRunnerOutput): string
 end
 ```

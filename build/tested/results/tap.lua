@@ -7,7 +7,7 @@ tap.allow_filtering = false
 tap.format = "tap"
 
 function tap.header(_version_info, _filepaths, _comments)
-   print("TAP version 14")
+   return "TAP version 14"
 end
 
 function tap.results(tested_result, _test_types_to_display)
@@ -23,7 +23,7 @@ function tap.results(tested_result, _test_types_to_display)
       tadd.add(tap_result, test.name)
 
       if test.result == "SKIP" or test.result == "CONDITIONAL_SKIP" then
-         tadd.add(" # SKIP" or "", "\n")
+         tadd.add(" # SKIP", "\n")
       else
          tadd.add("\n")
 
@@ -48,11 +48,11 @@ function tap.results(tested_result, _test_types_to_display)
       end
    end
 
-   print(tadd.tostring())
+   return tadd.tostring()
 end
 
 function tap.summary(output)
-   print("1.." .. output.total_tests)
+   return "1.." .. output.total_tests
 end
 
 return tap

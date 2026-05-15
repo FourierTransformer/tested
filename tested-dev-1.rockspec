@@ -37,12 +37,16 @@ build = {
       ["tested.main"] = "build/tested/main.lua",
       ["tested.test_runner"] = "build/tested/test_runner.lua",
       ["tested.types"] = "build/tested/types.lua",
+      ["tested.util"] = "build/tested/util.lua",
 
       ["tested.libs.ansicolors"] = "build/tested/libs/ansicolors.lua",
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",
       ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
       ["tested.libs.ThreadPool"] = "build/tested/libs/ThreadPool.lua",
+
+      ["tested.file_output.txt"] = "build/tested/file_output/txt.lua",
+      ["tested.file_output.json"] = "build/tested/file_output/json.lua",
 
       ["tested.results.plain"] = "build/tested/results/plain.lua",
       ["tested.results.tap"] = "build/tested/results/tap.lua",
@@ -67,6 +71,9 @@ build = {
          ["tested.libs.logging"] = "src/tested/libs/logging.tl",
          ["tested.libs.tadd"] = "src/tested/libs/tadd.tl",
          ["tested.libs.ThreadPool"] = "src/tested/libs/ThreadPool.tl",
+
+         ["tested.file_output.txt"] = "src/tested/file_output/txt.tl",
+         ["tested.file_output.json"] = "src/tested/file_output/json.tl",
 
          ["tested.results.plain"] = "src/tested/results/plain.tl",
          ["tested.results.tap"] = "src/tested/results/tap.tl",

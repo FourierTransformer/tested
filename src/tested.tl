@@ -3,6 +3,8 @@ local assert_table = require("tested.assert_table")
 
 local tested: types.Tested = { tests = {}, run_only_tests = false }
 
+
+
 local function validate_options(test_name: string, options: types.TestedOptions, test_src: string)
    local error_prefix = test_src .. " in \"" .. test_name .. "\": "
    if options.expected ~= nil then
@@ -31,6 +33,8 @@ local function extract_fn_and_options(test_name: string, fn_or_options: function
       if not fn then error("a function must be provided to run a unit test") end
       fn = fn
    end
+
+   tested.filename = test_src
 
    validate_options(test_name, options, test_src or "?")
 
@@ -160,10 +164,16 @@ local function should_skip_test(test: types.Test, run_only: boolean, options: ty
    return nil, nil  -- not a skip
 end
 
+local function captured_os_exit(code: integer | boolean | nil)
+   local prefix = "os.exit()"
+   if code then prefix = "os.exit(" .. tostring(code) .. ")" end
+   error(prefix .. " intercepted — something tried to exit out of the process", 0)
+end
+
 local function set_result(ok: boolean, err: string, total_assertions: integer, assert_failed_count: integer, test_output: types.TestOutput)
    if ok == false then
       test_output.result = "EXCEPTION"
-      test_output.message = err .. "\n" .. debug.traceback()
+      test_output.message = err
 
    elseif total_assertions == 0 then
       test_output.result = "UNKNOWN"
@@ -238,6 +248,11 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
       tested.before_fn()
    end
 
+   local function xpcall_handler(e: any): string
+      local msg = type(e) == "string" and (e as string) or tostring(e)
+      return msg .. debug.traceback("", 2)
+   end
+
    for i, test in ipairs(self.tests) do
 
       test_results.tests[i] = {assertion_results = {}, name = test.name}
@@ -264,8 +279,8 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
             total_assertions = total_assertions + 1
 
             local assertion_result: types.AssertionResult = {}
-            local file_info = debug.getinfo(2, "Sl")
-            assertion_result.filename = file_info.short_src
+            local file_info = debug.getinfo(2, "l")
+            assertion_result.filename = tested.filename
             assertion_result.line_number = file_info.currentline
 
             assertion_result.given = assertion.given
@@ -283,11 +298,33 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
             return ok, err
          end
 
+         -- run the test
          local start = os.clock()
-         local ok, err = pcall(test.fn) as (boolean, string)
+
+         local original_os_exit: function(code: integer | boolean | nil)
+         if _VERSION == "Lua 5.1" then
+            global getfenv: function(any): {string:{string:function}}
+            original_os_exit = getfenv(test.fn).os.exit
+            getfenv(test.fn).os.exit = captured_os_exit
+         else
+            original_os_exit = os.exit
+            os.exit = captured_os_exit
+         end
+
+
+         local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
          test_results.tests[i].time = os.clock() - start
          test_results.total_time = test_results.total_time + test_results.tests[i].time
+
+         -- put things back
          self.assert = original_assert
+
+         -- again luajit or lua 5.1
+         if _VERSION == "Lua 5.1" then
+            getfenv(test.fn).os.exit = original_os_exit
+         else
+            os.exit = original_os_exit
+         end
 
          set_result(ok, err, total_assertions, assert_failed_count, test_results.tests[i])
 

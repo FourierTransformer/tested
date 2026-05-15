@@ -3,8 +3,6 @@ local terminal = require("tested.results.terminal")
 
 local plain = {}
 
-
-
 plain.format = "plain"
 
 

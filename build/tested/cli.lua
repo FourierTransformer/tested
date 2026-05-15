@@ -3,10 +3,12 @@ local lfs = require("lfs")
 
 local logging = require("tested.libs.logging")
 local logger = logging.get_logger("tested.cli")
+local util = require("tested.util")
 
 
 
 local cli = { CLIOptions = {} }
+
 
 
 
@@ -79,10 +81,13 @@ function cli.parse_args(version)
    choices({ "terminal", "plain", "tap" }):
    default("terminal"),
    parser:option("-z --custom-formatter"):
-   description("File that loads a custom formatter to use for output"))
+   description("File that loads a custom formatter to use for terminal output"))
 
+   parser:option("-o --output-file"):
+   description("Output file to save test results in (currently supported extensions: '.txt' and '.json')"):
+   count("*")
    parser:option("-n --threads"):
-   description("Set the number of threads to run the tests with (default: 4). Set to 0 to disable."):
+   description("Set the number of threads to run the tests with (default: 4). Set to 0 to disable. Test files are split amongst the threads."):
    default(4):
    convert(tonumber)
    parser:option("-x --format-handler"):
@@ -119,6 +124,14 @@ function cli.set_defaults(args)
    local show_all = false
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true; break end end
    if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" } end
+
+   if #args.output_file > 0 then
+      for _, output_file in ipairs(args.output_file) do
+         if not (util.get_file_extension(output_file) == ".txt" or util.get_file_extension(output_file) == ".json") then
+            error("The given output file does not have a supported file extension: '" .. output_file .. "'. Supported file extensions are: '.txt', '.json'", 0)
+         end
+      end
+   end
 end
 
 function cli.validate_args(args)
