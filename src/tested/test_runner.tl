@@ -97,7 +97,11 @@ function test_runner.run_tests(
 end
 
 local function load_and_run_test(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
-
+   -- HACK: so each lanes needs its own copy of the tested file_loader. but the parallel and sequential
+   -- runners both use run_with_cleanup, so this is the workaround to allow it all to work.
+   -- Lanes needs its own partially to avoid passing around potentially expensive loaders (i tried this - it was slow)
+   -- and b/c it can hang with teal files.
+   -- So yeah, this looks a little goofy, but I'm okay with the workaround/hack in place. (it's better than before)
    local file_loader = require("tested.file_loader")
    return test_runner.run_with_cleanup(file_loader, test_file, options)
 end

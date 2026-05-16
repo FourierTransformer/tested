@@ -60,10 +60,10 @@ if tl_ok then
    file_loader.loader[".tl"] = load_teal_file
 
    table.insert(file_loader.setups, function()
+
+
       local tl2 = require("tl")
       tl2.loader()
-
-
    end)
 end
 
