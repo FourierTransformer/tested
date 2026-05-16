@@ -7,17 +7,19 @@ end
 local record file_loader is types.FileLoader
    load_file: function(filepath: string): any
    loader: {string: function(filepath: string): function()}
-   register_handler: function(extension: string, loader: function(filepath: string): function(): any)
+   setups: {function}
+   register_handler: function(extension: string, loader: function(filepath: string): function(): any, setup: function)
    load_and_register_handler: function(filepath: string)
+end
+
+local function get_file_extension(str: string): string
+   return str:match("^.+(%..+)$")
 end
 
 file_loader.loader = {
    [".lua"] = load_lua_file
 }
-
-local function get_file_extension(str: string): string
-   return str:match("^.+(%..+)$")
-end
+file_loader.setups = {}
 
 function file_loader.load_file(filepath: string): any
    local extension = get_file_extension(filepath)
@@ -31,13 +33,16 @@ function file_loader.load_file(filepath: string): any
    error("No file loader found for format: " .. extension)
 end
 
-function file_loader.register_handler(extension: string, loader: function(filepath: string): function(): any)
+function file_loader.register_handler(extension: string, loader: function(filepath: string): function(): any, setup: function)
    file_loader.loader[extension] = loader
+   if setup then
+      table.insert(file_loader.setups, setup)
+   end
 end
 
 function file_loader.load_and_register_handler(filepath: string)
    local handler = file_loader.load_file(filepath) as types.FileLoaderHandler
-   file_loader.register_handler(handler.extension, handler.loader)
+   file_loader.register_handler(handler.extension, handler.loader, handler.setup)
 end
 
 local tl_ok, tl = pcall(require, "tl")
@@ -53,6 +58,13 @@ if tl_ok then
       return load_function
    end
    file_loader.loader[".tl"] = load_teal_file
+
+   table.insert(file_loader.setups, function()
+      -- we know it exists, so we can safely load it here without wrapping in a pcall
+      -- we are re-loading it here, so tl can be properly intialized and placed in Lanes
+      local tl2 = require("tl")
+      tl2.loader()
+   end)
 end
 
 return file_loader

@@ -37,16 +37,13 @@ function test_runner.run_tests(
    options)
 
 
-
-
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then tl.loader() end
+   local file_loader = require("tested.file_loader")
+   for _, setup in ipairs(file_loader.setups) do setup() end
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
    end
-   local file_loader = require("tested.file_loader")
 
    local output = {
       total_time = 0,
@@ -123,7 +120,8 @@ local function run_parallel_tests(
    }
    local coverage_results = {}
 
-   local pool = ThreadPool.init(num_threads, options.coverage)
+   local file_loader = require("tested.file_loader")
+   local pool = ThreadPool.init(num_threads, options.coverage, file_loader.setups)
    local input = {}
    for i = 1, #test_files do
       input[i] = { test_files[i], options }

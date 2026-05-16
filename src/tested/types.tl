@@ -93,6 +93,7 @@ local record types
    interface FileLoaderHandler
       extension: string
       loader: function(filepath: string): function(): any
+      setup: function  -- optional: registers language support for require()
    end
 
    -- needed for tested

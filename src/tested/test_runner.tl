@@ -37,16 +37,13 @@ function test_runner.run_tests(
    options: types.TestRunnerOptions
 ): function(): (types.TestedOutput, types.TestRunnerOutput)
 
-   -- these get called in here to avoid weirdness with lanes
-   -- if they are called outside, the lanes will sometimes hang.
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then tl.loader() end
+   local file_loader = require("tested.file_loader")
+   for _, setup in ipairs(file_loader.setups) do setup() end
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
    end
-   local file_loader = require("tested.file_loader")
 
    local output: types.TestRunnerOutput = {
       total_time = 0,
@@ -100,9 +97,7 @@ function test_runner.run_tests(
 end
 
 local function load_and_run_test(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
-   -- I feel like there's some way to get this loaded into Lanes.
-   -- Notably, it needs to be added to lanes _after_ any language registration,
-   -- because I think lanes will copy it somewhere?
+
    local file_loader = require("tested.file_loader")
    return test_runner.run_with_cleanup(file_loader, test_file, options)
 end
@@ -123,7 +118,8 @@ local function run_parallel_tests(
    }
    local coverage_results = {}
 
-   local pool = ThreadPool.init(num_threads, options.coverage)
+   local file_loader = require("tested.file_loader")
+   local pool = ThreadPool.init(num_threads, options.coverage, file_loader.setups)
    local input = {}
    for i = 1, #test_files do
       input[i] = {test_files[i], options}

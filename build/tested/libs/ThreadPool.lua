@@ -35,17 +35,10 @@ local _unpack = unpack or table.unpack
 
 
 
-local function worker(num, run_coverage, linda)
+local function worker(num, run_coverage, linda, setups)
    logger:info("Starting worker %d", num)
 
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then
-
-
-
-      require("tested.file_loader")
-      tl.loader()
-   end
+   for _, setup in ipairs(setups) do setup() end
 
    local luacov
 
@@ -88,7 +81,7 @@ local function worker(num, run_coverage, linda)
    end
 end
 
-function ThreadPool.init(workers, run_coverage)
+function ThreadPool.init(workers, run_coverage, setups)
    local instance = setmetatable({}, { __index = ThreadPool })
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -96,7 +89,7 @@ function ThreadPool.init(workers, run_coverage)
    for i = 1, workers do
 
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda, setups)
    end
    return instance
 end

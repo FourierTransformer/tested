@@ -13,7 +13,7 @@ local record ThreadPool
       code_coverage: table
    end
 
-   init: function(workers: integer, run_coverage: boolean): ThreadPool
+   init: function(workers: integer, run_coverage: boolean, setups: {function}): ThreadPool
    map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, display_func: function(T), timeout?: number): {Result<T>}
    shutdown: function(self: ThreadPool, timeout?: number)
    workers: {lanes.Lane}
@@ -35,17 +35,10 @@ local record Task
 end
 
 -- waits for a task, then executes it
-local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
+local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda, setups: {function})
    logger:info("Starting worker %d", num)
 
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then
-      -- Pre-load framework modules via the standard .lua loader before registering
-      -- tl.loader() at position 2. This caches them in package.loaded so
-      -- tl_package_loader won't intercept their require() calls across workers.
-      require("tested.file_loader")
-      tl.loader()
-   end
+   for _, setup in ipairs(setups) do setup() end
 
    local luacov: luacov_type
 
@@ -88,7 +81,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    end
 end
 
-function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
+function ThreadPool.init(workers: integer, run_coverage: boolean, setups: {function}): ThreadPool
    local instance = setmetatable({}, {__index=ThreadPool}) as ThreadPool
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -96,7 +89,7 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
    for i = 1, workers do
       -- Create worker lanes with separate state
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda, setups)
    end
    return instance
 end

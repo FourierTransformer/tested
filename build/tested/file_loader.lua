@@ -11,13 +11,15 @@ local file_loader = {}
 
 
 
-file_loader.loader = {
-   [".lua"] = load_lua_file,
-}
 
 local function get_file_extension(str)
    return str:match("^.+(%..+)$")
 end
+
+file_loader.loader = {
+   [".lua"] = load_lua_file,
+}
+file_loader.setups = {}
 
 function file_loader.load_file(filepath)
    local extension = get_file_extension(filepath)
@@ -31,13 +33,16 @@ function file_loader.load_file(filepath)
    error("No file loader found for format: " .. extension)
 end
 
-function file_loader.register_handler(extension, loader)
+function file_loader.register_handler(extension, loader, setup)
    file_loader.loader[extension] = loader
+   if setup then
+      table.insert(file_loader.setups, setup)
+   end
 end
 
 function file_loader.load_and_register_handler(filepath)
    local handler = file_loader.load_file(filepath)
-   file_loader.register_handler(handler.extension, handler.loader)
+   file_loader.register_handler(handler.extension, handler.loader, handler.setup)
 end
 
 local tl_ok, tl = pcall(require, "tl")
@@ -53,6 +58,13 @@ if tl_ok then
       return load_function
    end
    file_loader.loader[".tl"] = load_teal_file
+
+   table.insert(file_loader.setups, function()
+      local tl2 = require("tl")
+      tl2.loader()
+
+
+   end)
 end
 
 return file_loader

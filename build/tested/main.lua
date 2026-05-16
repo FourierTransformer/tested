@@ -51,7 +51,7 @@ local function register_format_handler(handlers)
       logger:info("Registering format handler: %s", handler)
       local ok, module_format_handler = pcall(require, handler)
       if ok then
-         file_loader.register_handler(module_format_handler.extension, module_format_handler.loader)
+         file_loader.register_handler(module_format_handler.extension, module_format_handler.loader, module_format_handler.setup)
       else
          local info, err = lfs.attributes(handler)
          if err then error("Unable to load format handler, the file/module '" .. handler .. "' was not able to be loaded.") end
