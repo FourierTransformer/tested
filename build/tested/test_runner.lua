@@ -52,7 +52,7 @@ function test_runner.run_tests(
       total_time = 0,
       total_tests = 0,
       all_fully_tested = true,
-      total_counts = { passed = 0, failed = 0, expected = 0, skipped = 0, invalid = 0 },
+      total_counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },
       module_results = {},
    }
    local coverage_results = {}
@@ -89,6 +89,7 @@ function test_runner.run_tests(
       output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
       output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
       output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
+      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests
@@ -117,7 +118,7 @@ local function run_parallel_tests(
       total_time = 0,
       total_tests = 0,
       all_fully_tested = true,
-      total_counts = { passed = 0, failed = 0, expected = 0, skipped = 0, invalid = 0 },
+      total_counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },
       module_results = {},
    }
    local coverage_results = {}
@@ -163,6 +164,7 @@ local function run_parallel_tests(
       output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
       output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
       output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
+      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests

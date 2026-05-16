@@ -43,10 +43,12 @@ end
 local tl_ok, tl = pcall(require, "tl")
 if tl_ok then
    local function load_teal_file(filepath: string): function(): any
-      local file = io.open(filepath, "rb")
-      -- the '@' is a quick hack to get luacov to be able to analyze the lines of teal files!
-      local load_function, errors = tl.load(file:read("*all"), "@" .. filepath)
+      local file, err = io.open(filepath, "rb")
+      if not file then error("Cannot load filepath: '" .. filepath .. "' with error: " .. err) end
+      local file_contents = file:read("*all")
       file:close()
+      -- the '@' is a quick hack to get luacov to be able to analyze the lines of teal files!
+      local load_function, errors = tl.load(file_contents, "@" .. filepath)
       if not load_function then error(errors) end
       return load_function
    end

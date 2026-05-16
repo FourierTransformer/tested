@@ -6,4 +6,12 @@ function util.get_file_extension(str: string): string
    return str:match("^.+(%..+)$")
 end
 
+function util.is_valid_filename(str: string): boolean
+   return not not str:match("^[%w_/%\\%.%-]+$")
+end
+
+function util.is_valid_lua_module_name(str: string): boolean
+   return not not str:match("^[%a_][%w_%.]*$")
+end
+
 return util

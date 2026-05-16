@@ -6,7 +6,7 @@ local symbol_map <total>: {types.TestResult: string} = {
    PASS = " ✓",
    FAIL = " ✗",
    SKIP = " ⊘",
-   CONDITIONAL_SKIP = " ⊘",
+   FILTERED = " ᗊ",
    EXCEPTION = " !",
    TIMEOUT = " ⏱",
    UNKNOWN = " ?",
@@ -20,7 +20,7 @@ local color_map <total>: {types.TestResult: string} = {
    PASS = " %{green}",
    FAIL = " %{red}",
    SKIP = " %{yellow}",
-   CONDITIONAL_SKIP = " %{yellow}",
+   FILTERED = " %{dim yellow}",
    EXCEPTION = " %{cyan}",
    TIMEOUT = " %{blue}",
    UNKNOWN = " %{magenta}",
@@ -147,10 +147,12 @@ function terminal.summary(output: types.TestRunnerOutput): string
    tadd.add(
       "Other: %{yellow}",
       tostring(output.total_counts.skipped),
-      " skipped%{reset}, ",
-      tostring(output.total_counts.invalid),
-      " invalid\n"
+      " skipped%{reset}"
    )
+   if output.total_counts.filtered > 0 then
+      tadd.add(", %{dim}", tostring(output.total_counts.filtered), " filtered%{reset}")
+   end
+   tadd.add(", ", tostring(output.total_counts.invalid), " invalid\n")
 
    if output.all_fully_tested then
       tadd.add("\n%{bright}Fully Tested!%{reset}\n")

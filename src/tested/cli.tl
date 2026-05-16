@@ -171,6 +171,20 @@ function cli.validate_args(args: cli.CLIOptions)
       end
       args.tags_filter = loaded
    end
+
+   if args.custom_formatter then
+      if not (util.is_valid_filename(args.custom_formatter) or util.is_valid_lua_module_name(args.custom_formatter)) then
+         error("Invalid --custom-formatter '" .. args.custom_formatter .. "'. It does not appear to be a valid filepath nor Lua module name")
+      end
+   end
+
+   if args.format_handler then
+      for _, format_handler in ipairs(args.format_handler) do
+         if not (util.is_valid_filename(format_handler) or util.is_valid_lua_module_name(format_handler)) then
+            error("Invalid --format-handler '" .. format_handler .. "'. It does not appear to be a valid filepath nor Lua module name")
+         end
+      end
+   end
 end
 
 function cli.display_types(options: {cli.DisplayOptions}): {types.TestResult: boolean}
@@ -180,7 +194,6 @@ function cli.display_types(options: {cli.DisplayOptions}): {types.TestResult: bo
          to_display[cli_to_display[cli_option]] = true
          if cli_option == "skip" then
             to_display["SKIP"] = true
-            to_display["CONDITIONAL_SKIP"] = true
          end
       else
          if cli_option == "invalid" then
@@ -191,7 +204,7 @@ function cli.display_types(options: {cli.DisplayOptions}): {types.TestResult: bo
          elseif cli_option == "valid" then
             to_display["PASS"] = true
             to_display["SKIP"] = true
-            to_display["CONDITIONAL_SKIP"] = true
+            to_display["FILTERED"] = true
             to_display["FAIL"] = true
             to_display["EXPECTED_FAIL"] = true
             to_display["EXPECTED_EXCEPTION"] = true

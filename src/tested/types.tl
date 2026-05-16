@@ -19,7 +19,7 @@ local record types
       "PASS"
       "FAIL"
       "SKIP"
-      "CONDITIONAL_SKIP"
+      "FILTERED"
       "EXCEPTION"
       "TIMEOUT"
       "UNKNOWN"
@@ -57,6 +57,7 @@ local record types
       failed: integer
       expected: integer
       skipped: integer
+      filtered: integer
       invalid: integer
    end
 
@@ -99,8 +100,7 @@ local record types
       "test"
       "skip"
       "only"
-      "conditional_test"
-      "conditional_skip"
+      "filtered"
    end
 
    interface Test

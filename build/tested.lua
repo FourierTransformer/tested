@@ -3,10 +3,17 @@ local assert_table = require("tested.assert_table")
 
 local tested = { tests = {}, run_only_tests = false }
 
-
+local options_set = { tags = true, expected = true, run_when = true }
 
 local function validate_options(test_name, options, test_src)
    local error_prefix = test_src .. " in \"" .. test_name .. "\": "
+
+   for k, _ in pairs(options) do
+      if not options_set[k] then
+         error(error_prefix .. "options includes unknown value '" .. k .. "'. Options must be one of: " .. "'tags', 'expected', or 'run_when'")
+      end
+   end
+
    if options.expected ~= nil then
       if type(options.expected) ~= "string" then
          error(error_prefix .. "options.expected takes in a 'string', but received '" .. type(options.expected) .. "'", 0)
@@ -174,10 +181,10 @@ local function should_skip_test(test, run_only, options)
       return "SKIP", "Test marked with 'tested.skip'"
 
    elseif test.options.run_when ~= nil and test.options.run_when == false then
-      return "CONDITIONAL_SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
+      return "SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
 
    elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
-      return "CONDITIONAL_SKIP", "Test name does not match filter pattern '" .. options.filter .. "'"
+      return "FILTERED", "Test name does not match filter pattern '" .. options.filter .. "'"
 
    elseif options and options.tags_filter ~= nil then
 
@@ -187,7 +194,7 @@ local function should_skip_test(test, run_only, options)
       end
 
       if not options.tags_filter(tag_set) then
-         return "CONDITIONAL_SKIP", "Test tags do not match tag filter expression"
+         return "FILTERED", "Test tags do not match tag filter expression"
       end
    end
    return nil, nil
@@ -248,8 +255,11 @@ local function add_up_test_results(test_output, test_counts)
    elseif test_output.result == "EXCEPTION" or test_output.result == "UNKNOWN" or test_output.result == "UNEXPECTED" then
       test_counts.invalid = test_counts.invalid + 1
 
-   elseif test_output.result == "SKIP" or test_output.result == "CONDITIONAL_SKIP" then
+   elseif test_output.result == "SKIP" then
       test_counts.skipped = test_counts.skipped + 1
+
+   elseif test_output.result == "FILTERED" then
+      test_counts.filtered = test_counts.filtered + 1
 
    end
 end
@@ -266,7 +276,7 @@ function tested:run(filename, options)
    end
 
    local test_results = {
-      counts = { passed = 0, failed = 0, expected = 0, skipped = 0, invalid = 0 },
+      counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },
       tests = {},
       filename = filename,
       fully_tested = false,
