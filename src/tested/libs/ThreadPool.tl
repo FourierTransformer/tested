@@ -38,29 +38,13 @@ end
 local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    logger:info("Starting worker %d", num)
 
-   -- Unfortunately have to handle this as more of a special case than I was hoping for...
-   -- To be able to have teal files depend on other teal files, a package loader needs to be added
-   -- I can't just use tl.load() to handle this here, because it causes the concurrent tests to hang
-   -- (similar to the luacov problems below). Still not entirely sure why, but appending this loader
-   -- does appear to solve the issue
    local tl_ok, tl = pcall(require, "tl")
    if tl_ok then
-      local function tl_fallback_loader(modname: string): function, string
-         -- search_all=false: finds only .tl files (not .lua), and respects TL_PATH
-         local found, fd = tl.search_module(modname, false)
-         if not found then return end
-
-         local code = fd:read("*all")
-         fd:close()
-         local fn, err = tl.load(code, "@" .. found)
-         if fn then return fn end
-         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
-      end
-      if package.searchers then
-         table.insert(package.searchers, tl_fallback_loader)
-      else
-         table.insert(package.loaders, tl_fallback_loader)
-      end
+      -- Pre-load framework modules via the standard .lua loader before registering
+      -- tl.loader() at position 2. This caches them in package.loaded so
+      -- tl_package_loader won't intercept their require() calls across workers.
+      require("tested.file_loader")
+      tl.loader()
    end
 
    local luacov: luacov_type

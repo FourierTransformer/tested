@@ -38,29 +38,13 @@ local _unpack = unpack or table.unpack
 local function worker(num, run_coverage, linda)
    logger:info("Starting worker %d", num)
 
-
-
-
-
-
    local tl_ok, tl = pcall(require, "tl")
    if tl_ok then
-      local function tl_fallback_loader(modname)
 
-         local found, fd = tl.search_module(modname, false)
-         if not found then return end
 
-         local code = fd:read("*all")
-         fd:close()
-         local fn, err = tl.load(code, "@" .. found)
-         if fn then return fn end
-         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
-      end
-      if package.searchers then
-         table.insert(package.searchers, tl_fallback_loader)
-      else
-         table.insert(package.loaders, tl_fallback_loader)
-      end
+
+      require("tested.file_loader")
+      tl.loader()
    end
 
    local luacov
