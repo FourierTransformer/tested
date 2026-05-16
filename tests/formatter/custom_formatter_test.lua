@@ -27,7 +27,7 @@ end)
 
 tested.test("custom formatter output for tested_test.tl", function()
     local out = run("tests/execution/tested_test.tl")
-    tested.assert({ given = "test with run_when=false", should = "appear as CFMT_TEST CONDITIONAL_SKIP", expected = true, actual = out:find("CFMT_TEST CONDITIONAL_SKIP conditional guy should be skipped") ~= nil })
+    tested.assert({ given = "test with run_when=false", should = "appear as CFMT_TEST SKIP", expected = true, actual = out:find("CFMT_TEST SKIP conditional guy should be skipped") ~= nil })
     tested.assert({ given = "CFMT_SUMMARY for tested_test.tl", should = "show failed > 0", expected = false, actual = out:find("failed=0") ~= nil })
     tested.assert({ given = "CFMT_SUMMARY for tested_test.tl", should = "show skipped=1", expected = true, actual = out:find("skipped=1") ~= nil })
 end)
