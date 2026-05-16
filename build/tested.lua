@@ -72,6 +72,7 @@ function tested.only(name, fn_or_options, fn)
    local test_src = debug.getinfo(2, "S").short_src
    local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
    table.insert(tested.tests, { name = name, fn = func, options = options, kind = "only" })
+   tested.run_only_tests = true
 end
 
 function tested.before(fn)
