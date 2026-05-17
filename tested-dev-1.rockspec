@@ -42,6 +42,7 @@ build = {
       ["tested.languages.teal"] = "build/tested/languages/teal.lua",
 
       ["tested.libs.ansicolors"] = "build/tested/libs/ansicolors.lua",
+      ["tested.libs.dkjson"] = "src/tested/libs/dkjson.lua",
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",
       ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
