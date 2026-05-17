@@ -10,6 +10,8 @@ NOTE: If tables have an `__eq` metamethod, that will be taken account first and 
 === "Test"
 
     ```lua
+    local tested = require("tested")
+    
     tested.test("table compare will error", function()
       local t1 = {
         name = 'Alice',
@@ -33,6 +35,8 @@ NOTE: If tables have an `__eq` metamethod, that will be taken account first and 
         actual = t2
       })
     end)
+
+    return tested -- SUPER important, otherwise the tests wont work
     ```
 
 === "Output"

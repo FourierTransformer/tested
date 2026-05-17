@@ -58,7 +58,7 @@ Below is an example `tested` test and it's output. `tested` requires the `return
     ```
 === "Output"
     ```
-    tested v0.0.1  tests/binary_test.tl
+    tested v0.2.0  tests/binary_test.tl
 
     - tests/binary_test.tl (11.05ms)
     Test Summary for 4 tests (11.05ms):

@@ -39,6 +39,8 @@ The tag filtering supports boolean logic (and/or/not and parenthesis), so you ca
 - `-t "unit and slow"` and `-t "slow"` - would select only the last test
 - `-t "not integration"` - will run _all_ tests without the integration tag (including un-tagged tests)
 
+and because of that, tags cannot be named `and`, `or`, or `not`.
+
 
 ## `tested -s/--show`
 By default the `tested` output shows the problematic test results, that likely need to be addressed: `fail`, `exception`, `unknown`, and `unexpected` but allows displaying other results.
@@ -47,7 +49,7 @@ Current Values: `pass fail skip exception unknown expected unexpected valid inva
 
 There are three groupings that can also be used:
 
-- `tested -s valid` - will show `pass`, `fail`, `expected`, and `skip`
+- `tested -s valid` - will show `pass`, `fail`, `expected`, `filtered` (for tests that did not run when filtered) and `skip`
 - `tested -s invalid` - will show `exception`, `unknown`, and `unexpected`
 - `tested -s all` - shows all tests
 
