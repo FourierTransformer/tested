@@ -2,11 +2,11 @@ local type types = require("tested.types")
 local colors = require("tested.libs.ansicolors")
 local tadd = require("tested.libs.tadd")
 
-local symbol_map <total>: {types.TestResult: string} = {
+local SYMBOL_MAP <total>: {types.TestResult: string} = {
    PASS = " ✓",
    FAIL = " ✗",
    SKIP = " ⊘",
-   CONDITIONAL_SKIP = " ⊘",
+   FILTERED = " ᗊ",
    EXCEPTION = " !",
    TIMEOUT = " ⏱",
    UNKNOWN = " ?",
@@ -16,11 +16,11 @@ local symbol_map <total>: {types.TestResult: string} = {
    UNEXPECTED = " ‽"
 }
 
-local color_map <total>: {types.TestResult: string} = {
+local COLOR_MAP <total>: {types.TestResult: string} = {
    PASS = " %{green}",
    FAIL = " %{red}",
    SKIP = " %{yellow}",
-   CONDITIONAL_SKIP = " %{yellow}",
+   FILTERED = " %{dim yellow}",
    EXCEPTION = " %{cyan}",
    TIMEOUT = " %{blue}",
    UNKNOWN = " %{magenta}",
@@ -36,7 +36,7 @@ local record terminal is types.ResultFormatter where self.format == "terminal"
 end
 
 terminal.format = "terminal"
-terminal.allow_filtering = true
+terminal.supports_show = true
 
 -- used to disable the colors in the "plain" formatter
 terminal.colors = colors
@@ -67,7 +67,7 @@ local function to_ms(time: number, add_color?: boolean): string
 end
 
 local function format_assertion_result(assertion_result: types.AssertionResult): string
-   tadd.add("  ", symbol_map[assertion_result.result], " ", assertion_result.filename, ":", tostring(assertion_result.line_number))
+   tadd.add("  ", SYMBOL_MAP[assertion_result.result], " ", assertion_result.filename, ":", tostring(assertion_result.line_number))
    -- given and should
    if assertion_result.given then
       tadd.add(" - Given: ", assertion_result.given)
@@ -88,7 +88,7 @@ function terminal.results(tested_result: types.TestedOutput, test_types_to_displ
 
       -- if the user wants to see it
       if test_types_to_display[test_result.result] then
-         tadd.add(color_map[test_result.result], symbol_map[test_result.result], " ", test_result.name, to_ms(test_result.time, false), "%{reset}\n")
+         tadd.add(COLOR_MAP[test_result.result], SYMBOL_MAP[test_result.result], " ", test_result.name, to_ms(test_result.time, false), "%{reset}\n")
          local extra_newline = false
          if test_result.result == "FAIL" or test_result.result == "PASS" or test_result.result == "EXPECTED_FAIL" then
             for _, assertion_result in ipairs(test_result.assertion_results) do
@@ -147,10 +147,12 @@ function terminal.summary(output: types.TestRunnerOutput): string
    tadd.add(
       "Other: %{yellow}",
       tostring(output.total_counts.skipped),
-      " skipped%{reset}, ",
-      tostring(output.total_counts.invalid),
-      " invalid\n"
+      " skipped%{reset}"
    )
+   if output.total_counts.filtered > 0 then
+      tadd.add(", %{dim}", tostring(output.total_counts.filtered), " filtered out%{reset}")
+   end
+   tadd.add(", ", tostring(output.total_counts.invalid), " invalid\n")
 
    if output.all_fully_tested then
       tadd.add("\n%{bright}Fully Tested!%{reset}\n")

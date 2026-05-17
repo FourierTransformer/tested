@@ -1,10 +1,13 @@
+-- very basic threadpool. I really wish I could've made this more generic, but time and limitations are real.
+-- yes calling it "ThreadPool" is intentional because it is class based (even though nothing else is...)
+-- maybe I'll change it up one day.
+
 local lanes = require("lanes").configure()
 local logging = require("tested.libs.logging")
 local type luacov_type = require("luacov.runner")
 
 local logger = logging.get_logger("tested.libs.thread_pool")
 
--- very basic threadpool. I really wish I could've made this more generic, but time and limitations are real.
 local record ThreadPool
    interface Result<T>
       error: string
@@ -13,7 +16,7 @@ local record ThreadPool
       code_coverage: table
    end
 
-   init: function(workers: integer, run_coverage: boolean): ThreadPool
+   init: function(workers: integer, run_coverage: boolean, language_handlers: {string}): ThreadPool
    map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, display_func: function(T), timeout?: number): {Result<T>}
    shutdown: function(self: ThreadPool, timeout?: number)
    workers: {lanes.Lane}
@@ -35,33 +38,12 @@ local record Task
 end
 
 -- waits for a task, then executes it
-local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
+local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda, language_handlers: {string})
    logger:info("Starting worker %d", num)
 
-   -- Unfortunately have to handle this as more of a special case than I was hoping for...
-   -- To be able to have teal files depend on other teal files, a package loader needs to be added
-   -- I can't just use tl.load() to handle this here, because it causes the concurrent tests to hang
-   -- (similar to the luacov problems below). Still not entirely sure why, but appending this loader
-   -- does appear to solve the issue
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then
-      local function tl_fallback_loader(modname: string): function, string
-         -- search_all=false: finds only .tl files (not .lua), and respects TL_PATH
-         local found, fd = tl.search_module(modname, false)
-         if not found then return end
-
-         local code = fd:read("*all")
-         fd:close()
-         local fn, err = tl.load(code, "@" .. found)
-         if fn then return fn end
-         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
-      end
-      if package.searchers then
-         table.insert(package.searchers, tl_fallback_loader)
-      else
-         table.insert(package.loaders, tl_fallback_loader)
-      end
-   end
+   local file_loader = require("tested.file_loader")
+   file_loader.register_language_handlers(language_handlers)
+   for _, setup in ipairs(file_loader.setups) do setup() end
 
    local luacov: luacov_type
 
@@ -104,7 +86,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda)
    end
 end
 
-function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
+function ThreadPool.init(workers: integer, run_coverage: boolean, language_handlers: {string}): ThreadPool
    local instance = setmetatable({}, {__index=ThreadPool}) as ThreadPool
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -112,7 +94,7 @@ function ThreadPool.init(workers: integer, run_coverage: boolean): ThreadPool
    for i = 1, workers do
       -- Create worker lanes with separate state
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda, language_handlers)
    end
    return instance
 end

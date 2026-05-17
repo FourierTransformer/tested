@@ -8,7 +8,7 @@ Things that I am one day planning to add (in no particular order):
     - [x] Expected Statuses
     - [x] `run_when` for conditional running tests
     - [ ] `retries` and (maybe) `retry_timeout` for automatically retrying failing tests
-    - [ ] tags for filtering
+    - [x] tags for filtering
 - [x] Lifecycle management (`before`, `after`, `before_each`, `after_each`)
 - [ ] Spies
 - [ ] Stubbing

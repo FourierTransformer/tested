@@ -55,6 +55,6 @@ Parts of the following are included in the source code present in this repo:
 - Bundles a slightly modified [inspect.lua](https://github.com/kikito/inspect.lua) for table diffing and viewing - MIT
 - Also bundles a slightly modified [ansicolors.lua](https://github.com/kikito/ansicolors.lua) - MIT
 - A function from [Luacov](https://github.com/lunarmodules/luacov) code to help merge stats files in process - MIT
-- Bundles [json.lua](https://github.com/rxi/json.lua)'s encoder for writing file output to json
+- Bundles [dkjson.lua](https://dkolf.de/dkjson-lua/)'s encoder for writing file output to json
 
 Major thanks to hishamhm, kikito, and benoit-germain for their work in the Lua space. Without them, `tested` wouldn't be possible.

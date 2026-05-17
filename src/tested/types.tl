@@ -5,6 +5,8 @@ local record types
    -- file loader
    interface FileLoader
       load_file: function(filepath: string): any
+      loader: {string: function(filepath: string): function()}
+      setups: {function}
    end
 
    -- test running types
@@ -13,13 +15,14 @@ local record types
       coverage: boolean
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
+      language_handlers: {string}
    end
 
    enum TestResult
       "PASS"
       "FAIL"
       "SKIP"
-      "CONDITIONAL_SKIP"
+      "FILTERED"
       "EXCEPTION"
       "TIMEOUT"
       "UNKNOWN"
@@ -50,6 +53,7 @@ local record types
       message: string
       time: number
       assertion_results: {AssertionResult}
+      options: TestedOptions
    end
 
    interface TestCounts
@@ -57,6 +61,7 @@ local record types
       failed: integer
       expected: integer
       skipped: integer
+      filtered: integer
       invalid: integer
    end
 
@@ -82,16 +87,17 @@ local record types
    -- needed for result handling
    interface ResultFormatter
       format: string
-      allow_filtering: boolean
+      supports_show: boolean
       header: function(version: string, filepaths: {string}, comments: {string}): string
       results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean}): string
       summary: function(runner_output: types.TestRunnerOutput): string
    end
 
    -- needed for registering new file types
-   interface FileLoaderHandler
+   interface LanguageHandler
       extension: string
       loader: function(filepath: string): function(): any
+      setup: function  -- optional: registers language support for require()
    end
 
    -- needed for tested
@@ -99,8 +105,7 @@ local record types
       "test"
       "skip"
       "only"
-      "conditional_test"
-      "conditional_skip"
+      "filtered"
    end
 
    interface Test

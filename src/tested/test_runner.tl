@@ -37,22 +37,19 @@ function test_runner.run_tests(
    options: types.TestRunnerOptions
 ): function(): (types.TestedOutput, types.TestRunnerOutput)
 
-   -- these get called in here to avoid weirdness with lanes
-   -- if they are called outside, the lanes will sometimes hang.
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then tl.loader() end
+   local file_loader = require("tested.file_loader")
+   for _, setup in ipairs(file_loader.setups) do setup() end
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
    end
-   local file_loader = require("tested.file_loader")
 
    local output: types.TestRunnerOutput = {
       total_time = 0,
       total_tests = 0,
       all_fully_tested = true,
-      total_counts = {passed=0, failed=0, expected=0, skipped=0, invalid=0},
+      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
       module_results = {},
    }
    local coverage_results = {}
@@ -89,6 +86,7 @@ function test_runner.run_tests(
       output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
       output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
       output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
+      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests
@@ -99,9 +97,11 @@ function test_runner.run_tests(
 end
 
 local function load_and_run_test(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
-   -- I feel like there's some way to get this loaded into Lanes.
-   -- Notably, it needs to be added to lanes _after_ any language registration,
-   -- because I think lanes will copy it somewhere?
+   -- HACK: so each lanes needs its own copy of the tested file_loader. but the parallel and sequential
+   -- runners both use run_with_cleanup, so this is the workaround to allow it all to work.
+   -- Lanes needs its own partially to avoid passing around potentially expensive loaders (i tried this - it was slow)
+   -- and b/c it can hang with teal files.
+   -- So yeah, this looks a little goofy, but I'm okay with the workaround/hack in place. (it's better than before)
    local file_loader = require("tested.file_loader")
    return test_runner.run_with_cleanup(file_loader, test_file, options)
 end
@@ -117,12 +117,12 @@ local function run_parallel_tests(
       total_time = 0,
       total_tests = 0,
       all_fully_tested = true,
-      total_counts = {passed=0, failed=0, expected=0, skipped=0, invalid=0},
+      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
       module_results = {},
    }
    local coverage_results = {}
 
-   local pool = ThreadPool.init(num_threads, options.coverage)
+   local pool = ThreadPool.init(num_threads, options.coverage, options.language_handlers)
    local input = {}
    for i = 1, #test_files do
       input[i] = {test_files[i], options}
@@ -163,6 +163,7 @@ local function run_parallel_tests(
       output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
       output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
       output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
+      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests

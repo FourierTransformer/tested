@@ -39,7 +39,10 @@ build = {
       ["tested.types"] = "build/tested/types.lua",
       ["tested.util"] = "build/tested/util.lua",
 
+      ["tested.languages.teal"] = "build/tested/languages/teal.lua",
+
       ["tested.libs.ansicolors"] = "build/tested/libs/ansicolors.lua",
+      ["tested.libs.dkjson"] = "src/tested/libs/dkjson.lua",
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",
       ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
@@ -57,8 +60,8 @@ build = {
          'src/bin/tested'
       },
       lua = {
-         -- could also maybe swap out with a .d.tl for _unlimited speed_
-         "src/tested.tl",
+         -- swapping to a .d.tl to avoid tested.tl compilation on test run
+         ["types/tested/tested.tl"] = "./types/tested.d.tl",
       }
    }
 }

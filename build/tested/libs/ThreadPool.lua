@@ -1,9 +1,12 @@
+
+
+
+
 local lanes = require("lanes").configure()
 local logging = require("tested.libs.logging")
 
 
 local logger = logging.get_logger("tested.libs.thread_pool")
-
 
 local ThreadPool = {}
 
@@ -35,33 +38,12 @@ local _unpack = unpack or table.unpack
 
 
 
-local function worker(num, run_coverage, linda)
+local function worker(num, run_coverage, linda, language_handlers)
    logger:info("Starting worker %d", num)
 
-
-
-
-
-
-   local tl_ok, tl = pcall(require, "tl")
-   if tl_ok then
-      local function tl_fallback_loader(modname)
-
-         local found, fd = tl.search_module(modname, false)
-         if not found then return end
-
-         local code = fd:read("*all")
-         fd:close()
-         local fn, err = tl.load(code, "@" .. found)
-         if fn then return fn end
-         return nil, "Error compiling '" .. found .. "': " .. tostring(err)
-      end
-      if package.searchers then
-         table.insert(package.searchers, tl_fallback_loader)
-      else
-         table.insert(package.loaders, tl_fallback_loader)
-      end
-   end
+   local file_loader = require("tested.file_loader")
+   file_loader.register_language_handlers(language_handlers)
+   for _, setup in ipairs(file_loader.setups) do setup() end
 
    local luacov
 
@@ -104,7 +86,7 @@ local function worker(num, run_coverage, linda)
    end
 end
 
-function ThreadPool.init(workers, run_coverage)
+function ThreadPool.init(workers, run_coverage, language_handlers)
    local instance = setmetatable({}, { __index = ThreadPool })
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -112,7 +94,7 @@ function ThreadPool.init(workers, run_coverage)
    for i = 1, workers do
 
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, run_coverage, instance.linda)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda, language_handlers)
    end
    return instance
 end

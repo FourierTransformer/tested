@@ -83,6 +83,22 @@ tested.test("assert_throws_exception handles exception in assert", function()
     })
 end)
 
+tested.test("assert_throws_exception checks exception in assert", function()
+    tested.assert_throws_exception({
+        given = "2 + 2",
+        expected = "gets raised, but handled!",
+        actual = function() error("gets raised, but handled!") end
+    })
+end)
+
+tested.test("assert_throws_exception with error(...,0) checks exception in assert", function()
+    tested.assert_throws_exception({
+        given = "2 + 2",
+        expected = "gets raised, but handled!",
+        actual = function() error("gets raised, but handled!", 0) end
+    })
+end)
+
 tested.test("should return unknown since no tested.assert called", {tags={"demo"}}, function() end)
 
 return tested

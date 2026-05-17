@@ -1,13 +1,17 @@
 # Unit Testing
-`tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing scenarios and philosophies.
+`tested` as a framework, tries to let you _just write tests_. If you want multiple asserts in one test, go for it. Dynamically generate tests? No Problem! `tested` aims to be flexible enough to work with a wide variety of testing setups and philosophies.
 
 ## Tests
 
 Below is an example of basic test comparing two tables, `tested.assert` will deep compare the tables, and generate a little summary of the differences as well as print out the expected and actual table.
 
+NOTE: If tables have an `__eq` metamethod, that will be taken account first and utilized during comparison.
+
 === "Test"
 
     ```lua
+    local tested = require("tested")
+    
     tested.test("table compare will error", function()
       local t1 = {
         name = 'Alice',
@@ -31,6 +35,8 @@ Below is an example of basic test comparing two tables, `tested.assert` will dee
         actual = t2
       })
     end)
+
+    return tested -- SUPER important, otherwise the tests wont work
     ```
 
 === "Output"

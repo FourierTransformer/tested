@@ -1,7 +1,7 @@
 local formatter = {}
 
 formatter.format = "simple"
-formatter.allow_filtering = false
+formatter.supports_show = false
 
 function formatter.header(version, filepaths, comments)
     return "CFMT_HEADER " .. version .. " " .. table.concat(filepaths, "|") .. "\n"
