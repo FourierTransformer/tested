@@ -36,5 +36,3 @@ All the lifecycle methods take in a function that will be executed at the corres
 4. It runs each test, tracking the asserts and results
 5. It clears any packages that were loaded during the test from the `package.loaded` table and then runs garbage collection.
 6. It gathers up all the results
-
-### Parallel vs Sequential execution
