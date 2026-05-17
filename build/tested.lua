@@ -144,7 +144,7 @@ function tested.assert_throws_exception(assertion)
       local function wrapped_pcall()
          local ok, err = pcall(function() assertion.actual() end)
          if type(err) == "string" then
-            return { ok, err:match(" (.-)$") }
+            return { ok, err:match("^.+:%d+: (.+)$") or err }
          else
             return { ok, err }
          end
