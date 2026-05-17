@@ -14,7 +14,7 @@ local diff_symbol = {
 }
 
 local diff_message = {
-   missing_key = ": Mising Key",
+   missing_key = ": Missing Key",
    different_value = ": Different Values",
    additional_key = ": Additional Key",
 }

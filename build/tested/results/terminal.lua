@@ -150,7 +150,7 @@ function terminal.summary(output)
    " skipped%{reset}")
 
    if output.total_counts.filtered > 0 then
-      tadd.add(", %{dim}", tostring(output.total_counts.filtered), " filtered%{reset}")
+      tadd.add(", %{dim}", tostring(output.total_counts.filtered), " filtered out%{reset}")
    end
    tadd.add(", ", tostring(output.total_counts.invalid), " invalid\n")
 

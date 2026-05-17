@@ -11,7 +11,7 @@ After installing, the `tested` module will be available to your Lua code with `r
 
 ## Example Test
 
-Test files should be placed in a folder called `tests`, and the `tested` command should be invoked from the same directory that has the `tests` folder in it.
+Below is an example `tested` test and it's output. `tested` requires the `return tested` at the end of a test file otherwises the test will not run (and an error message will be thrown)!
 
 === "Test"
 
@@ -52,7 +52,7 @@ Test files should be placed in a folder called `tests`, and the `tested` command
        end
     end)
 
-    -- ... the other test go here!
+    -- the other tests...
 
     return tested
     ```
@@ -71,13 +71,15 @@ Test files should be placed in a folder called `tests`, and the `tested` command
 ## Quickstart
 
 ### Folder setup
-In the root of your project, you should create a `tests` folder and place all your test files (with the suffix of `_test.lua` or `_test.tl`). From there you can run the `tested` command from a it will find all the tests and run them.
+In the root of your project, you should create a `tests` folder and place all your test files (with the suffix of `_test.lua` or `_test.tl`). From there you can run the `tested` command from a it will find all the tests and run them. Multiple sub-folders can be created in `tests` and will be crawled to find all the `_test.lua` files.
 
 ```
 .
 ├─ tests/
 │  ├─ my_library_test.lua
-│  └─ a_different_test.lua
+│  ├─ a_different_test.lua
+│  └─ sub_folder
+│     └─ another_test.lua
 └─ my_library.lua
 ```
 
@@ -109,9 +111,11 @@ end)
 return tested
 ```
 
-After the `tested` command loads up a test file, it goes through and finds all the various tests defined in the file (in this case there are two) and adds them to a list to be executed. In the example above, that `print` statement will execute before either tests.
+NOTE: it is very important that the test file has `return tested` at the end. `tested` will raise a (helpful!) error message if it's not present.
 
-It does this so tests can be [shuffled](#cli-quick-reference), skipped, or to only run a specific test within a test file!
+After the `tested` command loads up a test file, it goes through and finds all the various tests defined in the file (in this case there are two) and adds them to a list to be executed. It does this so tests can be shuffled, skipped, or easily be filtered! In the example above, that `print` statement will execute before either tests.
+
+To find out more about the different tests and test options (like conditional skipping or expected results), be sure to read the [Unit Testing page](./unit-testing.md)
 
 ### Asserts
 The basic assert is composed of four parts:
@@ -126,10 +130,10 @@ The basic assert is composed of four parts:
 
 The `given` and `should` are optional strings that get displayed in the output to help you identify which specific assert has failed. The idea behind them is to be able to look at the testing output and know _exactly_ what and how something has failed. If your test references multiple files, placing a filename in given can be incredibly useful. Since some tests are more obvious than others (based on a test name), they are not required and can be omitted.
 
-The `expected` and `actual` take in the expected and actual values. There are a couple of other asserts builtin to `tested`, including one for [exceptions](./unit-testing.md#testing-exceptions), [truthy, and falsy](./unit-testing.md#truthyfalsy-tests)!
+The `expected` and `actual` take in the expected and actual values. There are additional asserts (for truthyiness and exceptions) that are explained on the [Unit Testing page](./unit-testing.md#assertions).
 
 
-### CLI Quick Reference
+### Basic CLI Reference
 There are a couple CLI commands that are good to know when you get started:
 
 - `tested -c` or `--coverage` will enable luacov code coverage and generate a `luacov.stats.out` file

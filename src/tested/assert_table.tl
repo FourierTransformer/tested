@@ -14,7 +14,7 @@ local diff_symbol <total>: {TableDiff: string} = {
 }
 
 local diff_message <total>: {TableDiff: string} = {
-   missing_key = ": Mising Key",
+   missing_key = ": Missing Key",
    different_value = ": Different Values",
    additional_key = ": Additional Key"
 }

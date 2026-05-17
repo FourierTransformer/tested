@@ -3,10 +3,13 @@ As of now (1/2026), `tested` currently supports printing out a "terminal", "plai
 
 ## A basic formatter
 
+A formatter is composed of three functions which all return a string that will be printed in the terminal.
+
 ```lua
 
 local custom_formatter = {
 	-- whether or not this formatter allows filtering by type
+  -- set to `true` if actually handling `test_types_to_display` in the `results` function
 	allow_filtering: boolean = true,
 
 	-- name of formatter
@@ -16,7 +19,8 @@ local custom_formatter = {
 -- Runs after performing all the setups and tests are about to run!
 -- version: "tested v0.0.0"
 -- filepaths: list of filepaths passed into tested.
-function custom_formatter.header(version: string, filepaths: {string}): string end
+-- comments: list of comments that can be displayed at the beginning of a test run for things like selected filter/tags
+function custom_formatter.header(version: string, filepaths: {string}, comments: {string}): string end
 
 -- Displays results after a test has been run
 function custom_formatter.results(
@@ -139,7 +143,7 @@ enum TestResult
   "PASS"
   "FAIL"
   "SKIP"
-  "CONDITIONAL_SKIP"
+  "FILTERED"
   "EXCEPTION"
   -- "TIMEOUT" -- NYI
   "UNKNOWN"
@@ -158,12 +162,21 @@ interface AssertionResult
   error_message: string
 end
 
+interface TestedOptions
+  -- retries: integer -- NYI
+  -- retry_timeout: number -- NYI
+  expected: ExpectedTestResult
+  run_when: boolean
+  tags: {string}
+end
+
 interface TestOutput
   name: string
   result: types.TestResult
   message: string
   time: number
   assertion_results: {AssertionResult}
+  options: TestedOptions
 end
 
 interface TestCounts
@@ -171,6 +184,7 @@ interface TestCounts
   failed: integer
   expected: integer
   skipped: integer
+  filtered: integer
   invalid: integer
 end
 

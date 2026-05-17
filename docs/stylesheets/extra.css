@@ -7,6 +7,14 @@
   max-width: 68rem;
 }
 
+.md-sidebar {
+  width: 12.5rem;
+}
+
+.md-typeset {
+  font-size: .7rem;
+}
+
 .md-typeset h2 {
   margin-top: 2.4em;
 }

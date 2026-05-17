@@ -19,7 +19,6 @@ teal_handler.loader = function(filepath)
 end
 
 teal_handler.setup = function()
-   print("Running teal setups?")
    local tl = require("tl")
    tl.loader()
 end
