@@ -45,6 +45,9 @@ end
 
 function file_loader.load_and_register_handler(filepath)
    local handler = file_loader.load_file(filepath)
+   if not (type(handler.extension) == "string" and type(handler.loader) == "function") then
+      error("The language handler '" .. filepath .. "' should return a table with at least 'extension' and 'loader' populated to be a valid language handler.")
+   end
    file_loader.register_handler(handler.extension, handler.loader, handler.setup)
 end
 
@@ -54,6 +57,9 @@ function file_loader.register_language_handlers(handlers)
       local ok, module_language_handler = pcall(require, handler)
 
       if ok then
+         if not (type(module_language_handler.extension) == "string" and type(module_language_handler.loader) == "function") then
+            error("The language handler '" .. handler .. "' should return a table with at least 'extension' and 'loader' populated to be a valid language handler.")
+         end
          file_loader.register_handler(module_language_handler.extension, module_language_handler.loader, module_language_handler.setup)
       else
 
