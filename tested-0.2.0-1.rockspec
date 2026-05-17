@@ -1,11 +1,12 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "dev-1"
+version = "0.2.0-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
-   branch = "main"
+   branch = "main",
+   tag = "0.2.0"
 }
 
 description = {

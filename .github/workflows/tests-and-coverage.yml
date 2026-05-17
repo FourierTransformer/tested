@@ -52,20 +52,25 @@ jobs:
       - name: Run demo tests (sequentially)
         continue-on-error: true
         run: |
-          tested -c -n 0 -t "demo"
+          tested -n 0 -t "demo"
 
       - name: Run demo tests (parallel)
         continue-on-error: true
         run: |
-          tested -c -t "demo"
+          tested -t "demo"
 
       - name: Run tests (sequentially)
         run: |
-          tested -c -n 0 -t "not demo"
+          tested -n 0 -t "not demo"
 
       - name: Run tests (parallel)
         run: |
-          tested -c -t "not demo"
+          tested -t "not demo"
+
+      - name: Collect coverage
+        continue-on-error: true
+        run: |
+          lua ./scripts/tested-ci-coverage.lua -n 0
 
       - name: Save Cache
         uses: actions/cache/save@v5
@@ -114,23 +119,30 @@ jobs:
         continue-on-error: true
         run: |
           .\lua_install\bin\activate
-          tested -c -n 0 -t "demo"
+          tested -n 0 -t "demo"
 
       - name: Run demo tests (parallel)
         continue-on-error: true
         run: |
           .\lua_install\bin\activate
-          tested -c -t "demo"
+          tested -t "demo"
 
       - name: Run tests (sequentially)
         run: |
           .\lua_install\bin\activate
-          tested -c -n 0 -t "not demo"
+          tested -n 0 -t "not demo"
 
       - name: Run tests (parallel)
         run: |
           .\lua_install\bin\activate
-          tested -c -t "not demo"
+          tested -t "not demo"
+
+      - name: Collect coverage
+        continue-on-error: true
+        run: |
+          .\lua_install\bin\activate
+          lua ./scripts/tested-ci-coverage.lua -n 0
+        shell: cmd
 
       - name: Save Cache
         uses: actions/cache/save@v5
