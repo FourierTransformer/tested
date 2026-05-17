@@ -33,7 +33,7 @@ local record cli
       display_format: DisplayFormat
       output_file: {string}
       custom_formatter: string
-      format_handler: {string}
+      language_handler: {string}
       paths: {string}
       debug: logging.level
       threads: integer
@@ -94,8 +94,8 @@ function cli.parse_args(version: string): cli.CLIOptions
       :description("Set the number of threads to run the tests with (default: 4). Set to 0 to disable. Test files are split amongst the threads.")
       :default(4)
       :convert(tonumber)
-   parser:option("-x --format-handler")
-      :description("File that loads custom formats that are Lua-compatible")
+   parser:option("-x --language-handler")
+      :description("File that loads custom language that is Lua-compatible")
       :count("*")
    parser:option("-d --debug")
       :description("Set the log level - mostly for debugging issues with tested (default: 'WARNING')")
@@ -178,10 +178,10 @@ function cli.validate_args(args: cli.CLIOptions)
       end
    end
 
-   if args.format_handler then
-      for _, format_handler in ipairs(args.format_handler) do
-         if not (util.is_valid_filename(format_handler) or util.is_valid_lua_module_name(format_handler)) then
-            error("Invalid --format-handler '" .. format_handler .. "'. It does not appear to be a valid filepath nor Lua module name")
+   if args.language_handler then
+      for _, language_handler in ipairs(args.language_handler) do
+         if not (util.is_valid_filename(language_handler) or util.is_valid_lua_module_name(language_handler)) then
+            error("Invalid --format-handler '" .. language_handler .. "'. It does not appear to be a valid filepath nor Lua module name")
          end
       end
    end

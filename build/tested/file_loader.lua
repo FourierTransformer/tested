@@ -1,4 +1,7 @@
 
+local logging = require("tested.libs.logging")
+
+local logger = logging.get_logger("tested.file_loader")
 
 local function load_lua_file(filepath)
    return assert(loadfile(filepath))
@@ -45,26 +48,18 @@ function file_loader.load_and_register_handler(filepath)
    file_loader.register_handler(handler.extension, handler.loader, handler.setup)
 end
 
-local tl_ok, tl = pcall(require, "tl")
-if tl_ok then
-   local function load_teal_file(filepath)
-      local file, err = io.open(filepath, "rb")
-      if not file then error("Cannot load filepath: '" .. filepath .. "' with error: " .. err) end
-      local file_contents = file:read("*all")
-      file:close()
+function file_loader.register_language_handlers(handlers)
+   for _, handler in ipairs(handlers) do
+      logger:info("Registering language handler: %s", handler)
+      local ok, module_language_handler = pcall(require, handler)
 
-      local load_function, errors = tl.load(file_contents, "@" .. filepath)
-      if not load_function then error(errors) end
-      return load_function
+      if ok then
+         file_loader.register_handler(module_language_handler.extension, module_language_handler.loader, module_language_handler.setup)
+      else
+
+         file_loader.load_and_register_handler(handler)
+      end
    end
-   file_loader.loader[".tl"] = load_teal_file
-
-   table.insert(file_loader.setups, function()
-
-
-      local tl2 = require("tl")
-      tl2.loader()
-   end)
 end
 
 return file_loader

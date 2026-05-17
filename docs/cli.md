@@ -60,8 +60,8 @@ Multiple files can be specified and all will be written to at the end of the tes
 tested -o ./terminal_output.txt -o ./full_output.json
 ```
 
-## `tested -x/--format-handler`
-`tested` also supports loading [custom format handlers](./additional-formats.md). These are used to extend the functionality of tested and tap into other languages that can embed into Lua. Similar to custom output formatters, the format handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support a custom format. Multiple format handlers can be loaded, and afterward can be used for custom formatters or the tests themselves.
+## `tested -x/--language-handler`
+`tested` also supports loading [custom languages](./language-handler.md) that can run using Lua. Similar to custom output formatters, the language handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support their custom language. Multiple language handlers can be loaded, and afterward can be used for custom formatters or the tests themselves. The language handler for [Teal](https://teal-language.org/) is [built-in](./teal-support.md).
 
 ## `tested -h` - Reference
 

@@ -5,6 +5,8 @@ local record types
    -- file loader
    interface FileLoader
       load_file: function(filepath: string): any
+      loader: {string: function(filepath: string): function()}
+      setups: {function}
    end
 
    -- test running types
@@ -13,6 +15,7 @@ local record types
       coverage: boolean
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
+      language_handlers: {string}
    end
 
    enum TestResult
@@ -50,6 +53,7 @@ local record types
       message: string
       time: number
       assertion_results: {AssertionResult}
+      options: TestedOptions
    end
 
    interface TestCounts
@@ -90,7 +94,7 @@ local record types
    end
 
    -- needed for registering new file types
-   interface FileLoaderHandler
+   interface LanguageHandler
       extension: string
       loader: function(filepath: string): function(): any
       setup: function  -- optional: registers language support for require()

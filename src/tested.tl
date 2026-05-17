@@ -294,7 +294,7 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
 
    for i, test in ipairs(self.tests) do
 
-      test_results.tests[i] = {assertion_results = {}, name = test.name}
+      test_results.tests[i] = {assertion_results = {}, name = test.name, options = test.options}
 
       local skip_result, skip_message = should_skip_test(test, self.run_only_tests, options)
       if skip_result then

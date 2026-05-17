@@ -13,7 +13,7 @@ local record ThreadPool
       code_coverage: table
    end
 
-   init: function(workers: integer, run_coverage: boolean, setups: {function}): ThreadPool
+   init: function(workers: integer, run_coverage: boolean, language_handlers: {string}): ThreadPool
    map: function<T>(self: ThreadPool, func: function(...: any): T, args_list: {{any}}, display_func: function(T), timeout?: number): {Result<T>}
    shutdown: function(self: ThreadPool, timeout?: number)
    workers: {lanes.Lane}
@@ -35,10 +35,12 @@ local record Task
 end
 
 -- waits for a task, then executes it
-local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda, setups: {function})
+local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda, language_handlers: {string})
    logger:info("Starting worker %d", num)
 
-   for _, setup in ipairs(setups) do setup() end
+   local file_loader = require("tested.file_loader")
+   file_loader.register_language_handlers(language_handlers)
+   for _, setup in ipairs(file_loader.setups) do setup() end
 
    local luacov: luacov_type
 
@@ -81,7 +83,7 @@ local function worker(num: integer, run_coverage: boolean, linda: lanes.Linda, s
    end
 end
 
-function ThreadPool.init(workers: integer, run_coverage: boolean, setups: {function}): ThreadPool
+function ThreadPool.init(workers: integer, run_coverage: boolean, language_handlers: {string}): ThreadPool
    local instance = setmetatable({}, {__index=ThreadPool}) as ThreadPool
    instance.linda = lanes.linda()
    instance.workers = {}
@@ -89,7 +91,7 @@ function ThreadPool.init(workers: integer, run_coverage: boolean, setups: {funct
    for i = 1, workers do
       -- Create worker lanes with separate state
       local worker_lane = lanes.gen("*", worker)
-      instance.workers[i] = worker_lane(i, run_coverage, instance.linda, setups)
+      instance.workers[i] = worker_lane(i, run_coverage, instance.linda, language_handlers)
    end
    return instance
 end

@@ -46,22 +46,6 @@ local function load_result_formatter(args: cli.CLIOptions): types.ResultFormatte
    end
 end
 
-local function register_format_handler(handlers: {string})
-   for _, handler in ipairs(handlers) do
-      logger:info("Registering format handler: %s", handler)
-      local ok, module_format_handler = pcall(require, handler) as (boolean, types.FileLoaderHandler)
-      if ok then
-          file_loader.register_handler(module_format_handler.extension, module_format_handler.loader, module_format_handler.setup)
-      else
-         local info, err = lfs.attributes(handler)
-         if err then error("Unable to load format handler, the file/module '" .. handler .."' was not able to be loaded.") end
-         if info.mode ~= "file" then error("The custom format loader should point to a file, but currently appears to be a: " .. info.mode, 0) end
-
-         file_loader.load_and_register_handler(handler)
-      end
-   end
-end
-
 local function find_tests(files: {string}, test_path: string): {string}
    logger:info("Looking for test files in %s", test_path)
    for file in lfs.dir(test_path) do
@@ -104,7 +88,8 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
       random = args.random,
       coverage = args.coverage,
       filter = args.filter,
-      tags_filter = args.tags_filter
+      tags_filter = args.tags_filter,
+      language_handlers = args.language_handler
    }
 
    local display_results = function(test_output: types.TestedOutput)
@@ -155,9 +140,10 @@ local function main()
    if args.specified_show and formatter.allow_filtering == false then
       logger:warning("It appears the formatter you selected does not allow filtering. Please remove the '-s, --show' parameters from the CLI invocation")
    end
-   if args.format_handler then
-      register_format_handler(args.format_handler)
-   end
+
+   -- setup any language handlers
+   if pcall(require, "tl") then table.insert(args.language_handler, "tested.languages.teal") end
+   file_loader.register_language_handlers(args.language_handler)
 
    -- finding all the files
    local test_files = get_all_test_files(args)

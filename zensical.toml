@@ -14,7 +14,7 @@ nav = [
   "teal-support.md",
   "cli.md",
   "custom-formatter.md",
-  "additional-formats.md",
+  "language-handlers.md",
   "roadmap.md",
   "pure-lua.md",
   "api-reference.md",

@@ -1,4 +1,7 @@
 local type types = require("tested.types")
+local logging = require("tested.libs.logging")
+
+local logger = logging.get_logger("tested.file_loader")
 
 local function load_lua_file(filepath: string): function(): any
    return assert(loadfile(filepath))
@@ -41,30 +44,22 @@ function file_loader.register_handler(extension: string, loader: function(filepa
 end
 
 function file_loader.load_and_register_handler(filepath: string)
-   local handler = file_loader.load_file(filepath) as types.FileLoaderHandler
+   local handler = file_loader.load_file(filepath) as types.LanguageHandler
    file_loader.register_handler(handler.extension, handler.loader, handler.setup)
 end
 
-local tl_ok, tl = pcall(require, "tl")
-if tl_ok then
-   local function load_teal_file(filepath: string): function(): any
-      local file, err = io.open(filepath, "rb")
-      if not file then error("Cannot load filepath: '" .. filepath .. "' with error: " .. err) end
-      local file_contents = file:read("*all")
-      file:close()
-      -- the '@' is a quick hack to get luacov to be able to analyze the lines of teal files!
-      local load_function, errors = tl.load(file_contents, "@" .. filepath)
-      if not load_function then error(errors) end
-      return load_function
+function file_loader.register_language_handlers(handlers: {string})
+   for _, handler in ipairs(handlers) do
+      logger:info("Registering language handler: %s", handler)
+      local ok, module_language_handler = pcall(require, handler) as (boolean, types.LanguageHandler)
+      -- try as a module
+      if ok then
+          file_loader.register_handler(module_language_handler.extension, module_language_handler.loader, module_language_handler.setup)
+      else
+         -- fallback as a file
+         file_loader.load_and_register_handler(handler)
+      end
    end
-   file_loader.loader[".tl"] = load_teal_file
-
-   table.insert(file_loader.setups, function()
-      -- we know it exists, so we can safely load it here without wrapping in a pcall
-      -- we are re-loading it here, so tl can be properly intialized and placed in Lanes
-      local tl2 = require("tl")
-      tl2.loader()
-   end)
 end
 
 return file_loader

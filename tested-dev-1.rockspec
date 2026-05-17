@@ -39,6 +39,8 @@ build = {
       ["tested.types"] = "build/tested/types.lua",
       ["tested.util"] = "build/tested/util.lua",
 
+      ["tested.languages.teal"] = "build/tested/languages/teal.lua",
+
       ["tested.libs.ansicolors"] = "build/tested/libs/ansicolors.lua",
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",

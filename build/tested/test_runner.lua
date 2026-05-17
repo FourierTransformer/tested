@@ -122,8 +122,7 @@ local function run_parallel_tests(
    }
    local coverage_results = {}
 
-   local file_loader = require("tested.file_loader")
-   local pool = ThreadPool.init(num_threads, options.coverage, file_loader.setups)
+   local pool = ThreadPool.init(num_threads, options.coverage, options.language_handlers)
    local input = {}
    for i = 1, #test_files do
       input[i] = { test_files[i], options }
