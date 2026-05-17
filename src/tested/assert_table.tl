@@ -7,13 +7,13 @@ local enum TableDiff
    "additional_key"
 end
 
-local diff_symbol <total>: {TableDiff: string} = {
+local DIFF_SYMBOL <total>: {TableDiff: string} = {
    missing_key = "- ",
    different_value = "~ ",
    additional_key = "+ "
 }
 
-local diff_message <total>: {TableDiff: string} = {
+local DIFF_MESSAGE <total>: {TableDiff: string} = {
    missing_key = ": Missing Key",
    different_value = ": Different Values",
    additional_key = ": Additional Key"
@@ -21,12 +21,12 @@ local diff_message <total>: {TableDiff: string} = {
 
 local function add_index_error(prefix: string, index: integer, error_type: TableDiff, expected?: any, actual?: any)
    tadd.add(
-      diff_symbol[error_type],
+      DIFF_SYMBOL[error_type],
       prefix,
       "[",
       tostring(index),
       "]",
-      diff_message[error_type]
+      DIFF_MESSAGE[error_type]
    )
    if expected and actual then
       tadd.add(
@@ -42,11 +42,11 @@ end
 
 local function add_key_error(prefix: string, key: any, error_type: TableDiff, expected?: any, actual?: any)
    tadd.add(
-      diff_symbol[error_type],
+      DIFF_SYMBOL[error_type],
       prefix,
       ".",
       tostring(key),
-      diff_message[error_type]
+      DIFF_MESSAGE[error_type]
    )
    if expected and actual then
       tadd.add(

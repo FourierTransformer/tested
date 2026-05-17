@@ -1,10 +1,13 @@
+-- very basic threadpool. I really wish I could've made this more generic, but time and limitations are real.
+-- yes calling it "ThreadPool" is intentional because it is class based (even though nothing else is...)
+-- maybe I'll change it up one day.
+
 local lanes = require("lanes").configure()
 local logging = require("tested.libs.logging")
 local type luacov_type = require("luacov.runner")
 
 local logger = logging.get_logger("tested.libs.thread_pool")
 
--- very basic threadpool. I really wish I could've made this more generic, but time and limitations are real.
 local record ThreadPool
    interface Result<T>
       error: string

@@ -2,7 +2,7 @@
 local colors = require("tested.libs.ansicolors")
 local tadd = require("tested.libs.tadd")
 
-local symbol_map = {
+local SYMBOL_MAP = {
    PASS = " ✓",
    FAIL = " ✗",
    SKIP = " ⊘",
@@ -16,7 +16,7 @@ local symbol_map = {
    UNEXPECTED = " ‽",
 }
 
-local color_map = {
+local COLOR_MAP = {
    PASS = " %{green}",
    FAIL = " %{red}",
    SKIP = " %{yellow}",
@@ -67,7 +67,7 @@ local function to_ms(time, add_color)
 end
 
 local function format_assertion_result(assertion_result)
-   tadd.add("  ", symbol_map[assertion_result.result], " ", assertion_result.filename, ":", tostring(assertion_result.line_number))
+   tadd.add("  ", SYMBOL_MAP[assertion_result.result], " ", assertion_result.filename, ":", tostring(assertion_result.line_number))
 
    if assertion_result.given then
       tadd.add(" - Given: ", assertion_result.given)
@@ -88,7 +88,7 @@ function terminal.results(tested_result, test_types_to_display)
 
 
       if test_types_to_display[test_result.result] then
-         tadd.add(color_map[test_result.result], symbol_map[test_result.result], " ", test_result.name, to_ms(test_result.time, false), "%{reset}\n")
+         tadd.add(COLOR_MAP[test_result.result], SYMBOL_MAP[test_result.result], " ", test_result.name, to_ms(test_result.time, false), "%{reset}\n")
          local extra_newline = false
          if test_result.result == "FAIL" or test_result.result == "PASS" or test_result.result == "EXPECTED_FAIL" then
             for _, assertion_result in ipairs(test_result.assertion_results) do
