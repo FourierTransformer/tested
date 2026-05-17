@@ -36,7 +36,7 @@ local terminal = {}
 
 
 terminal.format = "terminal"
-terminal.allow_filtering = true
+terminal.supports_show = true
 
 
 terminal.colors = colors

@@ -3,7 +3,7 @@ local tadd = require("tested.libs.tadd")
 
 local record tap is types.ResultFormatter where self.format == "tap" end
 
-tap.allow_filtering = false
+tap.supports_show = false
 tap.format = "tap"
 
 function tap.header(_version_info: string, _filepaths: {string}, comments: {string}): string

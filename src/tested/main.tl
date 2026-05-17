@@ -137,8 +137,8 @@ local function main()
    cli.set_defaults(args)
    cli.validate_args(args)
    local formatter = load_result_formatter(args)
-   if args.specified_show and formatter.allow_filtering == false then
-      logger:warning("It appears the formatter you selected does not allow filtering. Please remove the '-s, --show' parameters from the CLI invocation")
+   if args.specified_show and formatter.supports_show == false then
+      logger:warning("It appears the formatter you selected does not support the '--show' option. Please remove the '-s, --show' parameters from the CLI invocation")
    end
 
    -- setup any language handlers

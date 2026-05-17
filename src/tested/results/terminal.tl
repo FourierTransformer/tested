@@ -36,7 +36,7 @@ local record terminal is types.ResultFormatter where self.format == "terminal"
 end
 
 terminal.format = "terminal"
-terminal.allow_filtering = true
+terminal.supports_show = true
 
 -- used to disable the colors in the "plain" formatter
 terminal.colors = colors

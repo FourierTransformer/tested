@@ -3,7 +3,7 @@ local tadd = require("tested.libs.tadd")
 
 local tap = {}
 
-tap.allow_filtering = false
+tap.supports_show = false
 tap.format = "tap"
 
 function tap.header(_version_info, _filepaths, comments)
