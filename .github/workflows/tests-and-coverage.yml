@@ -52,7 +52,7 @@ jobs:
       - name: Run demo tests (sequentially)
         continue-on-error: true
         run: |
-          tested -n 0 -t "demo"
+          luarocks test
 
       - name: Run demo tests (parallel)
         continue-on-error: true
@@ -119,7 +119,7 @@ jobs:
         continue-on-error: true
         run: |
           .\lua_install\bin\activate
-          tested -n 0 -t "demo"
+          luarocks test
 
       - name: Run demo tests (parallel)
         continue-on-error: true

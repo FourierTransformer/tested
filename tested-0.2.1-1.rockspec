@@ -28,7 +28,7 @@ test_dependencies = {
 
 test = {
    type = "tested",
-   flags = { "-c", "-n", "0", "-f", "plain" }
+   flags = { "-n", "0", "-t", "demo" }
 }
 
 build = {
