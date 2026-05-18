@@ -19,10 +19,16 @@ dependencies = {
    "luafilesystem",
    "argparse",
    "luacov",
-   -- just use whatever version of tl they have installed
-   -- they'll likely install tl first and then tested, so seems like a safe bet
-   "tl", 
    "lanes==3.17.2"
+}
+
+test_dependencies = {
+   "tl"
+}
+
+test = {
+   type = "tested",
+   flags = { "-c", "-n", "0", "-f", "plain" }
 }
 
 build = {
