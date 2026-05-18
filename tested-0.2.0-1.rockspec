@@ -1,11 +1,12 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "dev-1"
+version = "0.2.0-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
-   branch = "main"
+   branch = "main",
+   tag = "0.2.0"
 }
 
 description = {
@@ -54,6 +55,9 @@ build = {
       ["tested.results.plain"] = "build/tested/results/plain.lua",
       ["tested.results.tap"] = "build/tested/results/tap.lua",
       ["tested.results.terminal"] = "build/tested/results/terminal.lua",
+
+      -- I might play with this a bit and see how it goes
+      ["luarocks.test.tested"] = "src/luarocks/test/tested.lua",
    },
    install = {
       bin = {

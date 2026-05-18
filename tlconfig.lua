@@ -3,5 +3,5 @@ return {
     include_dir = {"src"},
     build_dir = "build",
     gen_compat = "off",
-    exclude = { "tested/libs/dkjson.lua" }
+    exclude = { "tested/libs/dkjson.lua", "luarocks/test/tested.lua" }
 }
