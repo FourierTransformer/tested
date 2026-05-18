@@ -51,10 +51,12 @@ You can see more tests in this repo's [tests](https://github.com/FourierTransfor
 As of versions > 0.1.0, AI has been used to help implement _some_ features, research Lua/Teal internals, debug issues, and make more readable output. Before this version, the code was hand-written, but some research was done with the help of AI. The docs will remain hand-written for now. I am personally still a little skeptical of AI and its place in open source, but at the moment am willing to evaluate it.
 
 ## Licenses
-Parts of the following are included in the source code present in this repo:
+Apart from dependencies specified in the rockspec, parts of the following are included in the source code present in this repo:
 - Bundles a slightly modified [inspect.lua](https://github.com/kikito/inspect.lua) for table diffing and viewing - MIT
 - Also bundles a slightly modified [ansicolors.lua](https://github.com/kikito/ansicolors.lua) - MIT
 - A function from [Luacov](https://github.com/lunarmodules/luacov) code to help merge stats files in process - MIT
 - Bundles [dkjson.lua](https://dkolf.de/dkjson-lua/)'s encoder for writing file output to json - MIT
+- Uses a modified LuaRocks test loader - MIT
+
 
 Major thanks to hishamhm, kikito, and benoit-germain for their work in the Lua space. Without them, `tested` wouldn't be possible.

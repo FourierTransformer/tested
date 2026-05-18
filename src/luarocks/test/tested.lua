@@ -1,4 +1,6 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local table = _tl_compat and _tl_compat.table or table; local _tl_table_unpack = unpack or table.unpack
+-- this is modified from the busted test runner in the LuaRocks source - MIT
+
+local _table_unpack = unpack or table.unpack
 
 local tested_backend = {}
 
@@ -8,21 +10,9 @@ local path = require("luarocks.path")
 local dir = require("luarocks.dir")
 local queries = require("luarocks.queries")
 
--- Auto-detection heuristic: tests/ directory containing *_test.lua or *_test.tl files.
--- Note: LuaRocks only checks hardcoded backends (busted, command) during auto-detection,
--- so this only fires if luarocks.test is patched to include "tested" in its type list.
--- Explicit `test = { type = "tested" }` in the rockspec is the supported path.
+-- I don't think the auto-detect will work unless LuaRocks is patched, so just going to omit for now.
+-- People will just have to manually select it, which I think is fine
 function tested_backend.detect_type()
-   if fs.exists("tests") then
-      local ok, lfs = pcall(require, "lfs")
-      if ok then
-         for filename in lfs.dir("tests") do
-            if filename:match("_test%.lua$") or filename:match("_test%.tl$") then
-               return true
-            end
-         end
-      end
-   end
    return false
 end
 
@@ -47,7 +37,7 @@ function tested_backend.run_tests(test, args)
    end
 
    local err
-   ok, err = fs.execute(tested_exe, _tl_table_unpack(args))
+   ok, err = fs.execute(tested_exe, _table_unpack(args))
    if ok then
       return true
    else

@@ -55,6 +55,8 @@ build = {
       ["tested.results.plain"] = "build/tested/results/plain.lua",
       ["tested.results.tap"] = "build/tested/results/tap.lua",
       ["tested.results.terminal"] = "build/tested/results/terminal.lua",
+
+      -- I might play with this a bit and see how it goes
       ["luarocks.test.tested"] = "src/luarocks/test/tested.lua",
    },
    install = {
