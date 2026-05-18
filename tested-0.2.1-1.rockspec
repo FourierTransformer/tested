@@ -1,12 +1,12 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "0.2.0-1"
+version = "0.2.1-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
    branch = "main",
-   tag = "0.2.0"
+   tag = "0.2.1"
 }
 
 description = {
@@ -19,10 +19,16 @@ dependencies = {
    "luafilesystem",
    "argparse",
    "luacov",
-   -- just use whatever version of tl they have installed
-   -- they'll likely install tl first and then tested, so seems like a safe bet
-   "tl", 
    "lanes==3.17.2"
+}
+
+test_dependencies = {
+   "tl"
+}
+
+test = {
+   type = "tested",
+   flags = { "-n", "0", "-t", "demo" }
 }
 
 build = {

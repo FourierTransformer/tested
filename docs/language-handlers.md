@@ -3,11 +3,13 @@
 
 
 ## Setting up a language handler
-Currently a new language hanlder involves creating a Lua table with the following attributes and returning it:
+Currently a new language handler involves creating a Lua table with the following attributes and returning it:
 
 - `extension: string` - a string representing the file extension
 - `loader: function(filepath: string): function(): any` - a function that can load the file. It should raise an error if something goes wrong, and return a loader function that when called, returns the module in Lua. This is for loading tests written in a different language.
 - `setup?: function()` - this is an optional method that gets run before tests get executed to support any language features that are needed for running a test itself.
+
+With some of the ideas in related to [better Teal file handling](./teal-support.md#good-to-know), some of the way language handlers work _could_ change.
 
 ### The loader
 The loader sets up loading files given the specific extension. Since it is designed for use with `tested` it can load [test files](./unit-testing.md#tests) or [custom formatters](./custom-formatter.md). Both are zero-argument loading from files that return tables. So any files written in another language would have to be setup that way as well.

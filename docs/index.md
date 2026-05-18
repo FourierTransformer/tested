@@ -147,4 +147,4 @@ There are a couple CLI commands that are good to know when you get started:
 To see the entire list of CLI options, check out the [CLI Reference](./cli.md)
 
 ### Teal Support
-`tested` has builtin Teal support, be sure to check out the [Teal Support](./teal-support.md) page for some of the considerations around its usage with Teal.
+`tested` has builtin Teal support, be sure to have Teal [installed](https://teal-language.org/#download) and check out the [Teal Support](./teal-support.md) page for some of the considerations around its usage with Teal.
