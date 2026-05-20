@@ -337,6 +337,25 @@ local function add_up_test_results(test_output, test_counts)
    end
 end
 
+local function run_test(self, test, test_output)
+   if tested.before_each_fn then tested.before_each_fn() end
+
+   local assertions, original_assert = wrap_assert(self, test_output)
+   local original_os_exit = swap_os_exit(test.fn)
+
+   local ok, err = xpcall(test.fn, xpcall_handler)
+   set_result(ok, err, assertions.total, assertions.failed, test_output)
+
+   restore_os_exit(test.fn, original_os_exit)
+   self.assert = original_assert
+
+
+   adjust_for_expected(test.options.expected, test_output)
+
+   if tested.after_each_fn then tested.after_each_fn() end
+end
+
+
 
 function tested:run(filename, options)
    if options and options.random then
@@ -383,24 +402,8 @@ function tested:run(filename, options)
          test_result.message = skip_message
 
       else
-         if tested.before_each_fn then
-            tested.before_each_fn()
-         end
+         run_test(self, test, test_result)
 
-         local assertions, original_assert = wrap_assert(self, test_result)
-
-         local original_os_exit = swap_os_exit(test.fn)
-
-         local ok, err = xpcall(test.fn, xpcall_handler)
-         set_result(ok, err, assertions.total, assertions.failed, test_result)
-
-         restore_os_exit(test.fn, original_os_exit)
-         self.assert = original_assert
-
-
-         adjust_for_expected(test.options.expected, test_result)
-
-         if tested.after_each_fn then tested.after_each_fn() end
       end
 
       test_result.time = options.clock_s() - start
