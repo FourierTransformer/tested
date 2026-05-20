@@ -173,6 +173,26 @@ tested.test("unexpected: expected fail but test passes", {expected="FAIL"}, func
 end)
 ```
 
+### Test Retries
+`tested` offers support for test retries with delays. While this is hopefully not needed, if your tests have reliance on flaky network resources or async operations with race conditions in the tests (which... ouch), but `tested` does offer a simple retry mechanism with a `retry_delay` (in seconds). The retry mechanism will fire if the test result is not a `PASS`, `EXPECTED_FAIL`, `EXPECTED_EXCEPTION`, or `EXPECTED_UNKNOWN`. If the `before_each` and/or `after_each` lifecycle methods are defined, they will execute on each retry attempt.
+
+```lua
+local exception_attempt_count = 0
+tested.test("retries: exception retried and then passes", {retries = 1, retry_delay = 1.5}, function()
+   exception_attempt_count = exception_attempt_count + 1
+   if exception_attempt_count == 1 then
+      error("first attempt raises an exception")
+   end
+   tested.assert({
+      given = "second attempt after exception",
+      should = "pass after initial exception",
+      expected = true,
+      actual = true
+   })
+end)
+```
+
+NOTE: If running tests sequentially (`-n 0`), the sleep function will block and consume CPU resources.
 
 
 ## Assertions

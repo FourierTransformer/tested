@@ -3,14 +3,14 @@ local assert_table = require("tested.assert_table")
 
 local tested: types.Tested = { tests = {}, run_only_tests = false }
 
-local options_set: {string: boolean} = {tags = true, expected = true, run_when = true}
+local options_set: {string: boolean} = {tags = true, expected = true, run_when = true, retries = true, retry_delay = true}
 
 local function validate_options(test_name: string, options: types.TestedOptions, test_src: string)
    local error_prefix = test_src .. " in \"" .. test_name .. "\": "
 
    for k, _ in pairs(options as {string: any}) do
       if not options_set[k] then
-         error(error_prefix .. "options includes unknown value '" .. k .. "'. Options must be one of: " .. "'tags', 'expected', or 'run_when'")
+         error(error_prefix .. "options includes unknown value '" .. k .. "'. Options must be one of: " .. "'tags', 'expected', 'run_when', 'retries', or 'retry_delay'")
       end
    end
 
@@ -40,6 +40,18 @@ local function validate_options(test_name: string, options: types.TestedOptions,
          if tag == "and" or tag == "or" or tag == "not" then
             error(error_prefix .. "options.tags[" .. i .. "] appears to be a reserved keyword: 'and', 'or', or 'not'. Please change to a different tag name", 0)
          end
+      end
+   end
+
+   if options.retries ~= nil then
+      if type(options.retries) ~= "number" or (options.retries as number) ~= math.floor(options.retries as number) or (options.retries as number) < 0 then
+         error(error_prefix .. "options.retries takes in a non-negative integer, but received '" .. tostring(options.retries) .. "'", 0)
+      end
+   end
+
+   if options.retry_delay ~= nil then
+      if type(options.retry_delay) ~= "number" or (options.retry_delay as number) < 0 then
+         error(error_prefix .. "options.retry_delay takes in a non-negative number, but received '" .. tostring(options.retry_delay) .. "'", 0)
       end
    end
 end
@@ -206,6 +218,58 @@ local function captured_os_exit(code: integer | boolean | nil)
    error(prefix .. " intercepted — something tried to exit out of the process", 0)
 end
 
+local record AssertCounters
+   total: integer
+   failed: integer
+end
+
+local function wrap_assert(self: types.Tested, test_output: types.TestOutput): AssertCounters, function<T>(types.Assertion<T>): boolean, string
+   local original_assert = self.assert
+   local counters: AssertCounters = {total = 0, failed = 0}
+
+   self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
+      local ok, err = original_assert(assertion)
+      counters.total = counters.total + 1
+
+      local assertion_result: types.AssertionResult = {
+         filename = tested.filename,
+         line_number = debug.getinfo(2, "l").currentline,
+         given = assertion.given,
+         should = assertion.should,
+      }
+      if ok == false then
+         counters.failed = counters.failed + 1
+         assertion_result.result = "FAIL"
+         assertion_result.error_message = err
+      else
+         assertion_result.result = "PASS"
+      end
+      table.insert(test_output.assertion_results, assertion_result)
+      return ok, err
+   end
+
+   return counters, original_assert
+end
+
+
+local function swap_os_exit(test_fn: function): function(code: integer | boolean | nil)
+   local original_os_exit: function(code: integer | boolean | nil)
+   if _VERSION == "Lua 5.1" then
+      global getfenv: function(any): {string:{string:function}}
+      original_os_exit = getfenv(test_fn).os.exit
+      getfenv(test_fn).os.exit = captured_os_exit
+   else
+      original_os_exit = os.exit
+      os.exit = captured_os_exit
+   end
+   return original_os_exit
+end
+
+local function xpcall_handler(e: any): string
+   local msg = type(e) == "string" and (e as string) or tostring(e)
+   return msg .. debug.traceback("", 2)
+end
+
 local function set_result(ok: boolean, err: string, total_assertions: integer, assert_failed_count: integer, test_output: types.TestOutput)
    if ok == false then
       test_output.result = "EXCEPTION"
@@ -224,6 +288,15 @@ local function set_result(ok: boolean, err: string, total_assertions: integer, a
       test_output.message = assert_failed_count .. " assertions have failed"
    end
 end
+
+local function restore_os_exit(test_fn: function, original: function(code: integer | boolean | nil))
+   if _VERSION == "Lua 5.1" then
+      getfenv(test_fn).os.exit = original
+   else
+      os.exit = original
+   end
+end
+
 
 local function adjust_for_expected(expected: types.ExpectedTestResult, test_output: types.TestOutput)
    if expected ~= nil then
@@ -264,6 +337,25 @@ local function add_up_test_results(test_output: types.TestOutput, test_counts: t
    end
 end
 
+local function run_test(self: types.Tested, test: types.Test, test_output: types.TestOutput)
+   if tested.before_each_fn then tested.before_each_fn() end
+
+   local assertions, original_assert = wrap_assert(self, test_output)
+   local original_os_exit = swap_os_exit(test.fn)
+
+   local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
+   set_result(ok, err, assertions.total, assertions.failed, test_output)
+
+   restore_os_exit(test.fn, original_os_exit)
+   self.assert = original_assert
+
+   -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
+   adjust_for_expected(test.options.expected, test_output)
+
+   if tested.after_each_fn then tested.after_each_fn() end
+end
+
+
 -- moved in here for hopes of one day being able to run a test from here directly
 function tested:run(filename: string, options: types.TestRunnerOptions): types.TestedOutput
    if options and options.random then
@@ -271,9 +363,7 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
       fisher_yates_shuffle(self.tests)
    end
 
-   if self.run_only_tests then
-      print("Only running tests with 'tested.only'")
-   end
+   if self.run_only_tests then print("Only running tests with 'tested.only'") end
 
    local test_results: types.TestedOutput = {
       counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
@@ -283,107 +373,65 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
       total_time = 0
    }
 
-   if tested.before_fn then
-      tested.before_fn()
-   end
+   if tested.before_fn then tested.before_fn() end
 
-   local function xpcall_handler(e: any): string
-      local msg = type(e) == "string" and (e as string) or tostring(e)
-      return msg .. debug.traceback("", 2)
-   end
+   -- setup
+   local retry_attempts: {types.TestOutput} = {}
 
    for i, test in ipairs(self.tests) do
 
-      test_results.tests[i] = {assertion_results = {}, name = test.name, options = test.options}
+      -- crate a test_result, could become a "retry_attempt" if we end up retrying
+      local test_result: types.TestOutput = {assertion_results = {}, name = test.name, options = test.options}
 
       local skip_result, skip_message = should_skip_test(test, self.run_only_tests, options)
+      local start = options.clock_s()
+
       if skip_result then
-         test_results.tests[i].result = skip_result
-         test_results.tests[i].message = skip_message
-         test_results.tests[i].time = 0
+         test_result.result = skip_result
+         test_result.message = skip_message
 
       else
-         if tested.before_each_fn then
-            tested.before_each_fn()
-         end
+         run_test(self, test, test_result)
 
-         local assert_failed_count = 0
-         local total_assertions = 0
+      end
 
-         -- wrap the original assert so we can do some handling here
-         local original_assert = self.assert
-         self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
-            local ok, err = original_assert(assertion)
+      test_result.time = options.clock_s() - start
 
-            total_assertions = total_assertions + 1
+      local result = test_result.result
+      local is_passing = result == "PASS" or result == "EXPECTED_FAIL" or result == "EXPECTED_EXCEPTION" or result == "EXPECTED_UNKNOWN"
 
-            local assertion_result: types.AssertionResult = {}
-            local file_info = debug.getinfo(2, "l")
-            assertion_result.filename = tested.filename
-            assertion_result.line_number = file_info.currentline
-
-            assertion_result.given = assertion.given
-            assertion_result.should = assertion.should
-
-            if ok == false then
-               assert_failed_count = assert_failed_count + 1
-               assertion_result.result = "FAIL"
-               assertion_result.error_message = err
-            else
-               assertion_result.result = "PASS"
+      -- retry
+      local retry_count = 0
+      if test.options.retries and not skip_result and not is_passing and test.options.retries > 0 then -- retry_count < max_retries then
+         while retry_count < test.options.retries do
+            table.insert(retry_attempts, test_result)
+            retry_count = retry_count + 1
+            if test.options.retry_delay and options.sleep_s then
+               options.sleep_s(test.options.retry_delay)
             end
-            table.insert(test_results.tests[i].assertion_results, assertion_result)
-
-            return ok, err
-         end
-
-         -- run the test
-         local start = os.clock()
-
-         local original_os_exit: function(code: integer | boolean | nil)
-         if _VERSION == "Lua 5.1" then
-            global getfenv: function(any): {string:{string:function}}
-            original_os_exit = getfenv(test.fn).os.exit
-            getfenv(test.fn).os.exit = captured_os_exit
-         else
-            original_os_exit = os.exit
-            os.exit = captured_os_exit
-         end
-
-
-         local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
-         test_results.tests[i].time = os.clock() - start
-         test_results.total_time = test_results.total_time + test_results.tests[i].time
-
-         -- put things back
-         self.assert = original_assert
-
-         -- again luajit or lua 5.1
-         if _VERSION == "Lua 5.1" then
-            getfenv(test.fn).os.exit = original_os_exit
-         else
-            os.exit = original_os_exit
-         end
-
-         set_result(ok, err, total_assertions, assert_failed_count, test_results.tests[i])
-
-         -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
-         adjust_for_expected(test.options.expected, test_results.tests[i])
-
-         if tested.after_each_fn then
-            tested.after_each_fn()
+            test_result = {assertion_results = {}, name = test.name, options = test.options}
+            run_test(self, test, test_result)
          end
       end
 
+      -- use the "whole" time (with retries + sleeps) for the test time
+      if retry_count > 0 then
+         test_result.time = (options.clock_s() - start)
+      end
+
       -- always add up at the end!
-      add_up_test_results(test_results.tests[i], test_results.counts)
-   end
-   if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
-      test_results.fully_tested = true
+      add_up_test_results(test_result, test_results.counts)
+
+      -- insert test_result into test_results + increase total_time
+      test_result.retry_attempts = retry_attempts
+      test_results.tests[i] = test_result
+      test_results.total_time = test_results.total_time + test_result.time
    end
 
-   if tested.after_fn then
-      tested.after_fn()
+   if tested.after_fn then tested.after_fn() end
+
+   if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
+      test_results.fully_tested = true
    end
 
    return test_results

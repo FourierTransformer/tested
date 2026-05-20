@@ -16,6 +16,8 @@ local record types
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
       language_handlers: {string}
+      clock_s: function(): number
+      sleep_s: function(seconds: number)
    end
 
    enum TestResult
@@ -54,6 +56,7 @@ local record types
       time: number
       assertion_results: {AssertionResult}
       options: TestedOptions
+      retry_attempts: {TestOutput}
    end
 
    interface TestCounts
@@ -134,11 +137,11 @@ local record types
    end
 
    interface TestedOptions
-      -- retries: integer
-      -- retry_timeout: number
       expected: ExpectedTestResult
       run_when: boolean
       tags: {string}
+      retries: integer
+      retry_delay: number
    end
 
    interface Tested

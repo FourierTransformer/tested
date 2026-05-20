@@ -4,10 +4,10 @@ I'm planning to start off by seeing if `tested` catches on, and see what feature
 
 Things that I am one day planning to add (in no particular order):
 
-- [ ] Test options [#35](https://github.com/FourierTransformer/tested/issues/35)
+- [x] Test options [#35](https://github.com/FourierTransformer/tested/issues/35)
     - [x] Expected Statuses
     - [x] `run_when` for conditional running tests
-    - [ ] `retries` and (maybe) `retry_timeout` for automatically retrying failing tests
+    - [x] `retries` and `retry_timeout` for automatically retrying failing tests
     - [x] tags for filtering
 - [x] Lifecycle management (`before`, `after`, `before_each`, `after_each`)
 - [ ] Spies
