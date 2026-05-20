@@ -376,20 +376,9 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
    if tested.before_fn then tested.before_fn() end
 
    -- setup
-   local i = 1
-   local retry_count = 0
-   local time_with_retries: number = 0
    local retry_attempts: {types.TestOutput} = {}
 
-   -- why does all my code eventually become while looped?
-   while i <= #self.tests do
-      local test = self.tests[i]
-
-      -- reset on first count
-      if retry_count == 0 then
-         time_with_retries = options.clock_s()
-         retry_attempts = {}
-      end
+   for i, test in ipairs(self.tests) do
 
       -- crate a test_result, could become a "retry_attempt" if we end up retrying
       local test_result: types.TestOutput = {assertion_results = {}, name = test.name, options = test.options}
@@ -409,34 +398,34 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
       test_result.time = options.clock_s() - start
 
       local result = test_result.result
-      local max_retries = test.options.retries or 0
       local is_passing = result == "PASS" or result == "EXPECTED_FAIL" or result == "EXPECTED_EXCEPTION" or result == "EXPECTED_UNKNOWN"
 
       -- retry
-      if not skip_result and not is_passing and retry_count < max_retries then
-         table.insert(retry_attempts, test_result)
-         retry_count = retry_count + 1
-         if test.options.retry_delay and options.sleep_s then
-            options.sleep_s(test.options.retry_delay)
+      local retry_count = 0
+      if test.options.retries and not skip_result and not is_passing and test.options.retries > 0 then -- retry_count < max_retries then
+         while retry_count < test.options.retries do
+            table.insert(retry_attempts, test_result)
+            retry_count = retry_count + 1
+            if test.options.retry_delay and options.sleep_s then
+               options.sleep_s(test.options.retry_delay)
+            end
+            test_result = {assertion_results = {}, name = test.name, options = test.options}
+            run_test(self, test, test_result)
          end
-      else
-         -- use the "whole" time (with retries + sleeps) for the test time
-         if retry_count > 0 then
-            test_result.time = (options.clock_s() - time_with_retries)
-         end
-
-         -- always add up at the end!
-         add_up_test_results(test_result, test_results.counts)
-
-         -- insert test_result into test_results + increase total_time
-         test_result.retry_attempts = retry_attempts
-         test_results.tests[i] = test_result
-         test_results.total_time = test_results.total_time + test_result.time
-
-         -- reset for the next test!
-         retry_count = 0
-         i = i + 1
       end
+
+      -- use the "whole" time (with retries + sleeps) for the test time
+      if retry_count > 0 then
+         test_result.time = (options.clock_s() - start)
+      end
+
+      -- always add up at the end!
+      add_up_test_results(test_result, test_results.counts)
+
+      -- insert test_result into test_results + increase total_time
+      test_result.retry_attempts = retry_attempts
+      test_results.tests[i] = test_result
+      test_results.total_time = test_results.total_time + test_result.time
    end
 
    if tested.after_fn then tested.after_fn() end
