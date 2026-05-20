@@ -62,7 +62,7 @@ end)
 
 local delay_attempt_count = 0
 local delay_start_time: integer = 0
-tested.test("retries: retry_delay waits before retrying", {retries = 1, retry_delay = 1}, function()
+tested.test("retries: retry_delay waits before retrying", {retries = 1, retry_delay = 1, tags={"slow"}}, function()
    delay_attempt_count = delay_attempt_count + 1
    if delay_attempt_count == 1 then
       delay_start_time = os.time()

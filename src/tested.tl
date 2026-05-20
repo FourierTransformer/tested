@@ -218,6 +218,53 @@ local function captured_os_exit(code: integer | boolean | nil)
    error(prefix .. " intercepted — something tried to exit out of the process", 0)
 end
 
+local record AssertCounters
+   total: integer
+   failed: integer
+end
+
+local function wrap_assert(self: types.Tested, test_output: types.TestOutput): AssertCounters, function<T>(types.Assertion<T>): boolean, string
+   local original_assert = self.assert
+   local counters: AssertCounters = {total = 0, failed = 0}
+
+   self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
+      local ok, err = original_assert(assertion)
+      counters.total = counters.total + 1
+
+      local assertion_result: types.AssertionResult = {
+         filename = tested.filename,
+         line_number = debug.getinfo(2, "l").currentline,
+         given = assertion.given,
+         should = assertion.should,
+      }
+      if ok == false then
+         counters.failed = counters.failed + 1
+         assertion_result.result = "FAIL"
+         assertion_result.error_message = err
+      else
+         assertion_result.result = "PASS"
+      end
+      table.insert(test_output.assertion_results, assertion_result)
+      return ok, err
+   end
+
+   return counters, original_assert
+end
+
+
+local function swap_os_exit(test_fn: function): function(code: integer | boolean | nil)
+   local original_os_exit: function(code: integer | boolean | nil)
+   if _VERSION == "Lua 5.1" then
+      global getfenv: function(any): {string:{string:function}}
+      original_os_exit = getfenv(test_fn).os.exit
+      getfenv(test_fn).os.exit = captured_os_exit
+   else
+      original_os_exit = os.exit
+      os.exit = captured_os_exit
+   end
+   return original_os_exit
+end
+
 local function xpcall_handler(e: any): string
    local msg = type(e) == "string" and (e as string) or tostring(e)
    return msg .. debug.traceback("", 2)
@@ -241,6 +288,15 @@ local function set_result(ok: boolean, err: string, total_assertions: integer, a
       test_output.message = assert_failed_count .. " assertions have failed"
    end
 end
+
+local function restore_os_exit(test_fn: function, original: function(code: integer | boolean | nil))
+   if _VERSION == "Lua 5.1" then
+      getfenv(test_fn).os.exit = original
+   else
+      os.exit = original
+   end
+end
+
 
 local function adjust_for_expected(expected: types.ExpectedTestResult, test_output: types.TestOutput)
    if expected ~= nil then
@@ -327,62 +383,18 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
          test_result.message = skip_message
 
       else
+         -- run the test!
          if tested.before_each_fn then
             tested.before_each_fn()
          end
 
-         local assert_failed_count = 0
-         local total_assertions = 0
-
-         -- wrap the original assert so we can do some handling here
-         local original_assert = self.assert
-         self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
-            local ok, err = original_assert(assertion)
-
-            total_assertions = total_assertions + 1
-
-            local assertion_result: types.AssertionResult = {}
-            local file_info = debug.getinfo(2, "l")
-            assertion_result.filename = tested.filename
-            assertion_result.line_number = file_info.currentline
-
-            assertion_result.given = assertion.given
-            assertion_result.should = assertion.should
-
-            if ok == false then
-               assert_failed_count = assert_failed_count + 1
-               assertion_result.result = "FAIL"
-               assertion_result.error_message = err
-            else
-               assertion_result.result = "PASS"
-            end
-            table.insert(test_result.assertion_results, assertion_result)
-
-            return ok, err
-         end
-
-         -- would be interesting to see if i can get the lua 5.1 stuff to not happen before each test,
-         -- but rather once per file
-         local original_os_exit: function(code: integer | boolean | nil)
-         if _VERSION == "Lua 5.1" then
-            global getfenv: function(any): {string:{string:function}}
-            original_os_exit = getfenv(test.fn).os.exit
-            getfenv(test.fn).os.exit = captured_os_exit
-         else
-            original_os_exit = os.exit
-            os.exit = captured_os_exit
-         end
+         local assertions, original_assert = wrap_assert(self, test_result)
+         local original_os_exit = swap_os_exit(test.fn)
 
          local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
-         set_result(ok, err, total_assertions, assert_failed_count, test_result)
+         set_result(ok, err, assertions.total, assertions.failed, test_result)
 
-         -- put things back
-         -- again luajit or lua 5.1 use getfenv
-         if _VERSION == "Lua 5.1" then
-            getfenv(test.fn).os.exit = original_os_exit
-         else
-            os.exit = original_os_exit
-         end
+         restore_os_exit(test.fn, original_os_exit)
          self.assert = original_assert
 
          -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
