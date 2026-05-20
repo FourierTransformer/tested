@@ -174,7 +174,7 @@ end)
 ```
 
 ### Test Retries
-`tested` offers support for test retries with delays. While this is hopefully not needed, if your tests have reliance on flaky network resources or async operations with race conditions in the tests (which... ouch), but `tested` does offer a simple retry mechanism with a `retry_delay` (in seconds). The retry mechanism will fire if the test result is not a `PASS`, `EXPECTED_FAIL`, `EXPECTED_EXCEPTION`, or `EXPECTED_UNKNOWN`
+`tested` offers support for test retries with delays. While this is hopefully not needed, if your tests have reliance on flaky network resources or async operations with race conditions in the tests (which... ouch), but `tested` does offer a simple retry mechanism with a `retry_delay` (in seconds). The retry mechanism will fire if the test result is not a `PASS`, `EXPECTED_FAIL`, `EXPECTED_EXCEPTION`, or `EXPECTED_UNKNOWN`. If the `before_each` and/or `after_each` lifecycle methods are defined, they will execute on each retry attempt.
 
 ```lua
 local exception_attempt_count = 0
