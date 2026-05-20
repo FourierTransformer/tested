@@ -90,6 +90,8 @@ local function run_tests(formatter, args, test_files)
       filter = args.filter,
       tags_filter = args.tags_filter,
       language_handlers = args.language_handler,
+      clock_s = os.clock,
+      sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end,
    }
 
    local display_results = function(test_output)

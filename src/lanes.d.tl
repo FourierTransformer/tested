@@ -176,6 +176,8 @@ local record lanes
 
    timers: function(): {table}
 
+   now_secs: function(): number
+
    sleep: function(? number | boolean)
 
    enum Try

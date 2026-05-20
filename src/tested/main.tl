@@ -89,7 +89,9 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
       coverage = args.coverage,
       filter = args.filter,
       tags_filter = args.tags_filter,
-      language_handlers = args.language_handler
+      language_handlers = args.language_handler,
+      clock_s = os.clock,
+      sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
    }
 
    local display_results = function(test_output: types.TestedOutput)

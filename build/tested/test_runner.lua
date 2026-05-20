@@ -1,4 +1,5 @@
 local ThreadPool = require("tested.libs.ThreadPool")
+local lanes = require("lanes")
 local logging = require("tested.libs.logging")
 
 
@@ -112,6 +113,10 @@ local function run_parallel_tests(
    options,
    display_func)
 
+
+
+   options.clock_s = lanes.now_secs
+   options.sleep_s = lanes.sleep
 
    local output = {
       total_time = 0,

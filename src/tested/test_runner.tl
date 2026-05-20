@@ -1,4 +1,5 @@
 local ThreadPool = require("tested.libs.ThreadPool")
+local lanes = require("lanes")
 local logging = require("tested.libs.logging")
 local type types = require("tested.types")
 
@@ -112,6 +113,10 @@ local function run_parallel_tests(
    options: types.TestRunnerOptions,
    display_func: function(to_display: types.TestedOutput)
 ): types.TestRunnerOutput
+
+   -- set timing source to lanes for more accurate timing
+   options.clock_s = lanes.now_secs
+   options.sleep_s = lanes.sleep
 
    local output: types.TestRunnerOutput = {
       total_time = 0,
