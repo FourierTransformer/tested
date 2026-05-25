@@ -10,7 +10,7 @@ local util = require("tested.util")
 local logger = logging.get_logger("tested.main")
 local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
 
-local TESTED_VERSION = "tested v0.2.0"
+local TESTED_VERSION = "tested v0.2.2"
 
 local function load_result_formatter(args)
    if args.custom_formatter then
