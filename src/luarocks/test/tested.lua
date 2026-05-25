@@ -31,7 +31,11 @@ function tested_backend.run_tests(test, args)
       tested_exe = test.tested_executable
    else
       tested_exe = dir.path(path.root_dir(where), "bin", "tested")
-      if not fs.exists(tested_exe) then
+
+      -- Windows fallback
+      local tested_bat = dir.path(path.root_dir(where), "bin", "tested.bat")
+
+      if not fs.exists(tested_exe) and not fs.exists(tested_bat) then
          return nil, "'tested' executable not found at: " .. tested_exe
       end
    end
