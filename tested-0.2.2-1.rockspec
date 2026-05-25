@@ -1,12 +1,12 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "0.2.1-1"
+version = "0.2.2-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
    branch = "main",
-   tag = "0.2.1"
+   tag = "0.2.2"
 }
 
 description = {
@@ -28,7 +28,7 @@ test_dependencies = {
 
 test = {
    type = "tested",
-   flags = { "-n", "0", "-t", "demo" }
+   flags = { "-n", "0", "-t", "not demo" }
 }
 
 build = {
