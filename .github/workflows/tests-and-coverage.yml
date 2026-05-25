@@ -50,7 +50,6 @@ jobs:
           luarocks install luacov-coveralls
 
       - name: Run demo tests (sequentially)
-        continue-on-error: true
         run: |
           luarocks test
 
@@ -116,7 +115,6 @@ jobs:
           luarocks install luacov-coveralls
 
       - name: Run demo tests (sequentially)
-        continue-on-error: true
         run: |
           .\lua_install\bin\activate
           luarocks test
