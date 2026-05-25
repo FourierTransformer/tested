@@ -129,9 +129,7 @@ local record types
       actual: T
    end
 
-   interface TruthyAssertion is BaseAssertion end
-   interface FalsyAssertion is BaseAssertion end
-   interface ExceptionAssertion is BaseAssertion 
+   interface ExceptionAssertion is BaseAssertion
       actual: function
       expected: any
    end
@@ -155,8 +153,9 @@ local record types
       after_each_fn: function()
 
       assert: function<T>(assertion: Assertion<T>): boolean, string
-      assert_truthy: function(assertion: TruthyAssertion): boolean, string
-      assert_falsy: function(assertion: FalsyAssertion): boolean, string
+      assert_nil: function(assertion: BaseAssertion): boolean, string
+      assert_truthy: function(assertion: BaseAssertion): boolean, string
+      assert_falsy: function(assertion: BaseAssertion): boolean, string
       assert_throws_exception: function(assertion: ExceptionAssertion): boolean, string
       -- teal currently doesn't support polymorphism, so we gotta kinda handle it ourselves
       test: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
