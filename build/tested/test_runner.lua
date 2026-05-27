@@ -60,7 +60,7 @@ function test_runner.run_with_cleanup(file_loader, test_file, options)
 
    local test_results = test_module:run(test_file, options)
 
-   logger:info("%s: Clearing out any Lua packages that were loaded", test_file)
+   logger:info("%s: Clearing out any non-C packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do
       if not pre_test_loaded_packages[package_name] then
          if is_c_package(package_name) then
