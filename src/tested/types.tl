@@ -122,6 +122,7 @@ local record types
       given: string
       should: string
       actual: any
+      debug_var: any
    end
 
    interface Assertion<T> is BaseAssertion

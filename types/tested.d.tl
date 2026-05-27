@@ -8,17 +8,18 @@ local record tested
    end
 
    interface TestedOptions
-      -- retries: integer
-      -- retry_timeout: number
       expected: ExpectedTestResult
       run_when: boolean
       tags: {string}
+      retries: integer
+      retry_delay: number
    end
 
    interface BaseAssertion
       given: string
       should: string
       actual: any
+      debug_var: any
    end
 
    interface Assertion<T> is BaseAssertion
@@ -26,8 +27,6 @@ local record tested
       actual: T
    end
 
-   interface TruthyAssertion is BaseAssertion end
-   interface FalsyAssertion is BaseAssertion end
    interface ExceptionAssertion is BaseAssertion
       actual: function
       expected: any
@@ -44,9 +43,11 @@ local record tested
    after: function(fn: function())
    before_each: function(fn: function())
    after_each: function(fn: function())
+
    assert: function<T>(assertion: Assertion<T>): boolean, string
-   assert_truthy: function(assertion: TruthyAssertion): boolean, string
-   assert_falsy: function(assertion: FalsyAssertion): boolean, string
+   assert_nil: function(assertion: BaseAssertion): boolean, string
+   assert_truthy: function(assertion: BaseAssertion): boolean, string
+   assert_falsy: function(assertion: BaseAssertion): boolean, string
    assert_throws_exception: function(assertion: ExceptionAssertion): boolean, string
 end
 

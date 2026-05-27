@@ -1,5 +1,6 @@
 local type types = require("tested.types")
 local assert_table = require("tested.assert_table")
+local inspect = require("tested.libs.inspect")
 
 local tested: types.Tested = { tests = {}, run_only_tests = false }
 
@@ -238,18 +239,25 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
    local original_assert_nil = self.assert_nil
    local counters: AssertCounters = {total = 0, failed = 0}
 
-   local function record_result(ok: boolean, err: string, given: string, should: string, line_number: integer)
+   local function record_result(ok: boolean, err: string, assertion: types.BaseAssertion, line_number: integer)
       counters.total = counters.total + 1
       local assertion_result: types.AssertionResult = {
          filename = tested.filename,
          line_number = line_number,
-         given = given,
-         should = should,
+         given = assertion.given,
+         should = assertion.should,
       }
       if ok == false then
          counters.failed = counters.failed + 1
          assertion_result.result = "FAIL"
          assertion_result.error_message = err
+         if assertion.debug_var ~= nil then
+            if type(assertion.debug_var) == "table" then
+               assertion_result.error_message = "debug_var: " .. inspect.inspect(assertion.debug_var, {})
+            else
+               assertion_result.error_message = "debug_var: " .. tostring(assertion.debug_var)
+            end
+         end
       else
          assertion_result.result = "PASS"
       end
@@ -258,13 +266,13 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
 
    self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
       local ok, err = original_assert(assertion)
-      record_result(ok, err, assertion.given, assertion.should, debug.getinfo(2, "l").currentline)
+      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
    self.assert_nil = function(assertion: types.BaseAssertion): boolean, string
       local ok, err = original_assert_nil(assertion)
-      record_result(ok, err, assertion.given, assertion.should, debug.getinfo(2, "l").currentline)
+      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
