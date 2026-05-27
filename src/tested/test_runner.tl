@@ -44,6 +44,17 @@ local function is_c_package(module_name: string): boolean
    return false
 end
 
+local function intialize_output(): types.TestRunnerOutput
+   local output: types.TestRunnerOutput = {
+      total_time = 0,
+      total_tests = 0,
+      all_fully_tested = true,
+      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
+      module_results = {},
+   }
+   return output
+end
+
 local function run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
@@ -74,6 +85,20 @@ local function run_with_cleanup(file_loader: types.FileLoader, test_file: string
 
 end
 
+local function add_stats(output: types.TestRunnerOutput)
+   for _, test_output in ipairs(output.module_results) do
+      if test_output.fully_tested == false then output.all_fully_tested = false end
+      output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
+      output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
+      output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
+      output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
+      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
+      output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
+      output.total_time = output.total_time + test_output.total_time
+      output.total_tests = output.total_tests + #test_output.tests
+   end
+end
+
 local function run_sequential_tests(
    test_files: {string},
    options: types.TestRunnerOptions,
@@ -88,13 +113,7 @@ local function run_sequential_tests(
       error("Code coverage requires the luacov module to be installed")
    end
 
-   local output: types.TestRunnerOutput = {
-      total_time = 0,
-      total_tests = 0,
-      all_fully_tested = true,
-      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
-      module_results = {},
-   }
+   local output = intialize_output()
    local coverage_results = {}
 
    if options.coverage then
@@ -103,11 +122,11 @@ local function run_sequential_tests(
       luacov_runner.pause()
    end
 
-   for i = 1, #test_files do
+   for i, test_file in ipairs(test_files) do
       local coverage = {}
 
       if options.coverage then luacov_runner.resume() end
-      local test_output = run_with_cleanup(file_loader, test_files[i], options)
+      local test_output = run_with_cleanup(file_loader, test_file, options)
       if options.coverage then
          coverage = luacov_runner.data
          luacov_runner.pause()
@@ -119,17 +138,7 @@ local function run_sequential_tests(
       display_func(test_output)
    end
 
-   for _, test_output in ipairs(output.module_results) do
-      if test_output.fully_tested == false then output.all_fully_tested = false end
-      output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
-      output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
-      output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
-      output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
-      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
-      output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
-      output.total_time = output.total_time + test_output.total_time
-      output.total_tests = output.total_tests + #test_output.tests
-   end
+   add_stats(output)
 
    if options.coverage then luacov_runner.shutdown() end
 
@@ -158,13 +167,7 @@ local function run_parallel_tests(
    options.clock_s = lanes.now_secs
    options.sleep_s = lanes.sleep
 
-   local output: types.TestRunnerOutput = {
-      total_time = 0,
-      total_tests = 0,
-      all_fully_tested = true,
-      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
-      module_results = {},
-   }
+   local output = intialize_output()
    local coverage_results = {}
 
    local pool = ThreadPool.init(num_threads, options.coverage, options.language_handlers)
@@ -202,17 +205,7 @@ local function run_parallel_tests(
       luacov.save_stats()
    end
 
-   for _, test_output in ipairs(output.module_results) do
-      if test_output.fully_tested == false then output.all_fully_tested = false end
-      output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
-      output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
-      output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
-      output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
-      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
-      output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
-      output.total_time = output.total_time + test_output.total_time
-      output.total_tests = output.total_tests + #test_output.tests
-   end
+   add_stats(output)
 
    return output
 end
