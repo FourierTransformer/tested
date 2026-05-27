@@ -5,8 +5,6 @@ local logging = require("tested.libs.logging")
 
 local logger = logging.get_logger("tested.test_runner")
 
-local test_runner = {}
-
 
 
 local _searchpath = package.searchpath or function(name, path, sep, rep)
@@ -46,7 +44,7 @@ local function is_c_package(module_name)
    return false
 end
 
-function test_runner.run_with_cleanup(file_loader, test_file, options)
+local function run_with_cleanup(file_loader, test_file, options)
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages = {}
@@ -76,9 +74,10 @@ function test_runner.run_with_cleanup(file_loader, test_file, options)
 
 end
 
-function test_runner.run_tests(
+local function run_sequential_tests(
    test_files,
-   options)
+   options,
+   display_func)
 
 
    local file_loader = require("tested.file_loader")
@@ -98,33 +97,29 @@ function test_runner.run_tests(
    }
    local coverage_results = {}
 
-   local i = 0
-
    if options.coverage then
       logger:info("Initializing luacov")
       luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
       luacov_runner.pause()
    end
 
-   return function()
-      i = i + 1
-      if i > #test_files then
-         if options.coverage then luacov_runner.shutdown() end
-         return nil, output
-      end
-
+   for i = 1, #test_files do
       local coverage = {}
 
       if options.coverage then luacov_runner.resume() end
-      local test_output = test_runner.run_with_cleanup(file_loader, test_files[i], options)
+      local test_output = run_with_cleanup(file_loader, test_files[i], options)
       if options.coverage then
          coverage = luacov_runner.data
-         luacov_runner.resume()
+         luacov_runner.pause()
       end
 
       output.module_results[i] = test_output
       coverage_results[i] = coverage
 
+      display_func(test_output)
+   end
+
+   for _, test_output in ipairs(output.module_results) do
       if test_output.fully_tested == false then output.all_fully_tested = false end
       output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
       output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
@@ -134,9 +129,11 @@ function test_runner.run_tests(
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests
-
-      return test_output, output
    end
+
+   if options.coverage then luacov_runner.shutdown() end
+
+   return output
 
 end
 
@@ -147,7 +144,7 @@ local function load_and_run_test(test_file, options)
 
 
    local file_loader = require("tested.file_loader")
-   return test_runner.run_with_cleanup(file_loader, test_file, options)
+   return run_with_cleanup(file_loader, test_file, options)
 end
 
 local function run_parallel_tests(
@@ -220,4 +217,4 @@ local function run_parallel_tests(
    return output
 end
 
-return { test_runner, run_parallel_tests }
+return { run_sequential_tests, run_parallel_tests }

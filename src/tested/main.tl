@@ -8,7 +8,7 @@ local type types = require("tested.types")
 local util = require("tested.util")
 
 local logger = logging.get_logger("tested.main")
-local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
+local run_sequential_tests, run_parallel_tests = test_runner[1], test_runner[2]
 
 local TESTED_VERSION = "tested v0.3.0"
 
@@ -100,18 +100,11 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
 
    if args.threads == 0 or #test_files <= 1 then
       logger:info("Running tests sequentially")
-      local runner_output: types.TestRunnerOutput
-      for test_result, output in TestRunner.run_tests(test_files, options) do
-         display_results(test_result)
-         runner_output = output
-      end
-      return runner_output
+      return run_sequential_tests(test_files, options, display_results)
+   else
+      logger:info("Running tests in parallel")
+      return run_parallel_tests(test_files, args.threads, options, display_results)
    end
-
-   logger:info("Running tests in parallel")
-   local runner_output = run_parallel_tests(test_files, args.threads, options, display_results)
-
-   return runner_output
 end
 
 local function write_output_files(args: cli.CLIOptions, header_comments: {string}, runner_output: types.TestRunnerOutput)
