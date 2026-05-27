@@ -1,5 +1,6 @@
 
 local assert_table = require("tested.assert_table")
+local inspect = require("tested.libs.inspect")
 
 local tested = { tests = {}, run_only_tests = false }
 
@@ -143,6 +144,16 @@ function tested.assert(assertion)
    return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
 end
 
+
+function tested.assert_nil(assertion)
+   assertion.should = assertion.should or "be nil"
+   if assertion.actual == nil then
+      return true, ""
+   end
+
+   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: nil"
+end
+
 function tested.assert_truthy(assertion)
    return tested.assert({ given = assertion.given, should = assertion.should or "be truthy", expected = true, actual = (not not (assertion.actual)) })
 end
@@ -225,15 +236,14 @@ end
 
 local function wrap_assert(self, test_output)
    local original_assert = self.assert
+   local original_assert_nil = self.assert_nil
    local counters = { total = 0, failed = 0 }
 
-   self.assert = function(assertion)
-      local ok, err = original_assert(assertion)
+   local function record_result(ok, err, assertion, line_number)
       counters.total = counters.total + 1
-
       local assertion_result = {
          filename = tested.filename,
-         line_number = debug.getinfo(2, "l").currentline,
+         line_number = line_number,
          given = assertion.given,
          should = assertion.should,
       }
@@ -241,14 +251,37 @@ local function wrap_assert(self, test_output)
          counters.failed = counters.failed + 1
          assertion_result.result = "FAIL"
          assertion_result.error_message = err
+         if assertion.debug_var ~= nil then
+            if type(assertion.debug_var) == "table" then
+               assertion_result.error_message = "debug_var: " .. inspect.inspect(assertion.debug_var, {})
+            else
+               assertion_result.error_message = "debug_var: " .. tostring(assertion.debug_var)
+            end
+         end
       else
          assertion_result.result = "PASS"
       end
       table.insert(test_output.assertion_results, assertion_result)
+   end
+
+   self.assert = function(assertion)
+      local ok, err = original_assert(assertion)
+      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
-   return counters, original_assert
+   self.assert_nil = function(assertion)
+      local ok, err = original_assert_nil(assertion)
+      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
+      return ok, err
+   end
+
+   local function restore()
+      self.assert = original_assert
+      self.assert_nil = original_assert_nil
+   end
+
+   return counters, restore
 end
 
 
@@ -340,14 +373,14 @@ end
 local function run_test(self, test, test_output)
    if tested.before_each_fn then tested.before_each_fn() end
 
-   local assertions, original_assert = wrap_assert(self, test_output)
+   local assertions, restore = wrap_assert(self, test_output)
    local original_os_exit = swap_os_exit(test.fn)
 
    local ok, err = xpcall(test.fn, xpcall_handler)
    set_result(ok, err, assertions.total, assertions.failed, test_output)
 
    restore_os_exit(test.fn, original_os_exit)
-   self.assert = original_assert
+   restore()
 
 
    adjust_for_expected(test.options.expected, test_output)

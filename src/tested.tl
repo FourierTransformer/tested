@@ -1,5 +1,6 @@
 local type types = require("tested.types")
 local assert_table = require("tested.assert_table")
+local inspect = require("tested.libs.inspect")
 
 local tested: types.Tested = { tests = {}, run_only_tests = false }
 
@@ -143,11 +144,21 @@ function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
    return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
 end
 
-function tested.assert_truthy(assertion: types.TruthyAssertion): boolean, string
+-- slightly special because of what it is doing. No nil checking nor type checking, so we can skip all the way to this:
+function tested.assert_nil(assertion: types.BaseAssertion): boolean, string
+   assertion.should = assertion.should or "be nil"
+   if assertion.actual == nil then
+      return true, ""
+   end
+
+   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: nil"
+end
+
+function tested.assert_truthy(assertion: types.BaseAssertion): boolean, string
    return tested.assert({given=assertion.given, should=assertion.should or "be truthy", expected=true, actual=(not not (assertion.actual)) })
 end
 
-function tested.assert_falsy(assertion: types.FalsyAssertion): boolean, string
+function tested.assert_falsy(assertion: types.BaseAssertion): boolean, string
    return tested.assert({given=assertion.given, should=assertion.should or "be falsy", expected=false, actual=(not not (assertion.actual)) })
 end
 
@@ -223,17 +234,16 @@ local record AssertCounters
    failed: integer
 end
 
-local function wrap_assert(self: types.Tested, test_output: types.TestOutput): AssertCounters, function<T>(types.Assertion<T>): boolean, string
+local function wrap_assert(self: types.Tested, test_output: types.TestOutput): AssertCounters, function()
    local original_assert = self.assert
+   local original_assert_nil = self.assert_nil
    local counters: AssertCounters = {total = 0, failed = 0}
 
-   self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
-      local ok, err = original_assert(assertion)
+   local function record_result(ok: boolean, err: string, assertion: types.BaseAssertion, line_number: integer)
       counters.total = counters.total + 1
-
       local assertion_result: types.AssertionResult = {
          filename = tested.filename,
-         line_number = debug.getinfo(2, "l").currentline,
+         line_number = line_number,
          given = assertion.given,
          should = assertion.should,
       }
@@ -241,14 +251,37 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
          counters.failed = counters.failed + 1
          assertion_result.result = "FAIL"
          assertion_result.error_message = err
+         if assertion.debug_var ~= nil then
+            if type(assertion.debug_var) == "table" then
+               assertion_result.error_message = "debug_var: " .. inspect.inspect(assertion.debug_var, {})
+            else
+               assertion_result.error_message = "debug_var: " .. tostring(assertion.debug_var)
+            end
+         end
       else
          assertion_result.result = "PASS"
       end
       table.insert(test_output.assertion_results, assertion_result)
+   end
+
+   self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
+      local ok, err = original_assert(assertion)
+      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
-   return counters, original_assert
+   self.assert_nil = function(assertion: types.BaseAssertion): boolean, string
+      local ok, err = original_assert_nil(assertion)
+      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
+      return ok, err
+   end
+
+   local function restore()
+      self.assert = original_assert
+      self.assert_nil = original_assert_nil
+   end
+
+   return counters, restore
 end
 
 
@@ -340,14 +373,14 @@ end
 local function run_test(self: types.Tested, test: types.Test, test_output: types.TestOutput)
    if tested.before_each_fn then tested.before_each_fn() end
 
-   local assertions, original_assert = wrap_assert(self, test_output)
+   local assertions, restore = wrap_assert(self, test_output)
    local original_os_exit = swap_os_exit(test.fn)
 
    local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
    set_result(ok, err, assertions.total, assertions.failed, test_output)
 
    restore_os_exit(test.fn, original_os_exit)
-   self.assert = original_assert
+   restore()
 
    -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
    adjust_for_expected(test.options.expected, test_output)
