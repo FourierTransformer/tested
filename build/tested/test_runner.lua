@@ -7,6 +7,45 @@ local logger = logging.get_logger("tested.test_runner")
 
 local test_runner = {}
 
+
+
+local _searchpath = package.searchpath or function(name, path, sep, rep)
+   if type(name) ~= "string" then
+      error(("bad argument #1 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
+   end
+   if type(path) ~= "string" then
+      error(("bad argument #2 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
+   end
+   if sep ~= nil and type(sep) ~= "string" then
+      error(("bad argument #3 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
+   end
+   if rep ~= nil and type(rep) ~= "string" then
+      error(("bad argument #4 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
+   end
+   sep = sep or "."
+   rep = rep or _G.package.config:sub(1, 1)
+   do
+      local s, e = name:find(sep, nil, true)
+      while s do
+         name = name:sub(1, s - 1) .. rep .. name:sub(e + 1, -1)
+         s, e = name:find(sep, s + #rep + 1, true)
+      end
+   end
+   local tried = {}
+   for m in path:gmatch('[^;]+') do
+      local nm = m:gsub('?', name)
+      tried[#tried + 1] = nm
+      local f = io.open(nm, 'r')
+      if f then f:close(); return nm end
+   end
+   return nil, "\tno file '" .. table.concat(tried, "'\n\tno file '") .. "'"
+end
+
+local function is_c_package(module_name)
+   if _searchpath(module_name, package.cpath) then return true end
+   return false
+end
+
 function test_runner.run_with_cleanup(file_loader, test_file, options)
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
@@ -20,11 +59,15 @@ function test_runner.run_with_cleanup(file_loader, test_file, options)
 
    local test_results = test_module:run(test_file, options)
 
-   logger:info("%s: Clearing out any packages that were loaded", test_file)
+   logger:info("%s: Clearing out any non-C packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do
       if not pre_test_loaded_packages[package_name] then
-         logger:debug("%s: Clearing out package: %s", test_file, package_name)
-         package.loaded[package_name] = nil
+         if is_c_package(package_name) then
+            logger:debug("%s: NOT clearing out C module: %s", test_file, package_name)
+         else
+            logger:debug("%s: Clearing out package: %s", test_file, package_name)
+            package.loaded[package_name] = nil
+         end
       end
    end
    collectgarbage()

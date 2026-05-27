@@ -56,7 +56,8 @@ Apart from dependencies specified in the rockspec, parts of the following are in
 - Also bundles a slightly modified [ansicolors.lua](https://github.com/kikito/ansicolors.lua) - MIT
 - A function from [Luacov](https://github.com/lunarmodules/luacov) code to help merge stats files in process - MIT
 - Bundles [dkjson.lua](https://dkolf.de/dkjson-lua/)'s encoder for writing file output to json - MIT
-- Uses a modified LuaRocks test loader - MIT
+- Bundles a polyfill for `package.searchpath` for Lua 5.1 from [Penlight](https://lunarmodules.github.io/Penlight/) - MIT
+- Uses a modified LuaRocks test loader to support `luarocks test` - MIT
 
 
 Major thanks to hishamhm, kikito, and benoit-germain for their work in the Lua space. Without them, `tested` wouldn't be possible.
