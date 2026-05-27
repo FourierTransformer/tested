@@ -23,6 +23,7 @@ dependencies = {
 }
 
 test_dependencies = {
+   "lua-cjson", -- needed for one test
    "tl"
 }
 
