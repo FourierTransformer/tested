@@ -18,7 +18,7 @@ tested.test("coverage output is identical for sequential and parallel runs", {ta
 
    -- use assertions/ — most test files (5), no slow retry-delay tests
    local tests_path = project_root .. "/tests/assertions"
-   local tmpdir = (os.getenv("TMPDIR") or "/tmp") .. "/tested_cov_" .. tostring(os.time())
+   local tmpdir = (os.getenv("TMPDIR") or os.getenv("RUNNER_TEMP") or "/tmp") .. "/tested_cov_" .. tostring(os.time())
    lfs.mkdir(tmpdir)
 
    local stats_path = tmpdir .. "/luacov.stats.out"
