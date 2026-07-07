@@ -1,9 +1,30 @@
-local ThreadPool = require("tested.libs.ThreadPool")
-local lanes = require("lanes")
 local logging = require("tested.libs.logging")
 local type types = require("tested.types")
+local type luacov_type = require("luacov.runner")
 
 local logger = logging.get_logger("tested.test_runner")
+
+-- Excludes third-party code from coverage: anything installed into a luarocks
+-- tree (dependencies like luacov, lanes, tl, and tested itself when installed
+-- normally), plus tested's own files when developed in place (its build/ or
+-- src/ tree). Anchored to these specific directories rather than a bare
+-- "tested/" anywhere in the path, so a project checked out into a directory
+-- literally named "tested" doesn't have its own files excluded too.
+local _coverage_exclude_patterns <const> = {
+   "luarocks%/.+$",
+   "share/lua/[%d%.]+/.+$",
+   "build/tested%/.+$",
+   "src/tested%/.+$",
+   "tested$",
+}
+
+-- simple lookup through require so the file_loader table never ends up as an upvalue in the
+-- closure sent through the Lanes linda (cross-module function upvalues cause linda:send to fail silently)
+local function _load_file(filepath: string): any
+   return require("tested.file_loader").load_file(filepath)
+end
+
+local _file_loader_ready = false
 
 -- from the indomitable Penlight - MIT
 -- turned into an upvalue so it can be available in Lanes properly
@@ -55,13 +76,13 @@ local function intialize_output(): types.TestRunnerOutput
    return output
 end
 
-local function run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
+local function run_with_cleanup(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages: {string: boolean} = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-   local test_module = file_loader.load_file(test_file) as types.Tested
+   local test_module = _load_file(test_file) as types.Tested
    if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
       error(test_file ..": does not 'return tested' at end of file - unable to run tests", 0)
    end
@@ -82,7 +103,31 @@ local function run_with_cleanup(file_loader: types.FileLoader, test_file: string
    collectgarbage()
 
    return test_results
+end
 
+local function run_without_cleanup(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
+
+   local test_module = _load_file(test_file) as types.Tested
+   if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
+      error(test_file ..": does not 'return tested' at end of file - unable to run tests", 0)
+   end
+
+   local test_results = test_module:run(test_file, options)
+
+   return test_results
+end
+
+local function write_coverage_stats(luacov_runner: luacov_type, statsfile: string, data: {string: any})
+   local luacov_stats = require("luacov.stats")
+   local loaded = luacov_stats.load(statsfile) as {string: any} or {}
+   for name, file_data in pairs(data) do
+      if loaded[name] then
+         luacov_runner.update_stats(loaded[name] as {any: any}, file_data as {any: any})
+      else
+         loaded[name] = file_data
+      end
+   end
+   luacov_stats.save(statsfile, loaded)
 end
 
 local function add_stats(output: types.TestRunnerOutput)
@@ -104,9 +149,8 @@ local function run_sequential_tests(
    options: types.TestRunnerOptions,
    display_func: function(to_display: types.TestedOutput)
 ): types.TestRunnerOutput
-
-   local file_loader = require("tested.file_loader")
-   for _, setup in ipairs(file_loader.setups) do setup() end
+   local fl = require("tested.file_loader")
+   for _, setup in ipairs(fl.setups) do setup() end
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
@@ -114,100 +158,37 @@ local function run_sequential_tests(
    end
 
    local output = intialize_output()
-   local coverage_results = {}
 
    if options.coverage then
       logger:info("Initializing luacov")
-      luacov_runner.init({exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+      luacov_runner.init({exclude=_coverage_exclude_patterns})
+      -- Neuter save_stats(): luacov calls this both from the os.exit it monkey-patches
+      -- in and (were tick enabled) periodically from the debug hook itself. Either path
+      -- would load+merge+rewrite luacov.stats.out from inside the hot per-line hook or
+      -- at process exit; we merge and write the coverage ourselves, once, below instead.
+      luacov_runner.save_stats = function() end
       luacov_runner.pause()
    end
 
    for i, test_file in ipairs(test_files) do
-      local coverage = {}
-
       if options.coverage then luacov_runner.resume() end
-      local test_output = run_with_cleanup(file_loader, test_file, options)
-      if options.coverage then
-         coverage = luacov_runner.data
-         luacov_runner.pause()
-      end
+      local test_output = run_with_cleanup(test_file, options)
+      if options.coverage then luacov_runner.pause() end
 
       output.module_results[i] = test_output
-      coverage_results[i] = coverage
 
       display_func(test_output)
    end
 
    add_stats(output)
 
-   if options.coverage then luacov_runner.shutdown() end
-
-   return output
-
-end
-
-local function load_and_run_test(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
-   -- HACK: so each lanes needs its own copy of the tested file_loader. but the parallel and sequential
-   -- runners both use run_with_cleanup, so this is the workaround to allow it all to work.
-   -- Lanes needs its own partially to avoid passing around potentially expensive loaders (i tried this - it was slow)
-   -- and b/c it can hang with teal files.
-   -- So yeah, this looks a little goofy, but I'm okay with the workaround/hack in place. (it's better than before)
-   local file_loader = require("tested.file_loader")
-   return run_with_cleanup(file_loader, test_file, options)
-end
-
-local function run_parallel_tests(
-   test_files: {string},
-   num_threads: integer,
-   options: types.TestRunnerOptions,
-   display_func: function(to_display: types.TestedOutput)
-): types.TestRunnerOutput
-
-   -- set timing source to lanes for more accurate timing
-   options.clock_s = lanes.now_secs
-   options.sleep_s = lanes.sleep
-
-   local output = intialize_output()
-   local coverage_results = {}
-
-   local pool = ThreadPool.init(num_threads, options.coverage, options.language_handlers)
-   local input = {}
-   for i = 1, #test_files do
-      input[i] = {test_files[i], options}
-   end
-
-   local map_results = pool:map(load_and_run_test, input, display_func)
-   for i, map_result in ipairs(map_results) do
-      output.module_results[i] = map_result.result
-      coverage_results[i] = map_result.code_coverage
-   end
-   pool:shutdown()
-
-   -- future note: should probably save off the individual coverage results
-   -- before running the combine stats, or do a deep copy or something.
-   -- since the old stats get destroyed during the merge
    if options.coverage then
-
-      -- mostly code from luacov to help merge stats together.
-      local luacov = require("luacov.runner")
-      luacov.data = {}
-      luacov.configuration = {statsfile="luacov.stats.out"}
-
-      for _, stats in ipairs(coverage_results) do
-         for name, file_data in pairs(stats) do
-            if luacov.data[name] then
-               luacov.update_stats(luacov.data[name] as {any: any}, file_data as {any: any})
-            else
-               luacov.data[name] = file_data
-            end
-         end
-      end
-      luacov.save_stats()
+      debug.sethook(nil, "")
+      write_coverage_stats(luacov_runner, luacov_runner.configuration.statsfile, luacov_runner.data as {string: any})
    end
 
-   add_stats(output)
-
    return output
+
 end
 
-return {run_sequential_tests, run_parallel_tests}
+return {run_sequential_tests}

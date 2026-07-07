@@ -68,4 +68,8 @@ function file_loader.register_language_handlers(handlers)
    end
 end
 
+function file_loader.run_setups()
+   for _, setup in ipairs(file_loader.setups) do setup() end
+end
+
 return file_loader

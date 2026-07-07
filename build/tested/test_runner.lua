@@ -1,9 +1,30 @@
-local ThreadPool = require("tested.libs.ThreadPool")
-local lanes = require("lanes")
 local logging = require("tested.libs.logging")
 
 
+
 local logger = logging.get_logger("tested.test_runner")
+
+
+
+
+
+
+
+local _coverage_exclude_patterns = {
+   "luarocks%/.+$",
+   "share/lua/[%d%.]+/.+$",
+   "build/tested%/.+$",
+   "src/tested%/.+$",
+   "tested$",
+}
+
+
+
+local function _load_file(filepath)
+   return require("tested.file_loader").load_file(filepath)
+end
+
+local _file_loader_ready = false
 
 
 
@@ -55,13 +76,13 @@ local function intialize_output()
    return output
 end
 
-local function run_with_cleanup(file_loader, test_file, options)
+local function run_with_cleanup(test_file, options)
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-   local test_module = file_loader.load_file(test_file)
+   local test_module = _load_file(test_file)
    if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
       error(test_file .. ": does not 'return tested' at end of file - unable to run tests", 0)
    end
@@ -82,7 +103,31 @@ local function run_with_cleanup(file_loader, test_file, options)
    collectgarbage()
 
    return test_results
+end
 
+local function run_without_cleanup(test_file, options)
+
+   local test_module = _load_file(test_file)
+   if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
+      error(test_file .. ": does not 'return tested' at end of file - unable to run tests", 0)
+   end
+
+   local test_results = test_module:run(test_file, options)
+
+   return test_results
+end
+
+local function write_coverage_stats(luacov_runner, statsfile, data)
+   local luacov_stats = require("luacov.stats")
+   local loaded = luacov_stats.load(statsfile) or {}
+   for name, file_data in pairs(data) do
+      if loaded[name] then
+         luacov_runner.update_stats(loaded[name], file_data)
+      else
+         loaded[name] = file_data
+      end
+   end
+   luacov_stats.save(statsfile, loaded)
 end
 
 local function add_stats(output)
@@ -104,9 +149,8 @@ local function run_sequential_tests(
    options,
    display_func)
 
-
-   local file_loader = require("tested.file_loader")
-   for _, setup in ipairs(file_loader.setups) do setup() end
+   local fl = require("tested.file_loader")
+   for _, setup in ipairs(fl.setups) do setup() end
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
@@ -114,100 +158,37 @@ local function run_sequential_tests(
    end
 
    local output = intialize_output()
-   local coverage_results = {}
 
    if options.coverage then
       logger:info("Initializing luacov")
-      luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+      luacov_runner.init({ exclude = _coverage_exclude_patterns })
+
+
+
+
+      luacov_runner.save_stats = function() end
       luacov_runner.pause()
    end
 
    for i, test_file in ipairs(test_files) do
-      local coverage = {}
-
       if options.coverage then luacov_runner.resume() end
-      local test_output = run_with_cleanup(file_loader, test_file, options)
-      if options.coverage then
-         coverage = luacov_runner.data
-         luacov_runner.pause()
-      end
+      local test_output = run_with_cleanup(test_file, options)
+      if options.coverage then luacov_runner.pause() end
 
       output.module_results[i] = test_output
-      coverage_results[i] = coverage
 
       display_func(test_output)
    end
 
    add_stats(output)
 
-   if options.coverage then luacov_runner.shutdown() end
-
-   return output
-
-end
-
-local function load_and_run_test(test_file, options)
-
-
-
-
-
-   local file_loader = require("tested.file_loader")
-   return run_with_cleanup(file_loader, test_file, options)
-end
-
-local function run_parallel_tests(
-   test_files,
-   num_threads,
-   options,
-   display_func)
-
-
-
-   options.clock_s = lanes.now_secs
-   options.sleep_s = lanes.sleep
-
-   local output = intialize_output()
-   local coverage_results = {}
-
-   local pool = ThreadPool.init(num_threads, options.coverage, options.language_handlers)
-   local input = {}
-   for i = 1, #test_files do
-      input[i] = { test_files[i], options }
-   end
-
-   local map_results = pool:map(load_and_run_test, input, display_func)
-   for i, map_result in ipairs(map_results) do
-      output.module_results[i] = map_result.result
-      coverage_results[i] = map_result.code_coverage
-   end
-   pool:shutdown()
-
-
-
-
    if options.coverage then
-
-
-      local luacov = require("luacov.runner")
-      luacov.data = {}
-      luacov.configuration = { statsfile = "luacov.stats.out" }
-
-      for _, stats in ipairs(coverage_results) do
-         for name, file_data in pairs(stats) do
-            if luacov.data[name] then
-               luacov.update_stats(luacov.data[name], file_data)
-            else
-               luacov.data[name] = file_data
-            end
-         end
-      end
-      luacov.save_stats()
+      debug.sethook(nil, "")
+      write_coverage_stats(luacov_runner, luacov_runner.configuration.statsfile, luacov_runner.data)
    end
 
-   add_stats(output)
-
    return output
+
 end
 
-return { run_sequential_tests, run_parallel_tests }
+return { run_sequential_tests }

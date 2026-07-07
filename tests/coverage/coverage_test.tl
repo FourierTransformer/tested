@@ -10,7 +10,7 @@ local function run_tested_with_coverage(tmpdir: string, threads: integer, tests_
    if handle then handle:close() end
 end
 
-tested.test("coverage output is identical for sequential and parallel runs", {tags = {"coverage_test"}}, function()
+tested.test("coverage output is identical for sequential and parallel runs", {tags = {"coverage"}}, function()
    local project_root = lfs.currentdir()
    if not project_root then
       error("cannot determine current working directory")
@@ -33,6 +33,12 @@ tested.test("coverage output is identical for sequential and parallel runs", {ta
       expected = true,
       actual = lfs.attributes(stats_path) ~= nil
    })
+   tested.assert({
+      given = "luacov.stats.out",
+      should = "not be empty after sequential coverage run",
+      expected = true,
+      actual = (lfs.attributes(stats_path, "size") as integer) > 0
+   })
    os.rename(stats_path, sequential_stats_path)
 
    -- parallel coverage run
@@ -43,6 +49,12 @@ tested.test("coverage output is identical for sequential and parallel runs", {ta
       should = "exist after parallel coverage run",
       expected = true,
       actual = lfs.attributes(stats_path) ~= nil
+   })
+   tested.assert({
+      given = "luacov.stats.out",
+      should = "not be empty after parallel coverage run",
+      expected = true,
+      actual = (lfs.attributes(stats_path, "size") as integer) > 0
    })
 
    local luacov_stats = require("luacov.stats")
