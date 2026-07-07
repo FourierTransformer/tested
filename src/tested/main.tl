@@ -140,19 +140,24 @@ local function main()
    if #test_files == 0 then error("Unable to find any tests to run in: " .. table.concat(args.paths, ", "), 0) end
 
    local header_comments: {string} = {}
-   if args.filter ~= nil then
-      table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
-   end
-   if args.tags ~= nil then
-      table.insert(header_comments, "Filtering tests with tag expression: '" .. args.tags .. "'")
-   end
+   if not args.process then
+      if args.filter ~= nil then
+         table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
+      end
+      if args.tags ~= nil then
+         table.insert(header_comments, "Filtering tests with tag expression: '" .. args.tags .. "'")
+      end
 
-   -- running the tests
-   print(formatter.header(TESTED_VERSION, args.paths, header_comments))
+      -- running the tests
+      print(formatter.header(TESTED_VERSION, args.paths, header_comments))
+   end
 
    local runner_output = run_tests(formatter, args, test_files)
    runner_output.tested_version = TESTED_VERSION
-   print(formatter.summary(runner_output))
+
+   if not args.process then
+      print(formatter.summary(runner_output))
+   end
 
    write_output_files(args, header_comments, runner_output)
 

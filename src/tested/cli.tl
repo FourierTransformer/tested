@@ -39,6 +39,7 @@ local record cli
       threads: integer
       filter: string
       tags: string
+      process: boolean
 
       -- derived from above values
       test_files: {string}
@@ -65,20 +66,26 @@ local cli_to_display: {cli.DisplayOptions:types.TestResult} = {
 
 function cli.parse_args(version: string): cli.CLIOptions
    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io/tested")
+
    parser:flag("-c --coverage")
       :description("Enable code coverage - will generate luacov.stats.out (default: not-set)")
       :default(false)
+
    parser:flag("-r --random")
       :description("Randomize the order of the tests (default: not-set)")
       :default(false)
+
    parser:option("-F --filter")
       :description("Only run tests whose name matches this Lua pattern (default: not-set)")
+
    parser:option("-t --tags")
       :description("Only run tests matching a tag expression, e.g. 'integration' or '(unit or integration) and not slow' (default: not-set)")
+
    parser:option("-s --show")
       :description("What test results to display (default: '-s fail -s exception -s unknown')")
       :choices({"all", "valid", "invalid", "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected"})
       :count("*")
+
    parser:mutex(
       parser:option("-f --display-format")
          :description("What format to output the results in (default: 'terminal')")
@@ -87,23 +94,34 @@ function cli.parse_args(version: string): cli.CLIOptions
       parser:option("-z --custom-formatter")
          :description("File that loads a custom formatter to use for terminal output")
    )
+
    parser:option("-o --output-file")
       :description("Output file to save test results in (currently supported extensions: '.txt' and '.json')")
       :count("*")
-   parser:option("-n --threads")
-      :description("Set the number of threads to run the tests with (default: 4). Set to 0 to disable. Test files are split amongst the threads.")
+
+   parser:option("-n --instances")
+      :description("Set the number of concurrent tests to run (default: 4). Set to 0 to disable.")
       :default(4)
       :convert(tonumber)
+
    parser:option("-x --language-handler")
       :description("File that loads custom language that is Lua-compatible")
       :count("*")
+
    parser:option("-d --debug")
       :description("Set the log level - mostly for debugging issues with tested (default: 'WARNING')")
       :choices({"DEBUG", "INFO", "WARNING"})
       :default("WARNING")
+
    parser:flag("--version")
       :description("Show version information")
       :action(function() print(version) os.exit(0) end)
+
+   parser:flag("-p --process")
+      :description("Internal flag used to indicate that this test is running as a process")
+      :default(false)
+      :hidden(true)
+
    parser:argument("paths", "Path(s) to directories or files with tests to run (default: 'tests')")
       :args("*")
 
