@@ -11,6 +11,7 @@ local _coverage_exclude_patterns = {
    "luarocks%/.+$",
    "share/lua/[%d%.]+/.+$",
    "build/tested%/.+$",
+   "src/tested%/.+$",
    "tested$",
 }
 
