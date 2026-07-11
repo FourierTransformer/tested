@@ -6,7 +6,7 @@ local record types
    interface FileLoader
       load_file: function(filepath: string): any
       loader: {string: function(filepath: string): function()}
-      setups: {function}
+      setups: {string: function}
    end
 
    -- test running types

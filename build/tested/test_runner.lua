@@ -1,30 +1,10 @@
+local file_loader = require("tested.file_loader")
 local logging = require("tested.libs.logging")
-
 
 
 local logger = logging.get_logger("tested.test_runner")
 
-
-
-
-
-
-
-local _coverage_exclude_patterns = {
-   "luarocks%/.+$",
-   "share/lua/[%d%.]+/.+$",
-   "build/tested%/.+$",
-   "src/tested%/.+$",
-   "tested$",
-}
-
-
-
-local function _load_file(filepath)
-   return require("tested.file_loader").load_file(filepath)
-end
-
-local _file_loader_ready = false
+local test_runner = {}
 
 
 
@@ -65,24 +45,19 @@ local function is_c_package(module_name)
    return false
 end
 
-local function intialize_output()
-   local output = {
-      total_time = 0,
-      total_tests = 0,
-      all_fully_tested = true,
-      total_counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },
-      module_results = {},
-   }
-   return output
-end
-
 local function run_with_cleanup(test_file, options)
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-   local test_module = _load_file(test_file)
+   logger:info("%s: keeping track of pre-existing module searchers", test_file)
+   local pre_test_searchers = {}
+   for index, searcher in ipairs(package.searchers or package.loaders) do
+      pre_test_searchers[index] = searcher
+   end
+
+   local test_module = file_loader.load_file(test_file)
    if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
       error(test_file .. ": does not 'return tested' at end of file - unable to run tests", 0)
    end
@@ -100,38 +75,57 @@ local function run_with_cleanup(test_file, options)
          end
       end
    end
+
+   logger:info("%s: Restoring module searchers to their pre-test state", test_file)
+   local searchers = package.searchers or package.loaders
+   for index = #searchers, 1, -1 do searchers[index] = nil end
+   for index, searcher in ipairs(pre_test_searchers) do searchers[index] = searcher end
+
    collectgarbage()
 
    return test_results
+
 end
 
-local function run_without_cleanup(test_file, options)
+function test_runner.run_tests(
+   test_files,
+   options,
+   display_func)
 
-   local test_module = _load_file(test_file)
-   if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
-      error(test_file .. ": does not 'return tested' at end of file - unable to run tests", 0)
+   local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
+   if options and options.coverage and not luacov_loaded then
+      error("Code coverage requires the luacov module to be installed")
    end
 
-   local test_results = test_module:run(test_file, options)
+   local output = {
+      total_time = 0,
+      total_tests = 0,
+      all_fully_tested = true,
+      total_counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },
+      module_results = {},
+   }
+   local coverage_results = {}
 
-   return test_results
-end
+   if options.coverage then
+      logger:info("Initializing luacov")
+      luacov_runner.init({ exclude = { "luarocks%/.+$", "tested%/.+$", "tested$" } })
+      luacov_runner.pause()
+   end
 
-local function write_coverage_stats(luacov_runner, statsfile, data)
-   local luacov_stats = require("luacov.stats")
-   local loaded = luacov_stats.load(statsfile) or {}
-   for name, file_data in pairs(data) do
-      if loaded[name] then
-         luacov_runner.update_stats(loaded[name], file_data)
-      else
-         loaded[name] = file_data
+   for i, test_file in ipairs(test_files) do
+      local coverage = {}
+
+      if options.coverage then luacov_runner.resume() end
+      local test_output = run_with_cleanup(test_file, options)
+      if options.coverage then
+         coverage = luacov_runner.data
+         luacov_runner.resume()
       end
-   end
-   luacov_stats.save(statsfile, loaded)
-end
 
-local function add_stats(output)
-   for _, test_output in ipairs(output.module_results) do
+      display_func(test_output)
+      output.module_results[i] = test_output
+      coverage_results[i] = coverage
+
       if test_output.fully_tested == false then output.all_fully_tested = false end
       output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
       output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
@@ -141,54 +135,15 @@ local function add_stats(output)
       output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests
+
    end
-end
-
-local function run_sequential_tests(
-   test_files,
-   options,
-   display_func)
-
-   local fl = require("tested.file_loader")
-   for _, setup in ipairs(fl.setups) do setup() end
-
-   local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
-   if options and options.coverage and not luacov_loaded then
-      error("Code coverage requires the luacov module to be installed")
-   end
-
-   local output = intialize_output()
 
    if options.coverage then
-      logger:info("Initializing luacov")
-      luacov_runner.init({ exclude = _coverage_exclude_patterns })
-
-
-
-
-      luacov_runner.save_stats = function() end
-      luacov_runner.pause()
-   end
-
-   for i, test_file in ipairs(test_files) do
-      if options.coverage then luacov_runner.resume() end
-      local test_output = run_with_cleanup(test_file, options)
-      if options.coverage then luacov_runner.pause() end
-
-      output.module_results[i] = test_output
-
-      display_func(test_output)
-   end
-
-   add_stats(output)
-
-   if options.coverage then
-      debug.sethook(nil, "")
-      write_coverage_stats(luacov_runner, luacov_runner.configuration.statsfile, luacov_runner.data)
+      luacov_runner.save_stats()
    end
 
    return output
 
 end
 
-return { run_sequential_tests }
+return test_runner

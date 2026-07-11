@@ -10,7 +10,7 @@ end
 local record file_loader is types.FileLoader
    load_file: function(filepath: string): any
    loader: {string: function(filepath: string): function()}
-   setups: {function}
+   setups: {string: function}
    register_handler: function(extension: string, loader: function(filepath: string): function(): any, setup: function)
    load_and_register_handler: function(filepath: string)
 end
@@ -26,6 +26,7 @@ file_loader.setups = {}
 
 function file_loader.load_file(filepath: string): any
    local extension = get_file_extension(filepath)
+   if file_loader.setups[extension] then file_loader.setups[extension]() end
    if file_loader.loader[extension] then
       local loader = file_loader.loader[extension](filepath)
       return loader() as any
@@ -39,7 +40,7 @@ end
 function file_loader.register_handler(extension: string, loader: function(filepath: string): function(): any, setup: function)
    file_loader.loader[extension] = loader
    if setup then
-      table.insert(file_loader.setups, setup)
+      file_loader.setups[extension] = setup
    end
 end
 
@@ -66,10 +67,6 @@ function file_loader.register_language_handlers(handlers: {string})
          file_loader.load_and_register_handler(handler)
       end
    end
-end
-
-function file_loader.run_setups()
-   for _, setup in ipairs(file_loader.setups) do setup() end
 end
 
 return file_loader

@@ -8,7 +8,6 @@ local type types = require("tested.types")
 local util = require("tested.util")
 
 local logger = logging.get_logger("tested.main")
-local run_sequential_tests = test_runner[1]
 
 local TESTED_VERSION = "tested v0.3.0"
 
@@ -99,7 +98,7 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
    end
 
    logger:info("Running tests sequentially")
-   return run_sequential_tests(test_files, options, display_results)
+   return test_runner.run_tests(test_files, options, display_results)
 end
 
 local function write_output_files(args: cli.CLIOptions, header_comments: {string}, runner_output: types.TestRunnerOutput)
