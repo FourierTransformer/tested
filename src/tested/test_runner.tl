@@ -6,6 +6,14 @@ local logger = logging.get_logger("tested.test_runner")
 
 local record test_runner end
 
+-- Exclude anything installed into a luarocks tree and tested's own files.
+local _coverage_exclude_patterns <const> = {
+   "luarocks%/.+$",
+   "share/lua/[%d%.]+/.+$",
+   "build/tested%/.+$",
+   "tested$",
+}
+
 -- from the indomitable Penlight - MIT
 -- turned into an upvalue so it can be available in Lanes properly
 local _searchpath = package.searchpath or function (name: string, path: string, sep: string, rep: string): string, string    -- luacheck: ignore
@@ -104,27 +112,20 @@ function test_runner.run_tests(
       total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
       module_results = {},
    }
-   local coverage_results = {}
 
    if options.coverage then
       logger:info("Initializing luacov")
-      luacov_runner.init({exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+      luacov_runner.init({exclude=_coverage_exclude_patterns})
       luacov_runner.pause()
    end
 
    for i, test_file in ipairs(test_files) do
-      local coverage = {}
-
       if options.coverage then luacov_runner.resume() end
       local test_output = run_with_cleanup(test_file, options)
-      if options.coverage then
-         coverage = luacov_runner.data
-         luacov_runner.resume()
-      end
+      if options.coverage then luacov_runner.pause() end
 
       display_func(test_output)
       output.module_results[i] = test_output
-      coverage_results[i] = coverage
 
       if test_output.fully_tested == false then output.all_fully_tested = false end
       output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
