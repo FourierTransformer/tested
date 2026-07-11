@@ -1,13 +1,23 @@
 local tested = require("tested")
 local lfs = require("lfs")
 
-local function run_tested_with_coverage(tmpdir: string, threads: integer, tests_path: string)
+local function run_tested_with_coverage(tmpdir: string, threads: integer, tests_path: string): string
+   local stderr_path = tmpdir .. "/tested_stderr.log"
    local cmd = string.format(
-      "cd '%s' && tested -c -n %d -f plain '%s' > /dev/null 2>&1",
-      tmpdir, threads, tests_path
+      "cd '%s' && tested -c -n %d -f plain '%s' > /dev/null 2>'%s'",
+      tmpdir, threads, tests_path, stderr_path
    )
    local handle = io.popen(cmd)
    if handle then handle:close() end
+
+   local captured_stderr = ""
+   local stderr_file = io.open(stderr_path, "r")
+   if stderr_file then
+      captured_stderr = stderr_file:read("*a") or ""
+      stderr_file:close()
+      os.remove(stderr_path)
+   end
+   return captured_stderr
 end
 
 tested.test("coverage output is identical for sequential and parallel runs", {tags = {"coverage"}}, function()
@@ -26,35 +36,41 @@ tested.test("coverage output is identical for sequential and parallel runs", {ta
 
    -- sequential coverage run
    os.remove(stats_path)
-   run_tested_with_coverage(tmpdir, 0, tests_path)
+   local sequential_stderr = run_tested_with_coverage(tmpdir, 0, tests_path)
    tested.assert({
       given = "luacov.stats.out",
       should = "exist after sequential coverage run",
       expected = true,
-      actual = lfs.attributes(stats_path) ~= nil
+      actual = lfs.attributes(stats_path) ~= nil,
+      debug_var = sequential_stderr ~= "" and sequential_stderr or nil
    })
+   local sequential_size = lfs.attributes(stats_path, "size") as integer
    tested.assert({
       given = "luacov.stats.out",
       should = "not be empty after sequential coverage run",
       expected = true,
-      actual = (lfs.attributes(stats_path, "size") as integer) > 0
+      actual = (sequential_size or 0) > 0,
+      debug_var = sequential_stderr ~= "" and sequential_stderr or nil
    })
    os.rename(stats_path, sequential_stats_path)
 
    -- parallel coverage run
    os.remove(stats_path)
-   run_tested_with_coverage(tmpdir, 4, tests_path)
+   local parallel_stderr = run_tested_with_coverage(tmpdir, 4, tests_path)
    tested.assert({
       given = "luacov.stats.out",
       should = "exist after parallel coverage run",
       expected = true,
-      actual = lfs.attributes(stats_path) ~= nil
+      actual = lfs.attributes(stats_path) ~= nil,
+      debug_var = parallel_stderr ~= "" and parallel_stderr or nil
    })
+   local parallel_size = lfs.attributes(stats_path, "size") as integer
    tested.assert({
       given = "luacov.stats.out",
       should = "not be empty after parallel coverage run",
       expected = true,
-      actual = (lfs.attributes(stats_path, "size") as integer) > 0
+      actual = (parallel_size or 0) > 0,
+      debug_var = parallel_stderr ~= "" and parallel_stderr or nil
    })
 
    local luacov_stats = require("luacov.stats")
