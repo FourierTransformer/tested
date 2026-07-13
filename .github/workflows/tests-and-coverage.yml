@@ -40,7 +40,7 @@ jobs:
         run: |
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --${{ matrix.lua }}
-          echo lua_install/bin >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/lua_install/bin" >> $GITHUB_PATH
         env:
           MACOSX_DEPLOYMENT_TARGET: 11.0
 
