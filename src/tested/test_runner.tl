@@ -1,11 +1,19 @@
-local ThreadPool = require("tested.libs.ThreadPool")
-local lanes = require("lanes")
+local file_loader = require("tested.file_loader")
 local logging = require("tested.libs.logging")
 local type types = require("tested.types")
 
 local logger = logging.get_logger("tested.test_runner")
 
 local record test_runner end
+
+-- Exclude anything installed into a luarocks tree and tested's own files.
+local _coverage_exclude_patterns <const> = {
+   "luarocks%/.+$",
+   "share/lua/[%d%.]+/.+$",
+   "build/tested%/.+$",
+   "src/tested%/.+$",
+   "tested$",
+}
 
 -- from the indomitable Penlight - MIT
 -- turned into an upvalue so it can be available in Lanes properly
@@ -46,11 +54,17 @@ local function is_c_package(module_name: string): boolean
    return false
 end
 
-function test_runner.run_with_cleanup(file_loader: types.FileLoader, test_file: string, options: types.TestRunnerOptions): types.TestedOutput
+local function run_with_cleanup(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages: {string: boolean} = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
+
+   logger:info("%s: keeping track of pre-existing module searchers", test_file)
+   local pre_test_searchers: {function(string): (function(? string, ? any): (any), any)} = {}
+   for index, searcher in ipairs(package.searchers or package.loaders) do
+      pre_test_searchers[index] = searcher
+   end
 
    local test_module = file_loader.load_file(test_file) as types.Tested
    if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
@@ -70,6 +84,12 @@ function test_runner.run_with_cleanup(file_loader: types.FileLoader, test_file: 
          end
       end
    end
+
+   logger:info("%s: Restoring module searchers to their pre-test state", test_file)
+   local searchers = package.searchers or package.loaders
+   for index = #searchers, 1, -1 do searchers[index] = nil end
+   for index, searcher in ipairs(pre_test_searchers) do searchers[index] = searcher end
+
    collectgarbage()
 
    return test_results
@@ -78,12 +98,9 @@ end
 
 function test_runner.run_tests(
    test_files: {string},
-   options: types.TestRunnerOptions
-): function(): (types.TestedOutput, types.TestRunnerOutput)
-
-   local file_loader = require("tested.file_loader")
-   for _, setup in ipairs(file_loader.setups) do setup() end
-
+   options: types.TestRunnerOptions,
+   display_func: function(to_display: types.TestedOutput)
+): types.TestRunnerOutput
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
    if options and options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
@@ -96,34 +113,20 @@ function test_runner.run_tests(
       total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
       module_results = {},
    }
-   local coverage_results = {}
-
-   local i = 0
 
    if options.coverage then
       logger:info("Initializing luacov")
-      luacov_runner.init({exclude={"luarocks%/.+$", "tested%/.+$", "tested$"}})
+      luacov_runner.init({exclude=_coverage_exclude_patterns})
       luacov_runner.pause()
    end
 
-   return function(): (types.TestedOutput, types.TestRunnerOutput)
-      i = i + 1
-      if i > #test_files then
-         if options.coverage then luacov_runner.shutdown() end
-         return nil, output
-      end
-
-      local coverage = {}
-
+   for i, test_file in ipairs(test_files) do
       if options.coverage then luacov_runner.resume() end
-      local test_output = test_runner.run_with_cleanup(file_loader, test_files[i], options)
-      if options.coverage then
-         coverage = luacov_runner.data
-         luacov_runner.resume()
-      end
+      local test_output = run_with_cleanup(test_file, options)
+      if options.coverage then luacov_runner.pause() end
 
+      display_func(test_output)
       output.module_results[i] = test_output
-      coverage_results[i] = coverage
 
       if test_output.fully_tested == false then output.all_fully_tested = false end
       output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
@@ -135,89 +138,14 @@ function test_runner.run_tests(
       output.total_time = output.total_time + test_output.total_time
       output.total_tests = output.total_tests + #test_output.tests
 
-      return test_output, output
    end
 
-end
-
-local function load_and_run_test(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
-   -- HACK: so each lanes needs its own copy of the tested file_loader. but the parallel and sequential
-   -- runners both use run_with_cleanup, so this is the workaround to allow it all to work.
-   -- Lanes needs its own partially to avoid passing around potentially expensive loaders (i tried this - it was slow)
-   -- and b/c it can hang with teal files.
-   -- So yeah, this looks a little goofy, but I'm okay with the workaround/hack in place. (it's better than before)
-   local file_loader = require("tested.file_loader")
-   return test_runner.run_with_cleanup(file_loader, test_file, options)
-end
-
-local function run_parallel_tests(
-   test_files: {string},
-   num_threads: integer,
-   options: types.TestRunnerOptions,
-   display_func: function(to_display: types.TestedOutput)
-): types.TestRunnerOutput
-
-   -- set timing source to lanes for more accurate timing
-   options.clock_s = lanes.now_secs
-   options.sleep_s = lanes.sleep
-
-   local output: types.TestRunnerOutput = {
-      total_time = 0,
-      total_tests = 0,
-      all_fully_tested = true,
-      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
-      module_results = {},
-   }
-   local coverage_results = {}
-
-   local pool = ThreadPool.init(num_threads, options.coverage, options.language_handlers)
-   local input = {}
-   for i = 1, #test_files do
-      input[i] = {test_files[i], options}
-   end
-
-   local map_results = pool:map(load_and_run_test, input, display_func)
-   for i, map_result in ipairs(map_results) do
-      output.module_results[i] = map_result.result
-      coverage_results[i] = map_result.code_coverage
-   end
-   pool:shutdown()
-
-   -- future note: should probably save off the individual coverage results
-   -- before running the combine stats, or do a deep copy or something.
-   -- since the old stats get destroyed during the merge
    if options.coverage then
-
-      -- mostly code from luacov to help merge stats together.
-      local luacov = require("luacov.runner")
-      luacov.data = {}
-      luacov.configuration = {statsfile="luacov.stats.out"}
-
-      for _, stats in ipairs(coverage_results) do
-         for name, file_data in pairs(stats) do
-            if luacov.data[name] then
-               luacov.update_stats(luacov.data[name] as {any: any}, file_data as {any: any})
-            else
-               luacov.data[name] = file_data
-            end
-         end
-      end
-      luacov.save_stats()
-   end
-
-   for _, test_output in ipairs(output.module_results) do
-      if test_output.fully_tested == false then output.all_fully_tested = false end
-      output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
-      output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
-      output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
-      output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
-      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
-      output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
-      output.total_time = output.total_time + test_output.total_time
-      output.total_tests = output.total_tests + #test_output.tests
+      luacov_runner.save_stats()
    end
 
    return output
+
 end
 
-return {test_runner, run_parallel_tests}
+return test_runner

@@ -15,6 +15,7 @@ end
 
 local record runner
    init: function(configuration?: LuacovConfig)
+   load_config: function(configuration?: LuacovConfig): LuacovConfig
    shutdown: function()
    pause: function()
    resume: function()

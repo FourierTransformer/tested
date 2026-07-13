@@ -19,7 +19,6 @@ dependencies = {
    "luafilesystem",
    "argparse",
    "luacov",
-   "lanes==3.17.2"
 }
 
 test_dependencies = {
@@ -54,7 +53,6 @@ build = {
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",
       ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
-      ["tested.libs.ThreadPool"] = "build/tested/libs/ThreadPool.lua",
 
       ["tested.file_output.txt"] = "build/tested/file_output/txt.lua",
       ["tested.file_output.json"] = "build/tested/file_output/json.lua",

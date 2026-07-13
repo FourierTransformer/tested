@@ -8,7 +8,11 @@ local type types = require("tested.types")
 local util = require("tested.util")
 
 local logger = logging.get_logger("tested.main")
-local TestRunner, run_parallel_tests = test_runner[1], test_runner[2]
+
+-- Forces relative modules to be used first, this fixes a Windows issues,
+-- and likely creates useful behaviour for people wanting to run a unit testing framework
+-- could also consider turning this into a cli arg one day.
+package.path = "./?.lua;./?/init.lua;" .. package.path
 
 local TESTED_VERSION = "tested v0.3.0"
 
@@ -98,20 +102,8 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
       print(formatter.results(test_output, cli.display_types(args.show)))
    end
 
-   if args.threads == 0 or #test_files <= 1 then
-      logger:info("Running tests sequentially")
-      local runner_output: types.TestRunnerOutput
-      for test_result, output in TestRunner.run_tests(test_files, options) do
-         display_results(test_result)
-         runner_output = output
-      end
-      return runner_output
-   end
-
-   logger:info("Running tests in parallel")
-   local runner_output = run_parallel_tests(test_files, args.threads, options, display_results)
-
-   return runner_output
+   logger:info("Running tests sequentially")
+   return test_runner.run_tests(test_files, options, display_results)
 end
 
 local function write_output_files(args: cli.CLIOptions, header_comments: {string}, runner_output: types.TestRunnerOutput)
@@ -152,19 +144,24 @@ local function main()
    if #test_files == 0 then error("Unable to find any tests to run in: " .. table.concat(args.paths, ", "), 0) end
 
    local header_comments: {string} = {}
-   if args.filter ~= nil then
-      table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
-   end
-   if args.tags ~= nil then
-      table.insert(header_comments, "Filtering tests with tag expression: '" .. args.tags .. "'")
-   end
+   if not args.process then
+      if args.filter ~= nil then
+         table.insert(header_comments, "Filtering tests with pattern: '" .. args.filter .. "'")
+      end
+      if args.tags ~= nil then
+         table.insert(header_comments, "Filtering tests with tag expression: '" .. args.tags .. "'")
+      end
 
-   -- running the tests
-   print(formatter.header(TESTED_VERSION, args.paths, header_comments))
+      -- running the tests
+      print(formatter.header(TESTED_VERSION, args.paths, header_comments))
+   end
 
    local runner_output = run_tests(formatter, args, test_files)
    runner_output.tested_version = TESTED_VERSION
-   print(formatter.summary(runner_output))
+
+   if not args.process then
+      print(formatter.summary(runner_output))
+   end
 
    write_output_files(args, header_comments, runner_output)
 

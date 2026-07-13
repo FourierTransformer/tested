@@ -26,6 +26,7 @@ file_loader.setups = {}
 
 function file_loader.load_file(filepath)
    local extension = get_file_extension(filepath)
+   if file_loader.setups[extension] then file_loader.setups[extension]() end
    if file_loader.loader[extension] then
       local loader = file_loader.loader[extension](filepath)
       return loader()
@@ -39,7 +40,7 @@ end
 function file_loader.register_handler(extension, loader, setup)
    file_loader.loader[extension] = loader
    if setup then
-      table.insert(file_loader.setups, setup)
+      file_loader.setups[extension] = setup
    end
 end
 
