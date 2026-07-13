@@ -107,38 +107,33 @@ jobs:
         run: |
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --${{ matrix.lua }} --target ${{ matrix.target }}
+          echo "${{ github.workspace }}\lua_install\bin" >> $env:GITHUB_PATH
 
       - name: Build tested
         run: |
-          .\lua_install\bin\activate
           luarocks make
           luarocks install luacov-coveralls
 
       - name: Run luarocks test
         run: |
-          .\lua_install\bin\activate
           luarocks test
 
       - name: Run demo tests (parallel)
         continue-on-error: true
         run: |
-          .\lua_install\bin\activate
           tested -t "demo"
 
       - name: Run tests (sequentially)
         run: |
-          .\lua_install\bin\activate
           tested -n 0 -t "not demo"
 
       - name: Run tests (parallel)
         run: |
-          .\lua_install\bin\activate
           tested -t "not demo"
 
       - name: Collect coverage
         continue-on-error: true
         run: |
-          .\lua_install\bin\activate
           lua ./scripts/tested-ci-coverage.lua -n 0
         shell: cmd
 
@@ -153,7 +148,6 @@ jobs:
         if: success()
         continue-on-error: true
         run: |
-          .\lua_install\bin\activate
           luacov-coveralls -e lua_install
         env:
           COVERALLS_REPO_TOKEN: ${{ github.token }}
