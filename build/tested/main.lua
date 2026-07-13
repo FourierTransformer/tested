@@ -12,9 +12,7 @@ local logger = logging.get_logger("tested.main")
 
 
 
-
-
-
+package.path = "./?.lua;./?/init.lua;" .. package.path
 
 local TESTED_VERSION = "tested v0.3.0"
 

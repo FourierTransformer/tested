@@ -60,11 +60,11 @@ local function run_with_cleanup(test_file, options)
    local pre_test_loaded_packages = {}
    for package_name, _ in pairs(package.loaded) do pre_test_loaded_packages[package_name] = true end
 
-
-
-
-
-
+   logger:info("%s: keeping track of pre-existing module searchers", test_file)
+   local pre_test_searchers = {}
+   for index, searcher in ipairs(package.searchers or package.loaders) do
+      pre_test_searchers[index] = searcher
+   end
 
    local test_module = file_loader.load_file(test_file)
    if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
@@ -85,10 +85,10 @@ local function run_with_cleanup(test_file, options)
       end
    end
 
-
-
-
-
+   logger:info("%s: Restoring module searchers to their pre-test state", test_file)
+   local searchers = package.searchers or package.loaders
+   for index = #searchers, 1, -1 do searchers[index] = nil end
+   for index, searcher in ipairs(pre_test_searchers) do searchers[index] = searcher end
 
    collectgarbage()
 
