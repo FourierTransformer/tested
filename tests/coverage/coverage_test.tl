@@ -1,14 +1,26 @@
 local tested = require("tested")
 local lfs = require("lfs")
 
+local is_windows <const> = package.config:sub(1, 1) == "\\"
+local null_device <const> = is_windows and "NUL" or "/dev/null"
+
 local function run_tested_with_coverage(tmpdir: string, threads: integer, tests_path: string): string
    local stderr_path = tmpdir .. "/tested_stderr.log"
+
+   -- change directory in-process (rather than shelling out to `cd`) so the
+   -- command itself needs no OS-specific quoting/chaining (`cd '%s' && ...`
+   -- doesn't work under cmd.exe, which doesn't understand single quotes)
+   local original_dir = lfs.currentdir()
+   lfs.chdir(tmpdir)
+
    local cmd = string.format(
-      "cd '%s' && tested -c -n %d -f plain '%s' > /dev/null 2>'%s'",
-      tmpdir, threads, tests_path, stderr_path
+      'tested -c -n %d -f plain "%s" > %s 2>"%s"',
+      threads, tests_path, null_device, stderr_path
    )
    local handle = io.popen(cmd)
    if handle then handle:close() end
+
+   if original_dir then lfs.chdir(original_dir) end
 
    local captured_stderr = ""
    local stderr_file = io.open(stderr_path, "r")

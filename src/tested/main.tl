@@ -9,6 +9,13 @@ local util = require("tested.util")
 
 local logger = logging.get_logger("tested.main")
 
+-- Guarantee modules can be required relative to the current working directory
+-- (where `tested` is invoked from). Most Lua distributions bake this into the
+-- default package.path, but some toolchains (e.g. hererocks-built Windows Lua,
+-- once wrapped by LuaRocks' bin-script loader) omit it, breaking dotted
+-- requires of files that live alongside test files.
+-- package.path = "./?.lua;./?/init.lua;" .. package.path
+
 local TESTED_VERSION = "tested v0.3.0"
 
 local function load_result_formatter(args: cli.CLIOptions): types.ResultFormatter

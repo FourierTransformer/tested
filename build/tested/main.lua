@@ -9,6 +9,13 @@ local util = require("tested.util")
 
 local logger = logging.get_logger("tested.main")
 
+
+
+
+
+
+
+
 local TESTED_VERSION = "tested v0.3.0"
 
 local function load_result_formatter(args)
