@@ -113,16 +113,16 @@ end
 
 function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
    local errors = {}
-   if assertion.expected == nil then table.insert(errors, "'expected'") end
-   if assertion.actual == nil then table.insert(errors, "'actual'") end
-   if #errors ~= 0 then error("The assertion table must include 'expected' and 'actual' whose values cannot be 'nil'. Missing (or 'nil') fields: " .. table.concat(errors, ", "), 0) end
+   if assertion.expected == nil then table.insert(errors, "In assertion table, 'expected' is currently 'nil'.") end
+   if assertion.actual == nil then table.insert(errors, "In assertion table, 'actual' is currently 'nil'.") end
+   if #errors ~= 0 then return false, table.concat(errors, "\n") .. "\nCannot perform comparisons with 'nil' - use 'tested.assert_nil' for 'nil' comparison" end
    if assertion.given and type(assertion.given) ~= "string" then
-      table.insert(errors, "In assertion, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given))
+      table.insert(errors, "In assertion table, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given) .. "'")
    end
    if assertion.should and type(assertion.should) ~= "string" then
-      table.insert(errors, "In assertion, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should))
+      table.insert(errors, "In assertion table, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should) .. "'")
    end
-   if #errors ~= 0 then error(table.concat(errors, ". "), 0) end
+   if #errors ~= 0 then return false, table.concat(errors, "\n") end
    local expected_type = type(assertion.expected)
    local actual_type = type(assertion.actual)
 
