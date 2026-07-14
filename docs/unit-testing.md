@@ -44,7 +44,7 @@ NOTE: If tables have an `__eq` metamethod, that will be taken account first and 
     - tests/tables_test.tl (0.17ms)
       ✗ table compare will error (0.13ms)
        ✗ tests/tables_test.tl:27 - Given: a basic table  Should: not be the same as the other table
-          - .config.crazy_table: Mising Key
+          - .config.crazy_table: Missing Key
           ~ .config.debug: Different Values
           ~ .name: Different Values (Expected: Alice  Actual: Bob)
           ~ .scores[2]: Different Values (Expected: 20  Actual: 25)
@@ -76,7 +76,7 @@ NOTE: If tables have an `__eq` metamethod, that will be taken account first and 
     ```
 
 ### Table cycle compare
-`tested` can also check for cycles within a table. It performs a basic structural check to ensure the _structure_ of the cycles are the same. So, if you're writing an assertion that compares tables, you should mirror the cycle in the `expected` table. If you instead reference the `actual` table's cycle it will be considerd a failure.
+`tested` can also check for cycles within a table. It performs a basic structural check to ensure the _structure_ of the cycles are the same. So, if you're writing an assertion that compares tables, you should mirror the cycle in the `expected` table. If you instead reference the `actual` table's cycle it will be considered a failure.
 
 Example of a working cycle test:
 ```lua
@@ -197,11 +197,13 @@ NOTE: If running tests sequentially (`-n 0`), the sleep function will block and 
 
 ## Assertions
 
+Alongside the basic `tested.assert`, there are a few additional types of assertions in `tested`.
+
 ### Truthy/Falsy tests
 
 Sometimes in Lua you want to check if _anything_ returned (like a `string.match` or that a value exists in a table), we've added in an `assert_truthy` and `assert_falsy` to help out in those cases.
 
-We would recommend if you're looking for explicitly looking for `true` or `false`, maybe stick with the regular `assert` so your tests are more semantically correct, but if checking "exists" and "not exists", `assert_truthy` and `assert_falsy` are good candidates.
+We would recommend if you're explicitly looking for `true` or `false`, maybe stick with the regular `assert` so your tests are more semantically correct, but if checking "exists" and "not exists", `assert_truthy` and `assert_falsy` are good candidates.
 
 ```lua
 tested.test("truthy", function()
@@ -221,6 +223,26 @@ tested.test("falsy", function()
    tested.assert_falsy({given="nil", actual=nil})
    tested.assert_falsy({given="false", actual=false})
    tested.assert_falsy({given="unset variable", actual=b})
+end)
+```
+
+### `nil` tests
+At times, you may want to explcitly check for `nil` instead of "falsy", for this special case, there is a `tested.assert_nil`:
+
+```lua
+tested.test("assert_nil passes when value is nil", function()
+   tested.assert_nil({given="nil literal", actual=nil})
+
+   local unset: any
+   tested.assert_nil({given="unset variable", actual=unset})
+end)
+
+tested.test("assert_nil fails when value is false", {expected="FAIL"}, function()
+   tested.assert_nil({given="false boolean", actual=false})
+end)
+
+tested.test("assert_nil fails when value is zero", {expected="FAIL"}, function()
+   tested.assert_nil({given="zero", actual=0})
 end)
 ```
 
@@ -252,8 +274,55 @@ tested.test("example with exceptions and error checking", function()
 end)
 ```
 
+### Debugging Assertions
+To help make debugging assertions easier, an optional field `debug_var` can be added to any of the assertions that gets displayed when a test fails.
+
+```lua
+tested.test("normalize whitespace in user input", function()
+   -- Imagine processing user-submitted text
+   local user_input = "  Hello   World  \n"
+
+   -- Normalize: trim and collapse internal whitespace
+   local normalized = user_input:match("^%s*(%S.-)%s*$"):gsub("%s+", " ")
+
+   -- Test the result
+   tested.assert({
+      given = "user input with extra whitespace",
+      should = "normalize to single spaces",
+      expected = "Hello World",
+      actual = normalized,
+      debug_var = user_input
+   })
+end)
+```
+
+It can also take in a whole table of values (which get nicely pretty-printed) that could be useful when debugging a test:
+```lua
+tested.test("extract email domain from message", function()
+   -- Imagine processing incoming messages
+   local message = "Contact us at support@example.com for help"
+
+   -- Extract domain from email
+   local email = message:match("[%w%._%%-]+@[%w%._%%-]+")
+   local domain = email:match("@(.+)")
+
+   tested.assert({
+      given = "email embedded in message",
+      should = "extract correct domain",
+      expected = "example.com",
+      actual = domain,
+      debug_var = {
+         original_message = message,
+         extracted_email = email,
+      }
+   })
+end)
+```
+
+and this could also be used in an `assert_truthy` when checking substring existence, value in a table, and plenty of other situations - offering flexibility without having to provide numerous custom assertions.
+
 ## Test Lifecycle
-`tested` has support for a couple of test lifecycle methods. They allow you to register a function to run `before` any tests within the file have fun, `after` all tests have run, `before_each` test, and `after_each` test. If a test is skipped for any reason (`test.skip`, `run_when` is `false`, filtering, etc) the `before_each` and `after_each` will **not** be run. Test lifecycle hooks can be useful if you want to setup/teardown connections/services/configs, create or clean up temporary files, or even one day setup stubs and mocks!
+`tested` has support for a couple of test lifecycle methods. They allow you to register a function to run `before` any tests within the file have run, `after` all tests have run, `before_each` test, and `after_each` test. If a test is skipped for any reason (`test.skip`, `run_when` is `false`, filtering, etc) the `before_each` and `after_each` will **not** be run. Test lifecycle hooks can be useful if you want to setup/teardown connections/services/configs, create or clean up temporary files, or even one day setup stubs and mocks!
 
 Here's a simple example of what can be done:
 
@@ -327,7 +396,7 @@ Since `tested` is designed to be inherently composable, so data driven or parame
 
 === "Output"
     ```
-    tested v0.2.0  tests/litmus_test.tl
+    tested v0.3.0  tests/litmus_test.tl
 
     - tests/litmus_test.tl (3.14ms)
       ✗ test #97 (0.00ms)

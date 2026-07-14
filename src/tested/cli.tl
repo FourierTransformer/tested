@@ -36,7 +36,7 @@ local record cli
       language_handler: {string}
       paths: {string}
       debug: logging.level
-      threads: integer
+      instances: integer
       filter: string
       tags: string
       process: boolean
@@ -100,7 +100,7 @@ function cli.parse_args(version: string): cli.CLIOptions
       :count("*")
 
    parser:option("-n --instances")
-      :description("Set the number of concurrent tests to run (default: 4). Due to threading behaviour, this is now a noop. All tests run seqeuntially.")
+      :description("Set the number of concurrent tests to run (default: 4). Due to threading behaviour, this is now a noop. All tests run sequentially.")
       :default(4)
       :convert(tonumber)
 

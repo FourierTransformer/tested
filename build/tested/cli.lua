@@ -100,7 +100,7 @@ function cli.parse_args(version)
    count("*")
 
    parser:option("-n --instances"):
-   description("Set the number of concurrent tests to run (default: 4). Due to threading behaviour, this is now a noop. All tests run seqeuntially."):
+   description("Set the number of concurrent tests to run (default: 4). Due to threading behaviour, this is now a noop. All tests run sequentially."):
    default(4):
    convert(tonumber)
 

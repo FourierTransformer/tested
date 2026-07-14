@@ -1,6 +1,6 @@
 # `tested`
 
-`tested` is a new Lua (and [Teal](https://teal-language.org)!) unit testing framework! It's designed to be simple to use, fast, provide enough information to make results actionable, and one day run everywhere Lua does. It's still early days, but I think it could see some use and am excited to share it!
+`tested` is a new Lua (and [Teal](https://teal-language.org)!) unit testing framework! It's designed to be simple to use, fast, provide enough information to make results actionable, and one day run everywhere Lua does. It's still early days, and things are still changing, but I excited to share it and see what people think!
 
 ## Installation
 ```bash
@@ -58,7 +58,7 @@ Below is an example `tested` test and it's output. `tested` requires the `return
     ```
 === "Output"
     ```
-    tested v0.2.0  tests/binary_test.tl
+    tested v0.3.0  tests/binary_test.tl
 
     - tests/binary_test.tl (11.05ms)
     Test Summary for 4 tests (11.05ms):
@@ -71,7 +71,7 @@ Below is an example `tested` test and it's output. `tested` requires the `return
 ## Quickstart
 
 ### Folder setup
-In the root of your project, you should create a `tests` folder and place all your test files (with the suffix of `_test.lua` or `_test.tl`). From there you can run the `tested` command from a it will find all the tests and run them. Multiple sub-folders can be created in `tests` and will be crawled to find all the `_test.lua` files.
+In the root of your project, you should create a `tests` folder and place all your test files (with the suffix of `_test.lua` or `_test.tl`). From there you can run the `tested` command from and it will find all the tests and run them. Multiple sub-folders can be created in `tests` and will be crawled to find all the `_test.lua` files.
 
 ```
 .
@@ -141,7 +141,7 @@ There are a couple CLI commands that are good to know when you get started:
 - `tested -F <pattern>` or `--filter <pattern>` will filter tests based on a `string.find` pattern. It can just be the test name, a couple words from the test name (in order), or a full on Lua pattern!
 - `tested -s <option>` or `--show <option>` supports displaying different status of tests. By default `tested` shows tests which require followup (so `fail`, `exception`, and `invalid`)
     - Ex: `tested -s pass -s skip` see all passed and skipped tests
-- `tested -o <output_file>` - save off the reuslts in a `.txt` or `.json`
+- `tested -o <output_file>` - save off the results in a `.txt` or `.json`
     - Ex: `tested -o ./results.json`
 
 To see the entire list of CLI options, check out the [CLI Reference](./cli.md)

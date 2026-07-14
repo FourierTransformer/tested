@@ -1,5 +1,5 @@
 # Custom Formatters
-As of now (1/2026), `tested` currently supports printing out a "terminal", "plain" (which is just the terminal output without colors), and "tap" output. We've tried to make it easy to create your own formatter for `tested`. You can only create a custom formatter for _display_ purposes. If you want to create a custom formatter for _file saving_ purposes, please [create an issue](https://github.com/FourierTransformer/tested/issues)!
+`tested` currently supports printing out a "terminal", "plain" (which is just the terminal output without colors), and "tap" output. We've tried to make it easy to create your own formatter for `tested`. You can only create a custom formatter for _display_ purposes. If you want to create a custom formatter for _file saving_ purposes, please [create an issue](https://github.com/FourierTransformer/tested/issues)!
 
 ## A basic formatter
 
@@ -42,7 +42,7 @@ Feel free to also look at the existing [terminal](https://github.com/FourierTran
 An example of what `types.TestRunnerOutput` looks like (in json). `types.TestedOutput` is one of the values from `module_results`:
 ```json
 {
-  "tested_version":"tested v0.2.0",
+  "tested_version":"tested v0.3.0",
   "total_tests":2,
   "all_fully_tested":true,
   "total_time":4.000000000004e-06,
@@ -123,8 +123,8 @@ interface AssertionResult
 end
 
 interface TestedOptions
-  -- retries: integer -- NYI
-  -- retry_timeout: number -- NYI
+  retries: integer
+  retry_delay: number
   expected: ExpectedTestResult
   run_when: boolean
   tags: {string}
@@ -137,6 +137,7 @@ interface TestOutput
   time: number
   assertion_results: {AssertionResult}
   options: TestedOptions
+  retry_attempts: {TestOutput}
 end
 
 interface TestCounts

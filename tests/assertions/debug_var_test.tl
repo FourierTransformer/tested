@@ -50,6 +50,65 @@ tested.test("debug_var does not affect assert_nil when value is nil", function()
    })
 end)
 
+tested.test("debug_var does not affect a passing assert_truthy assertion", function()
+   tested.assert_truthy({
+      given = "a non-empty string",
+      should = "pass with debug_var set",
+      actual = "not empty",
+      debug_var = "some debug info"
+   })
+end)
+
+tested.test("debug_var does not affect a passing assert_falsy assertion", function()
+   tested.assert_falsy({
+      given = "a nil value",
+      should = "pass with debug_var set",
+      actual = nil,
+      debug_var = "some debug info"
+   })
+end)
+
+tested.test("debug_var does not affect a passing assert_throws_exception assertion", function()
+   tested.assert_throws_exception({
+      given = "a function that throws",
+      should = "pass with debug_var set",
+      actual = function() error("boom") end,
+      debug_var = "some debug info"
+   })
+end)
+
+-- regression test for a bug where assert_truthy, assert_falsy, and assert_throws_exception
+-- each built a fresh assertion table internally without copying over debug_var, so it never
+-- reached the failure output. Runs a fixture as a subprocess since we need to inspect the
+-- actual rendered output, not just whether the assertion passed or failed.
+tested.test("debug_var is forwarded to failure output for assert_truthy, assert_falsy, and assert_throws_exception", function()
+   local cmd = "tested -f plain tests/assertions/debug_var_forwarding_fixture.lua 2>&1"
+   local handle = io.popen(cmd)
+   local out = handle:read("*a")
+   handle:close()
+
+   tested.assert({
+      given = "assert_truthy failure output",
+      should = "include the forwarded debug_var",
+      expected = true,
+      actual = out:find("debug_var: FORWARDED_TRUTHY_MARKER", 1, true) ~= nil
+   })
+
+   tested.assert({
+      given = "assert_falsy failure output",
+      should = "include the forwarded debug_var",
+      expected = true,
+      actual = out:find("debug_var: FORWARDED_FALSY_MARKER", 1, true) ~= nil
+   })
+
+   tested.assert({
+      given = "assert_throws_exception failure output",
+      should = "include the forwarded debug_var",
+      expected = true,
+      actual = out:find("debug_var: FORWARDED_THROWS_MARKER", 1, true) ~= nil
+   })
+end)
+
 -- demo: show string debug_var in failure output
 tested.test("failing assertion shows string debug_var in output", {tags={"demo"}}, function()
    local actual_value = "world"
@@ -102,6 +161,36 @@ tested.test("assert_nil failure shows debug_var in output", {tags={"demo"}}, fun
       given = "a non-nil value",
       actual = 42,
       debug_var = "expected nil but got a number"
+   })
+end)
+
+-- demo: show debug_var on assert_truthy failure
+tested.test("assert_truthy failure shows debug_var in output", {tags={"demo"}}, function()
+   tested.assert_truthy({
+      given = "a falsy value",
+      should = "be truthy",
+      actual = false,
+      debug_var = "actual_value was: false"
+   })
+end)
+
+-- demo: show debug_var on assert_falsy failure
+tested.test("assert_falsy failure shows debug_var in output", {tags={"demo"}}, function()
+   tested.assert_falsy({
+      given = "a truthy value",
+      should = "be falsy",
+      actual = "not empty",
+      debug_var = "actual_value was: not empty"
+   })
+end)
+
+-- demo: show debug_var on assert_throws_exception failure
+tested.test("assert_throws_exception failure shows debug_var in output", {tags={"demo"}}, function()
+   tested.assert_throws_exception({
+      given = "a function that does not throw",
+      should = "throw an exception",
+      actual = function() end,
+      debug_var = "function returned without throwing"
    })
 end)
 
