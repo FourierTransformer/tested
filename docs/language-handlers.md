@@ -1,5 +1,5 @@
 # Additional Language Handlers
-`tested` supports running unit tests for languages written that are Lua-compatible. It just need to be made aware how to load those files into a Lua environement.
+`tested` supports running unit tests for languages written that are Lua-compatible. It just need to be made aware how to load those files into a Lua environment.
 
 
 ## Setting up a language handler
@@ -16,7 +16,7 @@ The loader sets up loading files given the specific extension. Since it is desig
 
 ### The setup
 
-In parallel mode, it's worth noting that the setup function is called _once_ for each worker thread, being executed inside of a Lua lane. In parallel mode (`-n 0` or `--thread 0`), the setup function should only be called once. Because of supporting parallel execution, the setup function can't have any _upvalues_ to C (this I think _could_ be supported if truly needed). In the example below, `tl.loader()` is invoked which modifies `package.loaders` (or `package.searchers` for LuaJIT/5.1) to support `require`ing Teal files from other Teal files.
+The setup function is called before executing a test _file_ with the expected extension. In the example below, `tl.loader()` is invoked which modifies `package.loaders` (or `package.searchers` for LuaJIT/5.1) to support `require`ing Teal files from tests written in Teal.
 
 ### Example Language Handler
 
@@ -58,6 +58,6 @@ tested --language-handler ./new-handler.lua -x handler_as_module
 
 ## Some notes on code coverage
 
-In the Teal loader example above (which is already [builtin to `tested`]()), we setup the `@` before the filename so the file got loaded in a way to indicate that it was a file on disk. This (along with `tl.loader` properly handling the load of additional Teal files) allows `luacov` to provide coverage for Teal files.
+In the Teal loader example above (which is already builtin to `tested`), we setup the `@` before the filename so the file got loaded in a way to indicate that it was a file on disk. This (along with `tl.loader` properly handling the load of additional Teal files) allows `luacov` to provide coverage for Teal files.
 
 Unfortunately, I'm not sure what the best way to handle this for other languages that compile to Lua, but extra care should be given if attempting to get code coverage to work. There are likely some ways to support it for not-as-directly compiled to Lua languages (mapping files?), but that might be an exercise left to the reader :P. If you have some ideas on how to solve or want to help add another compiled language - feel free to open up a [discussion](https://github.com/FourierTransformer/tested/discussions).

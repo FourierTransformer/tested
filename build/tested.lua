@@ -155,11 +155,11 @@ function tested.assert_nil(assertion)
 end
 
 function tested.assert_truthy(assertion)
-   return tested.assert({ given = assertion.given, should = assertion.should or "be truthy", expected = true, actual = (not not (assertion.actual)) })
+   return tested.assert({ given = assertion.given, should = assertion.should or "be truthy", expected = true, actual = (not not (assertion.actual)), debug_var = assertion.debug_var })
 end
 
 function tested.assert_falsy(assertion)
-   return tested.assert({ given = assertion.given, should = assertion.should or "be falsy", expected = false, actual = (not not (assertion.actual)) })
+   return tested.assert({ given = assertion.given, should = assertion.should or "be falsy", expected = false, actual = (not not (assertion.actual)), debug_var = assertion.debug_var })
 end
 
 function tested.assert_throws_exception(assertion)
@@ -178,6 +178,7 @@ function tested.assert_throws_exception(assertion)
          should = assertion.should or "throw exception with error message",
          expected = { false, assertion.expected },
          actual = wrapped_pcall(),
+         debug_var = assertion.debug_var,
       })
    else
       return tested.assert({
@@ -185,6 +186,7 @@ function tested.assert_throws_exception(assertion)
          should = assertion.should or "throw exception",
          expected = false,
          actual = pcall(function() assertion.actual() end),
+         debug_var = assertion.debug_var,
       })
    end
 end
@@ -408,10 +410,9 @@ function tested:run(filename, options)
 
    if tested.before_fn then tested.before_fn() end
 
-
-   local retry_attempts = {}
-
    for i, test in ipairs(self.tests) do
+
+      local retry_attempts = {}
 
 
       local test_result = { assertion_results = {}, name = test.name, options = test.options }

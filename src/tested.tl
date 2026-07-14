@@ -155,11 +155,11 @@ function tested.assert_nil(assertion: types.BaseAssertion): boolean, string
 end
 
 function tested.assert_truthy(assertion: types.BaseAssertion): boolean, string
-   return tested.assert({given=assertion.given, should=assertion.should or "be truthy", expected=true, actual=(not not (assertion.actual)) })
+   return tested.assert({given=assertion.given, should=assertion.should or "be truthy", expected=true, actual=(not not (assertion.actual)), debug_var=assertion.debug_var })
 end
 
 function tested.assert_falsy(assertion: types.BaseAssertion): boolean, string
-   return tested.assert({given=assertion.given, should=assertion.should or "be falsy", expected=false, actual=(not not (assertion.actual)) })
+   return tested.assert({given=assertion.given, should=assertion.should or "be falsy", expected=false, actual=(not not (assertion.actual)), debug_var=assertion.debug_var })
 end
 
 function tested.assert_throws_exception(assertion: types.ExceptionAssertion): boolean, string
@@ -177,14 +177,16 @@ function tested.assert_throws_exception(assertion: types.ExceptionAssertion): bo
          given=assertion.given,
          should=assertion.should or "throw exception with error message",
          expected={false, assertion.expected},
-         actual=wrapped_pcall()
+         actual=wrapped_pcall(),
+         debug_var=assertion.debug_var
       })
    else
       return tested.assert({
          given=assertion.given,
          should=assertion.should or "throw exception",
          expected=false,
-         actual=pcall(function() assertion.actual() end)
+         actual=pcall(function() assertion.actual() end),
+         debug_var=assertion.debug_var
       })
    end
 end
@@ -408,10 +410,9 @@ function tested:run(filename: string, options: types.TestRunnerOptions): types.T
 
    if tested.before_fn then tested.before_fn() end
 
-   -- setup
-   local retry_attempts: {types.TestOutput} = {}
-
    for i, test in ipairs(self.tests) do
+      -- setup
+      local retry_attempts: {types.TestOutput} = {}
 
       -- crate a test_result, could become a "retry_attempt" if we end up retrying
       local test_result: types.TestOutput = {assertion_results = {}, name = test.name, options = test.options}

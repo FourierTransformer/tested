@@ -65,8 +65,8 @@ Currently, `tested` has a couple display formats:
 - `tested -f tap` - output in the [TAP v14 format](https://testanything.org/). The TAP output does not change with the `-s` display options and always displays the entire output.
 
 
-## `tested -n/--threads`
-Specify the number of threads `tested` should use (default to `4`). If set to `0`, it will not use any threads (nor load the threading library - [LuaLanes](https://lualanes.github.io/lanes/) - at all and will run the tests sequentially. Each thread is setup to process a test _file_, so individual tests will not be processed by different threads. There is a small thread spin-up cost, but if you have a lot of tests it is generally negligible. Also, if you have a lot of resources available on your computer and a lot of individual test files, increasing the number of threads could help run tests faster.
+## `tested -n/--instances`
+Prior versions of `tested` included support for running tests in a threaded manner using Lua Lanes, however we eventually ran into deadlock issues in tests where a test file forked and decided to remove threaded tests for now. The `-n` flag is now a noop and will just run tests sequentially. We hope to one day bring back safely running tests in parallel.
 
 ## `tested -z/--custom-formatter`
 `tested` supports loading a [custom result formatter](./custom-formatter.md) from the commandline. It tries to load what's passed in initially as a Lua module, and then as filepath, doing some basic checks to ensure the object returned appears to be a formatter. Only one custom formatter can be loaded and will be used to display results.
@@ -92,7 +92,7 @@ tested -o ./terminal_output.txt -o ./full_output.json
 Usage: tested ([-f {terminal,plain,tap}] | [-z <custom_formatter>])
        [-h] [-c] [-r] [-F <filter>] [-t <tags>]
        [-s {all,valid,invalid,skip,pass,fail,exception,unknown,expected,unexpected}]
-       [-o <output_file>] [-n <threads>] [-x <language_handler>]
+       [-o <output_file>] [-n <instances>] [-x <language_handler>]
        [-d {DEBUG,INFO,WARNING}] [--version] [<paths>] ...
 
 A Lua/Teal Unit Testing Framework
@@ -120,8 +120,9 @@ Options:
               -o <output_file>,
    --output-file <output_file>
                          Output file to save test results in (currently supported extensions: '.txt' and '.json')
-          -n <threads>,  Set the number of threads to run the tests with (default: 4). Set to 0 to disable. Test files are split amongst the threads.
-   --threads <threads>
+            -n <instances>,
+   --instances <instances>
+                         Set the number of concurrent tests to run (default: 4). Due to threading behaviour, this is now a noop. All tests run sequentially.
                    -x <language_handler>,
    --language-handler <language_handler>
                          File that loads custom language that is Lua-compatible

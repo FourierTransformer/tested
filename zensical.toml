@@ -16,7 +16,6 @@ nav = [
   "custom-formatter.md",
   "language-handlers.md",
   "roadmap.md",
-  "pure-lua.md",
   "api-reference.md",
 ]
 
