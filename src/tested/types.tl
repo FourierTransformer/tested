@@ -9,8 +9,16 @@ local record types
       setups: {string: function}
    end
 
+   enum DisplayType
+      "none"
+      "plain"
+      "terminal"
+      "tap"
+   end
+
    -- test running types
    interface TestOptions
+      display: DisplayType
       random: boolean
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
@@ -164,7 +172,7 @@ local record types
       test: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       skip: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       only: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      run: function(self: types.Tested, filename_or_options?: string | types.TestOptions, options?: types.TestOptions): types.TestedOutput
+      run: function(self: types.Tested, options?: types.TestOptions, filename?: string): types.TestedOutput
       before: function(fn: function())
       after: function(fn: function())
       before_each: function(fn: function())

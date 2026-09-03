@@ -89,6 +89,7 @@ end
 
 local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions, test_files: {string}): types.TestRunnerOutput
    local test_options: types.TestOptions = {
+      display = "none",
       random = args.random,
       filter = args.filter,
       tags_filter = args.tags_filter,

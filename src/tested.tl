@@ -2,7 +2,7 @@ local type types = require("tested.types")
 local assert_table = require("tested.assert_table")
 local inspect = require("tested.libs.inspect")
 
-local tested: types.Tested = { tests = {}, run_only_tests = false }
+local tested: types.Tested = { tests = {}, run_only_tests = false, filename = "no tests in file, cannot detect filename" }
 
 local options_set: {string: boolean} = {tags = true, expected = true, run_when = true, retries = true, retry_delay = true}
 
@@ -391,15 +391,14 @@ local function run_test(self: types.Tested, test: types.Test, test_output: types
 end
 
 
-function tested:run(filename_or_options?: string | types.TestOptions, options?: types.TestOptions): types.TestedOutput
-   local filename: string = ""
-   if type(filename_or_options) == "string" then filename = filename_or_options as string
-   elseif type(filename_or_options) == "table" then options = filename_or_options as types.TestOptions end
-
+function tested:run(options?: types.TestOptions, filename?: string): types.TestedOutput
    if options then
       if options.random then
          math.randomseed(os.time())
          fisher_yates_shuffle(self.tests)
+      end
+      if not options.display then
+         options.display = "plain"
       end
       if not options.clock_s then
          options.clock_s = os.clock
@@ -409,6 +408,7 @@ function tested:run(filename_or_options?: string | types.TestOptions, options?: 
       end
    else
       options = {
+         display = "plain",
          clock_s = os.clock,
          sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
       }
@@ -417,7 +417,9 @@ function tested:run(filename_or_options?: string | types.TestOptions, options?: 
    local test_results: types.TestedOutput = {
       counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
       tests = {},
-      filename = filename,
+      -- test_runner passes the filename in, if no tests are declared in a file the filename will not be surmised
+      -- this will at least allow tests run via test_runner without any tests in them to show up nicely.
+      filename = filename or self.filename,
       fully_tested = false,
       total_time = 0
    }

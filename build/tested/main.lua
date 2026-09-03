@@ -89,6 +89,7 @@ end
 
 local function run_tests(formatter, args, test_files)
    local test_options = {
+      display = "none",
       random = args.random,
       filter = args.filter,
       tags_filter = args.tags_filter,

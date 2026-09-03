@@ -71,7 +71,7 @@ local function run_with_cleanup(test_file, options)
       error(test_file .. ": does not 'return tested' at end of file - unable to run tests", 0)
    end
 
-   local test_results = test_module:run(test_file, options)
+   local test_results = test_module:run(options, test_file)
 
    logger:info("%s: Clearing out any non-C packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do
