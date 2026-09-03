@@ -54,7 +54,7 @@ local function is_c_package(module_name: string): boolean
    return false
 end
 
-local function run_with_cleanup(test_file: string, options: types.TestRunnerOptions): types.TestedOutput
+local function run_with_cleanup(test_file: string, options: types.TestOptions): types.TestedOutput
 
    logger:info("%s: keeping track of pre-loaded packages", test_file)
    local pre_test_loaded_packages: {string: boolean} = {}
@@ -98,11 +98,12 @@ end
 
 function test_runner.run_tests(
    test_files: {string},
-   options: types.TestRunnerOptions,
+   test_options: types.TestOptions,
+   test_runner_options: types.TestRunnerOptions,
    display_func: function(to_display: types.TestedOutput)
 ): types.TestRunnerOutput
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
-   if options and options.coverage and not luacov_loaded then
+   if test_runner_options and test_runner_options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
    end
 
@@ -114,16 +115,16 @@ function test_runner.run_tests(
       module_results = {},
    }
 
-   if options.coverage then
+   if test_runner_options.coverage then
       logger:info("Initializing luacov")
       luacov_runner.init({exclude=_coverage_exclude_patterns})
       luacov_runner.pause()
    end
 
    for i, test_file in ipairs(test_files) do
-      if options.coverage then luacov_runner.resume() end
-      local test_output = run_with_cleanup(test_file, options)
-      if options.coverage then luacov_runner.pause() end
+      if test_runner_options.coverage then luacov_runner.resume() end
+      local test_output = run_with_cleanup(test_file, test_options)
+      if test_runner_options.coverage then luacov_runner.pause() end
 
       display_func(test_output)
       output.module_results[i] = test_output
@@ -140,7 +141,7 @@ function test_runner.run_tests(
 
    end
 
-   if options.coverage then
+   if test_runner_options.coverage then
       luacov_runner.save_stats()
    end
 

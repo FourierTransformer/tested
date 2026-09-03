@@ -198,7 +198,7 @@ local function fisher_yates_shuffle(t: {any})
    end
 end
 
-local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestRunnerOptions): types.TestResult, string
+local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestOptions): types.TestResult, string
    if run_only and test.kind ~= "only" then
       return "SKIP", "Only running 'tested.only' tests"
 
@@ -391,14 +391,28 @@ local function run_test(self: types.Tested, test: types.Test, test_output: types
 end
 
 
--- moved in here for hopes of one day being able to run a test from here directly
-function tested:run(filename: string, options: types.TestRunnerOptions): types.TestedOutput
-   if options and options.random then
-      math.randomseed(os.time())
-      fisher_yates_shuffle(self.tests)
-   end
+function tested:run(filename_or_options?: string | types.TestOptions, options?: types.TestOptions): types.TestedOutput
+   local filename: string = ""
+   if type(filename_or_options) == "string" then filename = filename_or_options as string
+   elseif type(filename_or_options) == "table" then options = filename_or_options as types.TestOptions end
 
-   if self.run_only_tests then print("Only running tests with 'tested.only'") end
+   if options then
+      if options.random then
+         math.randomseed(os.time())
+         fisher_yates_shuffle(self.tests)
+      end
+      if not options.clock_s then
+         options.clock_s = os.clock
+      end
+      if not options.sleep_s then
+         options.sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+      end
+   else
+      options = {
+         clock_s = os.clock,
+         sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+      }
+   end
 
    local test_results: types.TestedOutput = {
       counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},

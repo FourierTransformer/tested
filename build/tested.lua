@@ -391,14 +391,28 @@ local function run_test(self, test, test_output)
 end
 
 
+function tested:run(filename_or_options, options)
+   local filename = ""
+   if type(filename_or_options) == "string" then filename = filename_or_options
+   elseif type(filename_or_options) == "table" then options = filename_or_options end
 
-function tested:run(filename, options)
-   if options and options.random then
-      math.randomseed(os.time())
-      fisher_yates_shuffle(self.tests)
+   if options then
+      if options.random then
+         math.randomseed(os.time())
+         fisher_yates_shuffle(self.tests)
+      end
+      if not options.clock_s then
+         options.clock_s = os.clock
+      end
+      if not options.sleep_s then
+         options.sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+      end
+   else
+      options = {
+         clock_s = os.clock,
+         sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end,
+      }
    end
-
-   if self.run_only_tests then print("Only running tests with 'tested.only'") end
 
    local test_results = {
       counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },

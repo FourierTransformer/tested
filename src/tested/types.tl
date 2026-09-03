@@ -10,14 +10,16 @@ local record types
    end
 
    -- test running types
-   interface TestRunnerOptions
+   interface TestOptions
       random: boolean
-      coverage: boolean
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
-      language_handlers: {string}
       clock_s: function(): number
       sleep_s: function(seconds: number)
+   end
+
+   interface TestRunnerOptions
+      coverage: boolean
    end
 
    enum TestResult
@@ -162,7 +164,7 @@ local record types
       test: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       skip: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
       only: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      run: function(self: types.Tested, filename: string, options: types.TestRunnerOptions): types.TestedOutput
+      run: function(self: types.Tested, filename_or_options?: string | types.TestOptions, options?: types.TestOptions): types.TestedOutput
       before: function(fn: function())
       after: function(fn: function())
       before_each: function(fn: function())

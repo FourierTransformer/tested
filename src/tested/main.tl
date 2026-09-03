@@ -88,14 +88,15 @@ local function get_all_test_files(args: cli.CLIOptions): {string}
 end
 
 local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions, test_files: {string}): types.TestRunnerOutput
-   local options: types.TestRunnerOptions = {
+   local test_options: types.TestOptions = {
       random = args.random,
-      coverage = args.coverage,
       filter = args.filter,
       tags_filter = args.tags_filter,
-      language_handlers = args.language_handler,
       clock_s = os.clock,
       sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+   }
+   local test_runner_options: types.TestRunnerOptions = {
+      coverage = args.coverage
    }
 
    local display_results = function(test_output: types.TestedOutput)
@@ -103,7 +104,7 @@ local function run_tests(formatter: types.ResultFormatter, args: cli.CLIOptions,
    end
 
    logger:info("Running tests sequentially")
-   return test_runner.run_tests(test_files, options, display_results)
+   return test_runner.run_tests(test_files, test_options, test_runner_options, display_results)
 end
 
 local function write_output_files(args: cli.CLIOptions, header_comments: {string}, runner_output: types.TestRunnerOutput)
