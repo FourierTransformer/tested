@@ -1,6 +1,8 @@
 local tested = require("tested")
 
-tested.test("doesn't work with given and should being not strings!", function()
+local t = tested.new()
+
+t:test("doesn't work with given and should being not strings!", function()
 	tested.assert({
 		given="true",
 		should="1",
@@ -10,7 +12,7 @@ tested.test("doesn't work with given and should being not strings!", function()
 end)
 
 
-tested.test("output should clearly show just given", {tags={"demo"}}, function()
+t:test("output should clearly show just given", {tags={"demo"}}, function()
 	tested.assert({
 		given="true",
 		expected=false,
@@ -18,7 +20,7 @@ tested.test("output should clearly show just given", {tags={"demo"}}, function()
 	})
 end)
 
-tested.test("output should clearly show just should", {tags={"demo"}}, function()
+t:test("output should clearly show just should", {tags={"demo"}}, function()
 	tested.assert({
 		should="true",
 		expected=true,
@@ -26,4 +28,4 @@ tested.test("output should clearly show just should", {tags={"demo"}}, function(
 	})
 end)
 
-return tested
+return t

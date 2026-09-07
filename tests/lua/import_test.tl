@@ -1,7 +1,9 @@
 local tested = require("tested")
 local str = require("tests.lua.tl_to_import")
 
-tested.test("imported files should work", function()
+local t = tested.new()
+
+t:test("imported files should work", function()
     tested.assert({
         given = "a nested string",
         should = "be equivalent to imported string",
@@ -10,4 +12,4 @@ tested.test("imported files should work", function()
     })
 end)
 
-return tested
+return t

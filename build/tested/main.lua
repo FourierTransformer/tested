@@ -88,14 +88,16 @@ local function get_all_test_files(args)
 end
 
 local function run_tests(formatter, args, test_files)
-   local options = {
+   local test_options = {
+      display = "none",
       random = args.random,
-      coverage = args.coverage,
       filter = args.filter,
       tags_filter = args.tags_filter,
-      language_handlers = args.language_handler,
       clock_s = os.clock,
       sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end,
+   }
+   local test_runner_options = {
+      coverage = args.coverage,
    }
 
    local display_results = function(test_output)
@@ -103,7 +105,7 @@ local function run_tests(formatter, args, test_files)
    end
 
    logger:info("Running tests sequentially")
-   return test_runner.run_tests(test_files, options, display_results)
+   return test_runner.run_tests(test_files, test_options, test_runner_options, display_results)
 end
 
 local function write_output_files(args, header_comments, runner_output)

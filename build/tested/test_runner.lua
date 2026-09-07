@@ -68,10 +68,10 @@ local function run_with_cleanup(test_file, options)
 
    local test_module = file_loader.load_file(test_file)
    if not (type(test_module) == "table" and type(test_module.tests) == "table" and type(test_module.run_only_tests) == "boolean") then
-      error(test_file .. ": does not 'return tested' at end of file - unable to run tests", 0)
+      error(test_file .. ": does not return a tested object at end of file - unable to run tests", 0)
    end
 
-   local test_results = test_module:run(test_file, options)
+   local test_results = test_module:run(options, test_file)
 
    logger:info("%s: Clearing out any non-C packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do
@@ -98,11 +98,12 @@ end
 
 function test_runner.run_tests(
    test_files,
-   options,
+   test_options,
+   test_runner_options,
    display_func)
 
    local luacov_loaded, luacov_runner = pcall(require, "luacov.runner")
-   if options and options.coverage and not luacov_loaded then
+   if test_runner_options and test_runner_options.coverage and not luacov_loaded then
       error("Code coverage requires the luacov module to be installed")
    end
 
@@ -114,16 +115,16 @@ function test_runner.run_tests(
       module_results = {},
    }
 
-   if options.coverage then
+   if test_runner_options.coverage then
       logger:info("Initializing luacov")
       luacov_runner.init({ exclude = _coverage_exclude_patterns })
       luacov_runner.pause()
    end
 
    for i, test_file in ipairs(test_files) do
-      if options.coverage then luacov_runner.resume() end
-      local test_output = run_with_cleanup(test_file, options)
-      if options.coverage then luacov_runner.pause() end
+      if test_runner_options.coverage then luacov_runner.resume() end
+      local test_output = run_with_cleanup(test_file, test_options)
+      if test_runner_options.coverage then luacov_runner.pause() end
 
       display_func(test_output)
       output.module_results[i] = test_output
@@ -140,7 +141,7 @@ function test_runner.run_tests(
 
    end
 
-   if options.coverage then
+   if test_runner_options.coverage then
       luacov_runner.save_stats()
    end
 

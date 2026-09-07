@@ -18,7 +18,9 @@ After installing, the `tested` module will be available to your Lua code with `r
 local tested = require("tested")
 local tinytoml = require("tinytoml")
 
-tested.test("encode date as string", function()
+local t = tested.new()
+
+t:test("encode date as string", function()
 
     local date_toml = [[offset_datetime = 1979-05-27T07:32:00Z
 	local_datetime = 1979-05-27T07:32:00
@@ -40,15 +42,19 @@ end)
 
 --- as many other tests as you want
 
-return tested
+return t
 ```
 
 Running the tests are as simple as placing the file in a `tests` folder and then running the CLI command `tested` (which should be installed from LuaRocks). It will go through the `tests` folder, find each file matching the `*_test.lua` (or `*_test.tl` file), and run it through the test framework. It also doesn't matter if the test is written in Lua or Teal, `tested` is able to load and run both!
 
 You can see more tests in this repo's [tests](https://github.com/FourierTransformer/tested/tree/main/tests) folder!
 
-## AI Disclosure
-As of versions > 0.1.0, AI has been used to help implement _some_ features, research Lua/Teal internals, debug issues, and make more readable output. Before this version, the code was hand-written, but some research was done with the help of AI. The docs will remain hand-written for now. I am hesitant of AI and its place in open source, but am willing to evaluate it.
+## AI Policy
+As of 9/2026, AI will no longer be used to _implement_ any parts of `tested`. It _may_ be used to aid in research or debugging (particularly with issues at the OS level). PRs/Issues should be written by humans.
+
+AI was used between versions 0.1.0 and 0.3.0 to help implement _some_ features, research Lua/Teal internals, debug issues, and make more readable output. PRs during those times indicate what work was done by an AI. Before 0.1.0, the code was hand-written, but some research was done with the help of AI.
+
+The docs have always been and will always be hand written.
 
 ## Licenses
 Apart from dependencies specified in the rockspec, parts of the following are included in the source code present in this repo:

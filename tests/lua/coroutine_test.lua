@@ -1,6 +1,8 @@
 local tested = require("tested")
 
-tested.test("basic create and resume runs the function", function()
+local t = tested.new()
+
+t:test("basic create and resume runs the function", function()
     local result = nil
     local co = coroutine.create(function() result = 42 end)
     tested.assert({ given = "status before first resume", should = "be suspended", expected = "suspended", actual = coroutine.status(co) })
@@ -9,7 +11,7 @@ tested.test("basic create and resume runs the function", function()
     tested.assert({ given = "status after completion", should = "be dead", expected = "dead", actual = coroutine.status(co) })
 end)
 
-tested.test("yield passes values back to the resume caller", function()
+t:test("yield passes values back to the resume caller", function()
     local co = coroutine.create(function()
         coroutine.yield(10)
         coroutine.yield(20)
@@ -24,7 +26,7 @@ tested.test("yield passes values back to the resume caller", function()
     tested.assert({ given = "third yield value",  expected = 30, actual = v3 })
 end)
 
-tested.test("resume passes values back into the coroutine via yield", function()
+t:test("resume passes values back into the coroutine via yield", function()
     local received = {}
     local co = coroutine.create(function()
         local a = coroutine.yield()
@@ -38,7 +40,7 @@ tested.test("resume passes values back into the coroutine via yield", function()
     tested.assert({ given = "second received value", expected = "world", actual = received[2] })
 end)
 
-tested.test("status transitions: suspended → suspended at yield → dead", function()
+t:test("status transitions: suspended → suspended at yield → dead", function()
     local co = coroutine.create(function() coroutine.yield() end)
     tested.assert({ given = "before first resume",  expected = "suspended", actual = coroutine.status(co) })
     coroutine.resume(co)
@@ -47,7 +49,7 @@ tested.test("status transitions: suspended → suspended at yield → dead", fun
     tested.assert({ given = "after completion",     expected = "dead",      actual = coroutine.status(co) })
 end)
 
-tested.test("error inside coroutine does not propagate to caller", function()
+t:test("error inside coroutine does not propagate to caller", function()
     local co = coroutine.create(function() error("something went wrong") end)
     local ok, err = coroutine.resume(co)
     tested.assert({ given = "resume ok flag",   expected = false, actual = ok })
@@ -55,7 +57,7 @@ tested.test("error inside coroutine does not propagate to caller", function()
     tested.assert({ given = "status after error", expected = "dead", actual = coroutine.status(co) })
 end)
 
-tested.test("resuming a dead coroutine returns false", function()
+t:test("resuming a dead coroutine returns false", function()
     local co = coroutine.create(function() end)
     coroutine.resume(co)
     local ok, err = coroutine.resume(co)
@@ -63,7 +65,7 @@ tested.test("resuming a dead coroutine returns false", function()
     tested.assert_truthy({ given = "cannot resume dead coroutine message", actual = err })
 end)
 
-tested.test("coroutine.wrap creates a simple callable generator", function()
+t:test("coroutine.wrap creates a simple callable generator", function()
     local gen = coroutine.wrap(function()
         coroutine.yield("a")
         coroutine.yield("b")
@@ -74,7 +76,7 @@ tested.test("coroutine.wrap creates a simple callable generator", function()
     tested.assert({ given = "third call",  expected = "c", actual = gen() })
 end)
 
-tested.test("coroutine as a for-iterator produces a sequence", function()
+t:test("coroutine as a for-iterator produces a sequence", function()
     local function range(n)
         return coroutine.wrap(function()
             for i = 1, n do coroutine.yield(i) end
@@ -85,7 +87,7 @@ tested.test("coroutine as a for-iterator produces a sequence", function()
     tested.assert({ given = "generated sequence", expected = { 1, 2, 3, 4, 5 }, actual = result })
 end)
 
-tested.test("producer-consumer pattern with coroutines", function()
+t:test("producer-consumer pattern with coroutines", function()
     local produced = {}
     local consumed = {}
 
@@ -107,7 +109,7 @@ tested.test("producer-consumer pattern with coroutines", function()
     tested.assert({ given = "consumed values", expected = { 1, 2, 3 }, actual = consumed })
 end)
 
-tested.test("multiple coroutines interleave cooperatively", function()
+t:test("multiple coroutines interleave cooperatively", function()
     local log = {}
 
     local co1 = coroutine.create(function()
@@ -131,4 +133,4 @@ tested.test("multiple coroutines interleave cooperatively", function()
         actual   = log })
 end)
 
-return tested
+return t

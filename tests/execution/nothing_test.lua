@@ -1,3 +1,5 @@
 local tested = require("tested")
 
-return tested
+local t = tested.new()
+
+return t

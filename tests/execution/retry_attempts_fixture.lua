@@ -2,8 +2,10 @@
 -- not named '*_test.lua' so the main suite does not pick it up directly.
 local tested = require("tested")
 
+local t = tested.new()
+
 local attempt_count = 0
-tested.test("retried test that eventually passes", {retries = 2}, function()
+t:test("retried test that eventually passes", {retries = 2}, function()
    attempt_count = attempt_count + 1
    tested.assert({
       given = "attempt count",
@@ -13,7 +15,7 @@ tested.test("retried test that eventually passes", {retries = 2}, function()
    })
 end)
 
-tested.test("immediate pass with no retries configured", function()
+t:test("immediate pass with no retries configured", function()
    tested.assert({
       given = "1 + 1",
       should = "equal 2",
@@ -22,4 +24,4 @@ tested.test("immediate pass with no retries configured", function()
    })
 end)
 
-return tested
+return t

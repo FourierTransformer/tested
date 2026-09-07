@@ -4,7 +4,9 @@
 -- so the parent test can confirm debug_var actually reaches the failure output.
 local tested = require("tested")
 
-tested.test("assert_truthy fails with debug_var", function()
+local t = tested.new()
+
+t:test("assert_truthy fails with debug_var", function()
    tested.assert_truthy({
       given = "a falsy value",
       actual = false,
@@ -12,7 +14,7 @@ tested.test("assert_truthy fails with debug_var", function()
    })
 end)
 
-tested.test("assert_falsy fails with debug_var", function()
+t:test("assert_falsy fails with debug_var", function()
    tested.assert_falsy({
       given = "a truthy value",
       actual = true,
@@ -20,7 +22,7 @@ tested.test("assert_falsy fails with debug_var", function()
    })
 end)
 
-tested.test("assert_throws_exception fails with debug_var", function()
+t:test("assert_throws_exception fails with debug_var", function()
    tested.assert_throws_exception({
       given = "a function that does not throw",
       actual = function() end,
@@ -28,4 +30,4 @@ tested.test("assert_throws_exception fails with debug_var", function()
    })
 end)
 
-return tested
+return t

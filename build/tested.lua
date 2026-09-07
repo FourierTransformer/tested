@@ -2,12 +2,114 @@
 local assert_table = require("tested.assert_table")
 local inspect = require("tested.libs.inspect")
 
-local tested = { tests = {}, run_only_tests = false }
+local tested_class = {}
+local tested = {}
 
 local options_set = { tags = true, expected = true, run_when = true, retries = true, retry_delay = true }
 
-local function validate_options(test_name, options, test_src)
-   local error_prefix = test_src .. " in \"" .. test_name .. "\": "
+
+function tested_class.new(filename)
+   if filename == nil then
+      filename = debug.getinfo(2, "S").short_src
+   end
+
+   local self = {
+      tests = {},
+      run_only_tests = false,
+      filename = filename,
+   }
+   setmetatable(self, { __index = tested })
+
+   return self
+end
+
+function tested_class.assert(assertion)
+   local errors = {}
+   if assertion.expected == nil then table.insert(errors, "In assertion table, 'expected' is currently 'nil'.") end
+   if assertion.actual == nil then table.insert(errors, "In assertion table, 'actual' is currently 'nil'.") end
+   if #errors ~= 0 then return false, table.concat(errors, "\n") .. "\nCannot perform comparisons with 'nil' - use 'tested.assert_nil' for 'nil' comparison." end
+   if assertion.given and type(assertion.given) ~= "string" then
+      table.insert(errors, "In assertion table, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given) .. "'.")
+   end
+   if assertion.should and type(assertion.should) ~= "string" then
+      table.insert(errors, "In assertion table, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should) .. "'.")
+   end
+   if #errors ~= 0 then return false, table.concat(errors, "\n") end
+   local expected_type = type(assertion.expected)
+   local actual_type = type(assertion.actual)
+
+   if actual_type ~= expected_type then
+      return false, "Actual: " .. tostring(assertion.actual) .. " (as '" ..
+      actual_type .. "'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
+   end
+
+
+
+   if actual_type == "table" and expected_type == "table" then
+      return assert_table(assertion.expected, assertion.actual)
+   end
+
+   if assertion.actual == assertion.expected then
+      return true, ""
+   end
+
+   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
+end
+
+
+function tested_class.assert_nil(assertion)
+   assertion.should = assertion.should or "be nil"
+   if assertion.actual == nil then
+      return true, ""
+   end
+
+   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: nil"
+end
+
+function tested_class.assert_truthy(assertion)
+   return tested_class.assert({ given = assertion.given, should = assertion.should or "be truthy", expected = true, actual = (not not (assertion.actual)), debug_var = assertion.debug_var })
+end
+
+function tested_class.assert_falsy(assertion)
+   return tested_class.assert({ given = assertion.given, should = assertion.should or "be falsy", expected = false, actual = (not not (assertion.actual)), debug_var = assertion.debug_var })
+end
+
+function tested_class.assert_throws_exception(assertion)
+   if assertion.expected then
+      local function wrapped_pcall()
+         local ok, err = pcall(function() assertion.actual() end)
+         if type(err) == "string" then
+            return { ok, err:match("^.+:%d+: (.+)$") or err }
+         else
+            return { ok, err }
+         end
+      end
+
+      return tested_class.assert({
+         given = assertion.given,
+         should = assertion.should or "throw exception with error message",
+         expected = { false, assertion.expected },
+         actual = wrapped_pcall(),
+         debug_var = assertion.debug_var,
+      })
+   else
+      return tested_class.assert({
+         given = assertion.given,
+         should = assertion.should or "throw exception",
+         expected = false,
+         actual = pcall(function() assertion.actual() end),
+         debug_var = assertion.debug_var,
+      })
+   end
+end
+
+
+
+
+local tested_object_call_error = "on your tested object ensure you are calling ':test' and not '.test'"
+
+local function validate_options(test_name, options, filename)
+   local error_prefix = filename .. " in \"" .. test_name .. "\": "
 
    for k, _ in pairs(options) do
       if not options_set[k] then
@@ -57,7 +159,7 @@ local function validate_options(test_name, options, test_src)
    end
 end
 
-local function extract_fn_and_options(test_name, fn_or_options, fn, test_src)
+local function extract_fn_and_options(test_name, fn_or_options, fn, filename)
    local options = {}
    if type(fn_or_options) == "function" then
       fn = fn_or_options
@@ -68,127 +170,49 @@ local function extract_fn_and_options(test_name, fn_or_options, fn, test_src)
       fn = fn
    end
 
-   tested.filename = test_src
-
-   validate_options(test_name, options, test_src or "?")
+   validate_options(test_name, options, filename)
 
    return fn, options
 end
 
 
-function tested.test(name, fn_or_options, fn)
-   local test_src = debug.getinfo(2, "S").short_src
-   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
-   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "test" })
+function tested:test(name, fn_or_options, fn)
+   assert(type(self) == "table", tested_object_call_error)
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, self.filename)
+   table.insert(self.tests, { name = name, fn = func, options = options, kind = "test" })
 end
 
-function tested.skip(name, fn_or_options, fn)
-   local test_src = debug.getinfo(2, "S").short_src
-   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
-   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "skip" })
+function tested:skip(name, fn_or_options, fn)
+   assert(type(self) == "table", tested_object_call_error)
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, self.filename)
+   table.insert(self.tests, { name = name, fn = func, options = options, kind = "skip" })
 end
 
-function tested.only(name, fn_or_options, fn)
-   local test_src = debug.getinfo(2, "S").short_src
-   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
-   table.insert(tested.tests, { name = name, fn = func, options = options, kind = "only" })
-   tested.run_only_tests = true
+function tested:only(name, fn_or_options, fn)
+   assert(type(self) == "table", tested_object_call_error)
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, self.filename)
+   table.insert(self.tests, { name = name, fn = func, options = options, kind = "only" })
+   self.run_only_tests = true
 end
 
-function tested.before(fn)
-   tested.before_fn = fn
+function tested:before(fn)
+   assert(type(self) == "table", tested_object_call_error)
+   self.before_fn = fn
 end
 
-function tested.after(fn)
-   tested.after_fn = fn
+function tested:after(fn)
+   assert(type(self) == "table", tested_object_call_error)
+   self.after_fn = fn
 end
 
-function tested.before_each(fn)
-   tested.before_each_fn = fn
+function tested:before_each(fn)
+   assert(type(self) == "table", tested_object_call_error)
+   self.before_each_fn = fn
 end
 
-function tested.after_each(fn)
-   tested.after_each_fn = fn
-end
-
-function tested.assert(assertion)
-   local errors = {}
-   if assertion.expected == nil then table.insert(errors, "In assertion table, 'expected' is currently 'nil'.") end
-   if assertion.actual == nil then table.insert(errors, "In assertion table, 'actual' is currently 'nil'.") end
-   if #errors ~= 0 then return false, table.concat(errors, "\n") .. "\nCannot perform comparisons with 'nil' - use 'tested.assert_nil' for 'nil' comparison." end
-   if assertion.given and type(assertion.given) ~= "string" then
-      table.insert(errors, "In assertion table, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given) .. "'.")
-   end
-   if assertion.should and type(assertion.should) ~= "string" then
-      table.insert(errors, "In assertion table, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should) .. "'.")
-   end
-   if #errors ~= 0 then return false, table.concat(errors, "\n") end
-   local expected_type = type(assertion.expected)
-   local actual_type = type(assertion.actual)
-
-   if actual_type ~= expected_type then
-      return false, "Actual: " .. tostring(assertion.actual) .. " (as '" ..
-      actual_type .. "'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
-   end
-
-
-
-   if actual_type == "table" and expected_type == "table" then
-      return assert_table(assertion.expected, assertion.actual)
-   end
-
-   if assertion.actual == assertion.expected then
-      return true, ""
-   end
-
-   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
-end
-
-
-function tested.assert_nil(assertion)
-   assertion.should = assertion.should or "be nil"
-   if assertion.actual == nil then
-      return true, ""
-   end
-
-   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: nil"
-end
-
-function tested.assert_truthy(assertion)
-   return tested.assert({ given = assertion.given, should = assertion.should or "be truthy", expected = true, actual = (not not (assertion.actual)), debug_var = assertion.debug_var })
-end
-
-function tested.assert_falsy(assertion)
-   return tested.assert({ given = assertion.given, should = assertion.should or "be falsy", expected = false, actual = (not not (assertion.actual)), debug_var = assertion.debug_var })
-end
-
-function tested.assert_throws_exception(assertion)
-   if assertion.expected then
-      local function wrapped_pcall()
-         local ok, err = pcall(function() assertion.actual() end)
-         if type(err) == "string" then
-            return { ok, err:match("^.+:%d+: (.+)$") or err }
-         else
-            return { ok, err }
-         end
-      end
-
-      return tested.assert({
-         given = assertion.given,
-         should = assertion.should or "throw exception with error message",
-         expected = { false, assertion.expected },
-         actual = wrapped_pcall(),
-         debug_var = assertion.debug_var,
-      })
-   else
-      return tested.assert({
-         given = assertion.given,
-         should = assertion.should or "throw exception",
-         expected = false,
-         actual = pcall(function() assertion.actual() end),
-         debug_var = assertion.debug_var,
-      })
-   end
+function tested:after_each(fn)
+   assert(type(self) == "table", tested_object_call_error)
+   self.after_each_fn = fn
 end
 
 local function fisher_yates_shuffle(t)
@@ -200,13 +224,13 @@ end
 
 local function should_skip_test(test, run_only, options)
    if run_only and test.kind ~= "only" then
-      return "SKIP", "Only running 'tested.only' tests"
+      return "SKIP", "Only running 'tested:only' tests"
 
    elseif test.kind == "skip" then
-      return "SKIP", "Test marked with 'tested.skip'"
+      return "SKIP", "Test marked with 'tested:skip'"
 
    elseif test.options.run_when ~= nil and test.options.run_when == false then
-      return "SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
+      return "SKIP", "Condition in `run_when` returned false. Skipping test."
 
    elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
       return "FILTERED", "Test name does not match filter pattern '" .. options.filter .. "'"
@@ -237,14 +261,14 @@ end
 
 
 local function wrap_assert(self, test_output)
-   local original_assert = self.assert
-   local original_assert_nil = self.assert_nil
+   local original_assert = tested_class.assert
+   local original_assert_nil = tested_class.assert_nil
    local counters = { total = 0, failed = 0 }
 
    local function record_result(ok, err, assertion, line_number)
       counters.total = counters.total + 1
       local assertion_result = {
-         filename = tested.filename,
+         filename = self.filename,
          line_number = line_number,
          given = assertion.given,
          should = assertion.should,
@@ -266,21 +290,21 @@ local function wrap_assert(self, test_output)
       table.insert(test_output.assertion_results, assertion_result)
    end
 
-   self.assert = function(assertion)
+   tested_class.assert = function(assertion)
       local ok, err = original_assert(assertion)
       record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
-   self.assert_nil = function(assertion)
+   tested_class.assert_nil = function(assertion)
       local ok, err = original_assert_nil(assertion)
       record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
    local function restore()
-      self.assert = original_assert
-      self.assert_nil = original_assert_nil
+      tested_class.assert = original_assert
+      tested_class.assert_nil = original_assert_nil
    end
 
    return counters, restore
@@ -373,7 +397,7 @@ local function add_up_test_results(test_output, test_counts)
 end
 
 local function run_test(self, test, test_output)
-   if tested.before_each_fn then tested.before_each_fn() end
+   if self.before_each_fn then self.before_each_fn() end
 
    local assertions, restore = wrap_assert(self, test_output)
    local original_os_exit = swap_os_exit(test.fn)
@@ -387,28 +411,45 @@ local function run_test(self, test, test_output)
 
    adjust_for_expected(test.options.expected, test_output)
 
-   if tested.after_each_fn then tested.after_each_fn() end
+   if self.after_each_fn then self.after_each_fn() end
 end
 
 
-
-function tested:run(filename, options)
-   if options and options.random then
-      math.randomseed(os.time())
-      fisher_yates_shuffle(self.tests)
+function tested:run(options, filename)
+   assert(type(self) == "table", tested_object_call_error)
+   if options then
+      if options.random then
+         math.randomseed(os.time())
+         fisher_yates_shuffle(self.tests)
+      end
+      if not options.display then
+         options.display = "plain"
+      end
+      if not options.clock_s then
+         options.clock_s = os.clock
+      end
+      if not options.sleep_s then
+         options.sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+      end
+   else
+      options = {
+         display = "plain",
+         clock_s = os.clock,
+         sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end,
+      }
    end
-
-   if self.run_only_tests then print("Only running tests with 'tested.only'") end
 
    local test_results = {
       counts = { passed = 0, failed = 0, expected = 0, skipped = 0, filtered = 0, invalid = 0 },
       tests = {},
-      filename = filename,
+
+
+      filename = filename or self.filename,
       fully_tested = false,
       total_time = 0,
    }
 
-   if tested.before_fn then tested.before_fn() end
+   if self.before_fn then self.before_fn() end
 
    for i, test in ipairs(self.tests) do
 
@@ -462,7 +503,7 @@ function tested:run(filename, options)
       test_results.total_time = test_results.total_time + test_result.time
    end
 
-   if tested.after_fn then tested.after_fn() end
+   if self.after_fn then self.after_fn() end
 
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
@@ -471,4 +512,4 @@ function tested:run(filename, options)
    return test_results
 end
 
-return tested
+return tested_class

@@ -4,6 +4,8 @@ local cjson = require("cjson")
 local is_windows <const> = package.config:sub(1, 1) == "\\"
 local null_device <const> = is_windows and "NUL" or "/dev/null"
 
+local t = tested.new()
+
 -- runs the given fixture file as a subprocess and returns the decoded JSON output.
 -- a subprocess is needed since retry_attempts is only observable in the JSON output
 -- of a full run, not through the public tested API. tested's own dkjson vendor copy
@@ -36,7 +38,7 @@ local function find_test(module_result: {any:any}, name: string): {any:any}
    end
 end
 
-tested.test("retry_attempts stays scoped to the test that actually retried", function()
+t:test("retry_attempts stays scoped to the test that actually retried", function()
    local output = run_and_capture_json("tests/execution/retry_attempts_fixture.lua")
    local module_result = (output.module_results as {any:any})[1] as {any:any}
 
@@ -58,4 +60,4 @@ tested.test("retry_attempts stays scoped to the test that actually retried", fun
    })
 end)
 
-return tested
+return t

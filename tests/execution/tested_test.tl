@@ -1,11 +1,13 @@
 local tested = require("tested")
 
+local t = tested.new()
+
 local function sum(a: number, b: number): number
     return a + b
 end
 
 -- Your test code (unchanged)
-tested.test("sum()", {tags={"demo"}}, function()
+t:test("sum()", {tags={"demo"}}, function()
     
     -- some setup could go here!
     -- this should be run before every assert!
@@ -31,7 +33,7 @@ tested.test("sum()", {tags={"demo"}}, function()
     tested.assert(thing)
 end)
 
-tested.test("conditional guy over here", {run_when=true}, function()
+t:test("conditional guy over here", {run_when=true}, function()
     tested.assert({
         given = "4 + 4",
         should = "8",
@@ -40,7 +42,7 @@ tested.test("conditional guy over here", {run_when=true}, function()
     })
 end)
 
-tested.test("conditional guy should be skipped", {run_when=false}, function()
+t:test("conditional guy should be skipped", {run_when=false}, function()
     tested.assert({
         given = "4 and 4",
         should = "return 8",
@@ -49,7 +51,7 @@ tested.test("conditional guy should be skipped", {run_when=false}, function()
     })
 end)
 
-tested.test("just a test!", function()
+t:test("just a test!", function()
     tested.assert({
         given = "4 + 4",
         should = "return 8",
@@ -58,7 +60,7 @@ tested.test("just a test!", function()
     })
 end)
 
-tested.test("Throws exception in assert", {tags={"demo"}}, function()
+t:test("Throws exception in assert", {tags={"demo"}}, function()
     tested.assert({
         given = "2 + 2",
         should = "raise unhandled excpetion!",
@@ -67,7 +69,7 @@ tested.test("Throws exception in assert", {tags={"demo"}}, function()
     })
 end)
 
-tested.test("Properly handles exception in assert", function()
+t:test("Properly handles exception in assert", function()
     tested.assert({
         given = "2 + 2",
         should = "raise handled excpetion!",
@@ -76,14 +78,14 @@ tested.test("Properly handles exception in assert", function()
     })
 end)
 
-tested.test("assert_throws_exception handles exception in assert", function()
+t:test("assert_throws_exception handles exception in assert", function()
     tested.assert_throws_exception({
         given = "2 + 2",
         actual = function() error("gets raised, but handled!") end
     })
 end)
 
-tested.test("assert_throws_exception checks exception in assert", function()
+t:test("assert_throws_exception checks exception in assert", function()
     tested.assert_throws_exception({
         given = "2 + 2",
         expected = "gets raised, but handled!",
@@ -91,7 +93,7 @@ tested.test("assert_throws_exception checks exception in assert", function()
     })
 end)
 
-tested.test("assert_throws_exception with error(...,0) checks exception in assert", function()
+t:test("assert_throws_exception with error(...,0) checks exception in assert", function()
     tested.assert_throws_exception({
         given = "2 + 2",
         expected = "gets raised, but handled!",
@@ -99,6 +101,6 @@ tested.test("assert_throws_exception with error(...,0) checks exception in asser
     })
 end)
 
-tested.test("should return unknown since no tested.assert called", {tags={"demo"}}, function() end)
+t:test("should return unknown since no tested.assert called", {tags={"demo"}}, function() end)
 
-return tested
+return t
