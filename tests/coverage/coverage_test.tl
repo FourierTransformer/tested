@@ -4,6 +4,8 @@ local lfs = require("lfs")
 local is_windows <const> = package.config:sub(1, 1) == "\\"
 local null_device <const> = is_windows and "NUL" or "/dev/null"
 
+local t = tested.new()
+
 local function run_tested_with_coverage(tmpdir: string, threads: integer, tests_path: string): string
    local stderr_path = tmpdir .. "/tested_stderr.log"
 
@@ -32,7 +34,7 @@ local function run_tested_with_coverage(tmpdir: string, threads: integer, tests_
    return captured_stderr
 end
 
-tested.test("coverage output is identical for sequential and parallel runs", {tags = {"coverage"}}, function()
+t:test("coverage output is identical for sequential and parallel runs", {tags = {"coverage"}}, function()
    local project_root = lfs.currentdir()
    if not project_root then
       error("cannot determine current working directory")
@@ -99,4 +101,4 @@ tested.test("coverage output is identical for sequential and parallel runs", {ta
    lfs.rmdir(tmpdir)
 end)
 
-return tested
+return t

@@ -19,7 +19,9 @@ Below is an example `tested` test and it's output. `tested` requires the `return
     local tested = require("tested")
     local utf8validator = require("utf8validator")
 
-    tested.test("should support ascii", function()
+    local t = tested.new()
+
+    t:test("should support ascii", function()
        local start_seq = tonumber("00000000", 2)
        local end_seq = tonumber("01111111", 2)
 
@@ -35,7 +37,7 @@ Below is an example `tested` test and it's output. `tested` requires the `return
        
     end)
 
-    tested.test("should support two bytes", function()
+    t:test("should support two bytes", function()
        local start_seq = tonumber("11000010", 2)
        local end_seq = tonumber("11011111", 2)
 
@@ -54,7 +56,7 @@ Below is an example `tested` test and it's output. `tested` requires the `return
 
     -- the other tests...
 
-    return tested
+    return t
     ```
 === "Output"
     ```
@@ -90,7 +92,9 @@ Let's take a look at a basic test file:
 ```lua title="tests/my_library_test.lua"
 local tested = require("tested")
 
-tested.test("just a test!", function()
+local t = tested.new()
+
+t:test("just a test!", function()
     tested.assert({
         given = "4 + 4",
         should = "return 8",
@@ -101,17 +105,17 @@ end)
 
 print("This will be printed before _any_ tests run!")
 
-tested.test("just works without given and should!", function()
+t:test("just works without given and should!", function()
     tested.assert({
         expected=true,
         actual=true
     })
 end)
 
-return tested
+return t
 ```
 
-NOTE: it is very important that the test file has `return tested` at the end. `tested` will raise a (helpful!) error message if it's not present.
+NOTE: it is very important that the test file has `return t` at the end. `tested` will raise an error message if it's not present.
 
 After the `tested` command loads up a test file, it goes through and finds all the various tests defined in the file (in this case there are two) and adds them to a list to be executed. It does this so tests can be shuffled, skipped, or easily be filtered! In the example above, that `print` statement will execute before either tests.
 

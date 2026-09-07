@@ -24,13 +24,18 @@ Tests can also be tagged and then selected to run by tag from the CLI. This can 
 
 Test Example:
 ```lua
-tested.test("tagged as integration", {tags={"integration"}}, function()
+local tested = require("tested")
+local t = tested.new()
+
+t:test("tagged as integration", {tags={"integration"}}, function()
    tested.assert({given="1+1", should="equal 2", expected=2, actual=1+1})
 end)
 
-tested.test("tagged as unit and slow", {tags={"unit", "slow"}}, function()
+t:test("tagged as unit and slow", {tags={"unit", "slow"}}, function()
    tested.assert({given="1+1", should="equal 2", expected=2, actual=1+1})
 end)
+
+return t
 ```
 The tag filtering supports boolean logic (and/or/not and parenthesis), so you can do the following:
 

@@ -1,5 +1,7 @@
 local tested = require("tested")
 
+local t = tested.new()
+
 local t1 = {
   name = 'Alice',
   age = 30,
@@ -23,7 +25,7 @@ local t3 = {
   config = { debug = true, port = 8080, crazy_table = {"hello", "world"} }
 }
 
-tested.test("table compare will error", {expected="FAIL"}, function()
+t:test("table compare will error", {expected="FAIL"}, function()
   tested.assert({
     given = "a basic table",
     should = "not be the same as the other table",
@@ -33,7 +35,7 @@ tested.test("table compare will error", {expected="FAIL"}, function()
 
 end)
 
-tested.test("table compare should work", function()
+t:test("table compare should work", function()
   tested.assert({
     given = "a basic table",
     should = "be the same as the other table",
@@ -43,7 +45,7 @@ tested.test("table compare should work", function()
 end)
 
 -- Cycle tests
-tested.test("tables with self-cycles, but the same structure should be equal", function()
+t:test("tables with self-cycles, but the same structure should be equal", function()
    local cycle_a: {any:any} = {}
    cycle_a["self"] = cycle_a
 
@@ -58,7 +60,7 @@ tested.test("tables with self-cycles, but the same structure should be equal", f
    })
 end)
 
-tested.test("slightly complicated tables with self-cycles, but with different structures should not be equal", {expected="FAIL"}, function()
+t:test("slightly complicated tables with self-cycles, but with different structures should not be equal", {expected="FAIL"}, function()
 
    local cycle_a: {any:any} = {}
    cycle_a[1] = "first"
@@ -78,7 +80,7 @@ tested.test("slightly complicated tables with self-cycles, but with different st
    })
 end)
 
-tested.test("slightly complicated tables with self-cycles, but the same structure should be equal", function()
+t:test("slightly complicated tables with self-cycles, but the same structure should be equal", function()
 
    local cycle_a: {any:any} = {}
    cycle_a[1] = "first"
@@ -99,7 +101,7 @@ tested.test("slightly complicated tables with self-cycles, but the same structur
    })
 end)
 
-tested.test("mutually-referential tables with equivalent structure should be equal", function()
+t:test("mutually-referential tables with equivalent structure should be equal", function()
    local mutual_a: {any:any} = {}
    local mutual_b: {any:any} = {}
    mutual_a["other"] = mutual_b
@@ -118,7 +120,7 @@ tested.test("mutually-referential tables with equivalent structure should be equ
    })
 end)
 
-tested.test("back-reference cycle two levels deep should be considered equal", function()
+t:test("back-reference cycle two levels deep should be considered equal", function()
    -- Cycle deeper in the tree: child holds a back-reference to its parent
    local node_a: {any:any} = { name = "root", child = {} }
    (node_a.child as {any:any})["parent"] = node_a
@@ -148,7 +150,7 @@ local point_mt: metatable<Point> = {
    end
 }
 
-tested.test("tables with matching __eq should be considered equal", function()
+t:test("tables with matching __eq should be considered equal", function()
    -- same logical value, but _internal differs — __eq should make them equal
    local p1 = setmetatable({x=3, y=4, _internal="abc"} as Point, point_mt)
    local p2 = setmetatable({x=3, y=4, _internal="xyz"} as Point, point_mt)
@@ -161,7 +163,7 @@ tested.test("tables with matching __eq should be considered equal", function()
    })
 end)
 
-tested.test("tables with non-matching __eq should not be considered not equal", {expected="FAIL"}, function()
+t:test("tables with non-matching __eq should not be considered not equal", {expected="FAIL"}, function()
    -- __eq returning false should still produce a failure, not a deep-field diff
    local p3 = setmetatable({x=1, y=2} as Point, point_mt)
    local p4 = setmetatable({x=9, y=9} as Point, point_mt)
@@ -185,7 +187,7 @@ local shape_a = { name = "circle", center = p5 }
 local shape_b = { name = "circle", center = p6 }
 local shape_c = { name = "circle", center = p7 }
 
-tested.test("container table whose nested field has matching __eq should be equal", function()
+t:test("container table whose nested field has matching __eq should be equal", function()
    tested.assert({
       given = "two shapes whose center Points share coordinates but differ in _internal",
       should = "be equal because the nested Point's __eq only checks x and y",
@@ -194,7 +196,7 @@ tested.test("container table whose nested field has matching __eq should be equa
    })
 end)
 
-tested.test("container table whose nested field has non-matching __eq should not be equal", {expected="FAIL"}, function()
+t:test("container table whose nested field has non-matching __eq should not be equal", {expected="FAIL"}, function()
    tested.assert({
       given = "two shapes whose center Points have different coordinates",
       should = "not be equal because the nested Point's __eq returns false",
@@ -203,4 +205,4 @@ tested.test("container table whose nested field has non-matching __eq should not
    })
 end)
 
-return tested
+return t

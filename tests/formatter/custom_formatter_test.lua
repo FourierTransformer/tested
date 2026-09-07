@@ -1,5 +1,7 @@
 local tested = require("tested")
 
+local t = tested.new()
+
 local TESTED = "tested"
 local FORMATTER = "tests/formatter/simple_formatter.lua"
 
@@ -11,7 +13,7 @@ local function run(test_file)
     return out
 end
 
-tested.test("custom formatter output for fully_working_test.lua", function()
+t:test("custom formatter output for fully_working_test.lua", function()
     local out = run("tests/assertions/fully_working_test.lua")
     tested.assert({ given = "custom formatter output", should = "contain CFMT_HEADER line", expected = true, actual = out:find("CFMT_HEADER") ~= nil })
     tested.assert({ given = "CFMT_HEADER line", should = "contain the test file path", expected = true, actual = out:find("fully_working_test%.lua") ~= nil })
@@ -25,18 +27,18 @@ tested.test("custom formatter output for fully_working_test.lua", function()
     tested.assert({ given = "CFMT_SUMMARY for fully_working_test.lua", should = "show failed=0", expected = true, actual = out:find("failed=0") ~= nil })
 end)
 
-tested.test("custom formatter output for tested_test.tl", function()
+t:test("custom formatter output for tested_test.tl", function()
     local out = run("tests/execution/tested_test.tl")
     tested.assert({ given = "test with run_when=false", should = "appear as CFMT_TEST SKIP", expected = true, actual = out:find("CFMT_TEST SKIP conditional guy should be skipped") ~= nil })
     tested.assert({ given = "CFMT_SUMMARY for tested_test.tl", should = "show failed > 0", expected = false, actual = out:find("failed=0") ~= nil })
     tested.assert({ given = "CFMT_SUMMARY for tested_test.tl", should = "show skipped=1", expected = true, actual = out:find("skipped=1") ~= nil })
 end)
 
-tested.test("custom formatter output for expected_test.tl", function()
+t:test("custom formatter output for expected_test.tl", function()
     local out = run("tests/execution/expected_test.tl")
     tested.assert({ given = "test with {expected='FAIL'} that fails", should = "appear as CFMT_TEST EXPECTED_FAIL", expected = true, actual = out:find("CFMT_TEST EXPECTED_FAIL") ~= nil })
     tested.assert({ given = "test with {expected='EXCEPTION'} that throws", should = "appear as CFMT_TEST EXPECTED_EXCEPTION", expected = true, actual = out:find("CFMT_TEST EXPECTED_EXCEPTION") ~= nil })
     tested.assert({ given = "test with {expected='FAIL'} that passes", should = "appear as CFMT_TEST UNEXPECTED", expected = true, actual = out:find("CFMT_TEST UNEXPECTED") ~= nil })
 end)
 
-return tested
+return t

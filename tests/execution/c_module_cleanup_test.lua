@@ -1,5 +1,7 @@
 local tested = require("tested")
 
+local t = tested.new()
+
 local TESTED = "tested"
 local FIXTURE = "tests/execution/cjson_fixture_test.lua"
 
@@ -11,7 +13,7 @@ local function run_with_debug(test_file)
     return out
 end
 
-tested.test("C modules are not unloaded after test run", function()
+t:test("C modules are not unloaded after test run", function()
     local out = run_with_debug(FIXTURE)
     tested.assert({
         given = "debug output after running a test that requires cjson",
@@ -21,7 +23,7 @@ tested.test("C modules are not unloaded after test run", function()
     })
 end)
 
-tested.test("non-C modules are still unloaded after test run", function()
+t:test("non-C modules are still unloaded after test run", function()
     local out = run_with_debug(FIXTURE)
     tested.assert({
         given = "debug output after running a test that requires cjson",
@@ -37,4 +39,4 @@ tested.test("non-C modules are still unloaded after test run", function()
     })
 end)
 
-return tested
+return t

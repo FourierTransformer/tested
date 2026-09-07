@@ -5,14 +5,15 @@
 
 Below is an example of basic test comparing two tables, `tested.assert` will deep compare the tables, and generate a little summary of the differences as well as print out the expected and actual table.
 
-NOTE: If tables have an `__eq` metamethod, that will be taken account first and utilized during comparison.
+NOTE: If tables have an `__eq` metamethod, that will be taken into account first and utilized during comparison.
 
 === "Test"
 
     ```lua
     local tested = require("tested")
+    local t = tested.new()
     
-    tested.test("table compare will error", function()
+    t:test("table compare will error", function()
       local t1 = {
         name = 'Alice',
         age = 30,
@@ -36,7 +37,7 @@ NOTE: If tables have an `__eq` metamethod, that will be taken account first and 
       })
     end)
 
-    return tested -- SUPER important, otherwise the tests wont work
+    return t -- SUPER important, otherwise the tests wont work
     ```
 
 === "Output"
@@ -80,7 +81,7 @@ NOTE: If tables have an `__eq` metamethod, that will be taken account first and 
 
 Example of a working cycle test:
 ```lua
-tested.test("tables with self-cycles, but the same structure should be equal", function()
+t:test("tables with self-cycles, but the same structure should be equal", function()
    local cycle_a: {any:any} = {}
    cycle_a["self"] = cycle_a
 
@@ -104,7 +105,7 @@ For quick debugging purposes, there are `tested.skip` and `tested.only`. These a
 
 `tested.skip`:
 ```lua
-tested.skip("skipping because tested.skip", function()
+t:skip("skipping because tested.skip", function()
     tested.assert({expected = 8, actual = sum(4, 4)})
 end)
 ```
@@ -113,17 +114,17 @@ There is also a `tested.only` which will only cause the tests marked with `teste
 
 ```lua
 -- this will be marked as skipped
-tested.test("skipping because others are tested.only", function()
+t:test("skipping because others are tested.only", function()
     tested.assert({expected = 8, actual = sum(4, 4)})
 end)
 
 -- only these two will be run in a specific file!
-tested.only("this will run!", function()
+t:only("this will run!", function()
     tested.assert({expected = 8, actual = sum(5, 3) })
 end)
 
 -- this also gets run since it is an only test
-tested.only("this will also run!", function()
+t:only("this will also run!", function()
     tested.assert({expected = 8, actual = sum(2, 6) })
 end)
 ```
@@ -139,7 +140,7 @@ If you want to _conditionally_ skip tests based on something that can be determi
 
 ```lua
 -- the `run_when` option takes in a boolean where true runs the test, false will skip it
-tested.test("luajit only test", {run_when=(type(jit) == "table")}, function()
+t:test("luajit only test", {run_when=(type(jit) == "table")}, function()
     tested.assert({expected = 8, actual = sum(5, 3) })
 end)
 
@@ -149,7 +150,7 @@ end)
 If there are tests that are going to be broken for an extended period of time (ex: dependencies outside of your control, waaayy out future feature, a bug fix in a future sprint) you can set the `expected` option:
 
 ```lua
-tested.test("expected exception: throws as expected", {expected="EXCEPTION"}, function()
+t:test("expected exception: throws as expected", {expected="EXCEPTION"}, function()
    error("this exception is expected")
 end)
 ```
@@ -163,7 +164,7 @@ This will hide the test result from the default output, _however_, if the value 
 
 ```lua
 -- this will show up in the tested output with an error message indicating that it's passed but has expected to fail.
-tested.test("unexpected: expected fail but test passes", {expected="FAIL"}, function()
+t:test("unexpected: expected fail but test passes", {expected="FAIL"}, function()
    tested.assert({
       given = "1 + 1",
       should = "equal 2",
@@ -178,7 +179,7 @@ end)
 
 ```lua
 local exception_attempt_count = 0
-tested.test("retries: exception retried and then passes", {retries = 1, retry_delay = 1.5}, function()
+t:test("retries: exception retried and then passes", {retries = 1, retry_delay = 1.5}, function()
    exception_attempt_count = exception_attempt_count + 1
    if exception_attempt_count == 1 then
       error("first attempt raises an exception")
@@ -206,7 +207,7 @@ Sometimes in Lua you want to check if _anything_ returned (like a `string.match`
 We would recommend if you're explicitly looking for `true` or `false`, maybe stick with the regular `assert` so your tests are more semantically correct, but if checking "exists" and "not exists", `assert_truthy` and `assert_falsy` are good candidates.
 
 ```lua
-tested.test("truthy", function()
+t:test("truthy", function()
    tested.assert_truthy({given="empty string", actual=""})
    tested.assert_truthy({given="a number", actual=0})
    tested.assert_truthy({given="a function", actual=function() end})
@@ -218,7 +219,7 @@ tested.test("truthy", function()
    tested.assert_truthy({given="string.find he in hello", actual=string.find("hello", "he")})
 end)
 
-tested.test("falsy", function()
+t:test("falsy", function()
    local b
    tested.assert_falsy({given="nil", actual=nil})
    tested.assert_falsy({given="false", actual=false})
@@ -230,18 +231,18 @@ end)
 At times, you may want to explcitly check for `nil` instead of "falsy", for this special case, there is a `tested.assert_nil`:
 
 ```lua
-tested.test("assert_nil passes when value is nil", function()
+t:test("assert_nil passes when value is nil", function()
    tested.assert_nil({given="nil literal", actual=nil})
 
    local unset: any
    tested.assert_nil({given="unset variable", actual=unset})
 end)
 
-tested.test("assert_nil fails when value is false", {expected="FAIL"}, function()
+t:test("assert_nil fails when value is false", {expected="FAIL"}, function()
    tested.assert_nil({given="false boolean", actual=false})
 end)
 
-tested.test("assert_nil fails when value is zero", {expected="FAIL"}, function()
+t:test("assert_nil fails when value is zero", {expected="FAIL"}, function()
    tested.assert_nil({given="zero", actual=0})
 end)
 ```
@@ -251,7 +252,7 @@ When writing assertions that check that an exception has been thrown, the `actua
 
 ```lua
 -- simple check that exception will be raised
-tested.test("assert_throws_exception handles exception in assert", function()
+t:test("assert_throws_exception handles exception in assert", function()
     tested.assert_throws_exception({
         given = "an explicit error",
         actual = function() error("gets raised, but handled!") end
@@ -259,7 +260,7 @@ tested.test("assert_throws_exception handles exception in assert", function()
 end)
 
 -- check that a specific exception was thrown
-tested.test("example with exceptions and error checking", function()
+t:test("example with exceptions and error checking", function()
 
     -- will throw the specific exception in "expected" below
     local function_that_throws = function()
@@ -278,7 +279,7 @@ end)
 To help make debugging assertions easier, an optional field `debug_var` can be added to any of the assertions that gets displayed when a test fails.
 
 ```lua
-tested.test("normalize whitespace in user input", function()
+t:test("normalize whitespace in user input", function()
    -- Imagine processing user-submitted text
    local user_input = "  Hello   World  \n"
 
@@ -298,7 +299,7 @@ end)
 
 It can also take in a whole table of values (which get nicely pretty-printed) that could be useful when debugging a test:
 ```lua
-tested.test("extract email domain from message", function()
+t:test("extract email domain from message", function()
    -- Imagine processing incoming messages
    local message = "Contact us at support@example.com for help"
 
@@ -327,21 +328,23 @@ and this could also be used in an `assert_truthy` when checking substring existe
 Here's a simple example of what can be done:
 
 ```lua
+local tested = require("tested")
+local t = tested.new()
 local counts = { before = 0, after = 0, before_each = 0, after_each = 0 }
 
-tested.before(function() counts.before = counts.before + 1 end)
-tested.after(function() counts.after = counts.after + 1 end)
-tested.before_each(function() counts.before_each = counts.before_each + 1 end)
-tested.after_each(function() counts.after_each = counts.after_each + 1 end)
+t:before(function() counts.before = counts.before + 1 end)
+t:after(function() counts.after = counts.after + 1 end)
+t:before_each(function() counts.before_each = counts.before_each + 1 end)
+t:after_each(function() counts.after_each = counts.after_each + 1 end)
 
-tested.test("before runs once before first test", function()
+t:test("before runs once before first test", function()
     tested.assert({ given = "before count",       should = "be 1",  expected = 1, actual = counts.before })
     tested.assert({ given = "after count",         should = "be 0",  expected = 0, actual = counts.after })
     tested.assert({ given = "before_each count",   should = "be 1",  expected = 1, actual = counts.before_each })
     tested.assert({ given = "after_each count",    should = "be 0",  expected = 0, actual = counts.after_each })
 end)
 
-tested.test("after_each runs after first test, before_each runs again", function()
+t:test("after_each runs after first test, before_each runs again", function()
     tested.assert({ given = "before count",       should = "still be 1", expected = 1, actual = counts.before })
     tested.assert({ given = "after count",         should = "still be 0", expected = 0, actual = counts.after })
     tested.assert({ given = "before_each count",   should = "be 2",       expected = 2, actual = counts.before_each })
@@ -349,20 +352,23 @@ tested.test("after_each runs after first test, before_each runs again", function
 end)
 
 -- before_each and after_each will not run on skipped tests!
-tested.test("this test is skipped", { run_when = false }, function() end)
+t:test("this test is skipped", { run_when = false }, function() end)
+
+return t
 ```
 
 ## Data/table driven tests
-Since `tested` is designed to be inherently composable, so data driven or parametric tests just work with standard Lua conventions. Either entire `tested.test` or `tested.assert` can be wrapped, and as long as a good test name (for `tested.test`) or `given` (for `tested.assert`) are provided, the output will show exactly what has failed.
+Since `tested` is designed to be inherently composable, so data driven or parametric tests just work with standard Lua conventions. Either entire `t:test` or `tested.assert` can be wrapped, and as long as a good test name (for `tested.test`) or `given` (for `tested.assert`) are provided, the output will show exactly what has failed.
 
 === "Test"
 
     ```lua
     local tested = require("tested")
+    local t = tested.new()
 
     -- 1000 individual tests: most pass, a few fail sporadically (multiples of 97)
     for i = 1, 1000 do
-        tested.test("test #" .. i, function()
+        t:test("test #" .. i, function()
             local expected = i * 2
             -- fail at multiples of 97 by returning wrong value
             local actual = (i % 97 == 0) and (expected + 1) or expected
@@ -376,7 +382,7 @@ Since `tested` is designed to be inherently composable, so data driven or parame
     end
 
     -- single test with 1000 asserts: fails sporadically (multiples of 113)
-    tested.test("1000 asserts with sporadic failures", function()
+    t:test("1000 asserts with sporadic failures", function()
         for i = 1, 1000 do
             local expected = i * i
             -- fail at multiples of 113 by returning a wrong value

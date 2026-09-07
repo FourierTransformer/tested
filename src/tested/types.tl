@@ -153,30 +153,39 @@ local record types
       retry_delay: number
    end
 
-   interface Tested
-      tests: {Test}
-      run_only_tests: boolean
-      filename: string
-
-      before_fn: function()
-      after_fn: function()
-      before_each_fn: function()
-      after_each_fn: function()
-
+   interface TestedClass
+      -- asserts
       assert: function<T>(assertion: Assertion<T>): boolean, string
       assert_nil: function(assertion: BaseAssertion): boolean, string
       assert_truthy: function(assertion: BaseAssertion): boolean, string
       assert_falsy: function(assertion: BaseAssertion): boolean, string
       assert_throws_exception: function(assertion: ExceptionAssertion): boolean, string
+
+      -- initializer
+      new: function(filename?: string): Tested
+   end
+
+   interface Tested
+      -- properties needed to run tests
+      tests: {Test}
+      run_only_tests: boolean
+      filename: string
+      before_fn: function
+      after_fn: function
+      before_each_fn: function
+      after_each_fn: function
+
+      -- actual tests
       -- teal currently doesn't support polymorphism, so we gotta kinda handle it ourselves
-      test: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      skip: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      only: function(name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      run: function(self: types.Tested, options?: types.TestOptions, filename?: string): types.TestedOutput
-      before: function(fn: function())
-      after: function(fn: function())
-      before_each: function(fn: function())
-      after_each: function(fn: function())
+      test: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
+      skip: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
+      only: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
+      run: function(self: Tested, options?: types.TestOptions, filename?: string): types.TestedOutput
+
+      before: function(self: Tested, fn: function())
+      after: function(self: Tested, fn: function())
+      before_each: function(self: Tested, fn: function())
+      after_each: function(self: Tested, fn: function())
    end
 end
 

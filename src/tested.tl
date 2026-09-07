@@ -2,12 +2,114 @@ local type types = require("tested.types")
 local assert_table = require("tested.assert_table")
 local inspect = require("tested.libs.inspect")
 
-local tested: types.Tested = { tests = {}, run_only_tests = false, filename = "no tests in file, cannot detect filename" }
+local tested_class: types.TestedClass = {}
+local tested: types.Tested = {}
 
 local options_set: {string: boolean} = {tags = true, expected = true, run_when = true, retries = true, retry_delay = true}
 
-local function validate_options(test_name: string, options: types.TestedOptions, test_src: string)
-   local error_prefix = test_src .. " in \"" .. test_name .. "\": "
+-- all the tested class methods
+function tested_class.new(filename?: string): types.Tested
+   if filename == nil then
+      filename = debug.getinfo(2, "S").short_src
+   end
+
+   local self: types.Tested = {
+      tests = {},
+      run_only_tests = false,
+      filename = filename
+   }
+   setmetatable(self, {__index = tested})
+
+   return self
+end
+
+function tested_class.assert<T>(assertion: types.Assertion<T>): boolean, string
+   local errors = {}
+   if assertion.expected == nil then table.insert(errors, "In assertion table, 'expected' is currently 'nil'.") end
+   if assertion.actual == nil then table.insert(errors, "In assertion table, 'actual' is currently 'nil'.") end
+   if #errors ~= 0 then return false, table.concat(errors, "\n") .. "\nCannot perform comparisons with 'nil' - use 'tested.assert_nil' for 'nil' comparison." end
+   if assertion.given and type(assertion.given) ~= "string" then
+      table.insert(errors, "In assertion table, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given) .. "'.")
+   end
+   if assertion.should and type(assertion.should) ~= "string" then
+      table.insert(errors, "In assertion table, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should) .. "'.")
+   end
+   if #errors ~= 0 then return false, table.concat(errors, "\n") end
+   local expected_type = type(assertion.expected)
+   local actual_type = type(assertion.actual)
+
+   if actual_type ~= expected_type then
+      return false, "Actual: " .. tostring(assertion.actual) .. " (as '" ..
+      actual_type .."'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
+   end
+
+   -- perform table comparison first, so we can explicitly handle __eq
+   -- as opposed to it being handles in the assertion compare below
+   if actual_type == "table" and expected_type == "table" then
+      return assert_table(assertion.expected as table, assertion.actual as table)
+   end
+
+   if assertion.actual == assertion.expected then
+      return true, ""
+   end
+
+   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
+end
+
+-- slightly special because of what it is doing. No nil checking nor type checking, so we can skip all the way to this:
+function tested_class.assert_nil(assertion: types.BaseAssertion): boolean, string
+   assertion.should = assertion.should or "be nil"
+   if assertion.actual == nil then
+      return true, ""
+   end
+
+   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: nil"
+end
+
+function tested_class.assert_truthy(assertion: types.BaseAssertion): boolean, string
+   return tested_class.assert({given=assertion.given, should=assertion.should or "be truthy", expected=true, actual=(not not (assertion.actual)), debug_var=assertion.debug_var })
+end
+
+function tested_class.assert_falsy(assertion: types.BaseAssertion): boolean, string
+   return tested_class.assert({given=assertion.given, should=assertion.should or "be falsy", expected=false, actual=(not not (assertion.actual)), debug_var=assertion.debug_var })
+end
+
+function tested_class.assert_throws_exception(assertion: types.ExceptionAssertion): boolean, string
+   if assertion.expected then
+      local function wrapped_pcall(): {boolean, string | any}
+         local ok, err: boolean, string | any = pcall(function() assertion.actual() end)
+         if err is string then
+            return {ok, err:match("^.+:%d+: (.+)$") or err}
+         else
+            return {ok, err}
+         end
+      end
+
+      return tested_class.assert({
+         given=assertion.given,
+         should=assertion.should or "throw exception with error message",
+         expected={false, assertion.expected},
+         actual=wrapped_pcall(),
+         debug_var=assertion.debug_var
+      })
+   else
+      return tested_class.assert({
+         given=assertion.given,
+         should=assertion.should or "throw exception",
+         expected=false,
+         actual=pcall(function() assertion.actual() end),
+         debug_var=assertion.debug_var
+      })
+   end
+end
+
+
+
+-- all the tested object methods
+local tested_object_call_error = "on your tested object ensure you are calling ':test' and not '.test'"
+
+local function validate_options(test_name: string, options: types.TestedOptions, filename: string)
+   local error_prefix = filename .. " in \"" .. test_name .. "\": "
 
    for k, _ in pairs(options as {string: any}) do
       if not options_set[k] then
@@ -57,7 +159,7 @@ local function validate_options(test_name: string, options: types.TestedOptions,
    end
 end
 
-local function extract_fn_and_options(test_name: string, fn_or_options: function() | types.TestedOptions, fn?: function(), test_src?: string): function(), types.TestedOptions
+local function extract_fn_and_options(test_name: string, fn_or_options: function() | types.TestedOptions, fn?: function(), filename?: string): function(), types.TestedOptions
    local options: types.TestedOptions = {}
    if type(fn_or_options) == "function" then
       fn = fn_or_options as function()
@@ -68,127 +170,49 @@ local function extract_fn_and_options(test_name: string, fn_or_options: function
       fn = fn
    end
 
-   tested.filename = test_src
-
-   validate_options(test_name, options, test_src or "?")
+   validate_options(test_name, options, filename)
 
    return fn, options
 end
 
 -- teal currently doesn't support polymorphism, so we gotta kinda handle it ourselves
-function tested.test(name: string, fn_or_options: function() | types.TestedOptions, fn?: function())
-   local test_src = debug.getinfo(2, "S").short_src
-   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
-   table.insert(tested.tests, {name=name, fn=func, options=options, kind="test"})
+function tested:test(name: string, fn_or_options: function() | types.TestedOptions, fn?: function())
+   assert(type(self) == "table", tested_object_call_error)
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, self.filename)
+   table.insert(self.tests, {name=name, fn=func, options=options, kind="test"})
 end
 
-function tested.skip(name: string, fn_or_options: function() | types.TestedOptions, fn?: function())
-   local test_src = debug.getinfo(2, "S").short_src
-   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
-   table.insert(tested.tests, {name=name, fn=func, options=options, kind="skip"})
+function tested:skip(name: string, fn_or_options: function() | types.TestedOptions, fn?: function())
+   assert(type(self) == "table", tested_object_call_error)
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, self.filename)
+   table.insert(self.tests, {name=name, fn=func, options=options, kind="skip"})
 end
 
-function tested.only(name: string, fn_or_options: function() | types.TestedOptions, fn?: function())
-   local test_src = debug.getinfo(2, "S").short_src
-   local func, options = extract_fn_and_options(name, fn_or_options, fn, test_src)
-   table.insert(tested.tests, {name=name, fn=func, options=options, kind="only"})
-   tested.run_only_tests = true
+function tested:only(name: string, fn_or_options: function() | types.TestedOptions, fn?: function())
+   assert(type(self) == "table", tested_object_call_error)
+   local func, options = extract_fn_and_options(name, fn_or_options, fn, self.filename)
+   table.insert(self.tests, {name=name, fn=func, options=options, kind="only"})
+   self.run_only_tests = true
 end
 
-function tested.before(fn: function())
-   tested.before_fn = fn
+function tested:before(fn: function())
+   assert(type(self) == "table", tested_object_call_error)
+   self.before_fn = fn
 end
 
-function tested.after(fn: function())
-   tested.after_fn = fn
+function tested:after(fn: function())
+   assert(type(self) == "table", tested_object_call_error)
+   self.after_fn = fn
 end
 
-function tested.before_each(fn: function())
-   tested.before_each_fn = fn
+function tested:before_each(fn: function())
+   assert(type(self) == "table", tested_object_call_error)
+   self.before_each_fn = fn
 end
 
-function tested.after_each(fn: function())
-   tested.after_each_fn = fn
-end
-
-function tested.assert<T>(assertion: types.Assertion<T>): boolean, string
-   local errors = {}
-   if assertion.expected == nil then table.insert(errors, "In assertion table, 'expected' is currently 'nil'.") end
-   if assertion.actual == nil then table.insert(errors, "In assertion table, 'actual' is currently 'nil'.") end
-   if #errors ~= 0 then return false, table.concat(errors, "\n") .. "\nCannot perform comparisons with 'nil' - use 'tested.assert_nil' for 'nil' comparison." end
-   if assertion.given and type(assertion.given) ~= "string" then
-      table.insert(errors, "In assertion table, 'given' should be a 'string'. It appears to be a '" .. type(assertion.given) .. "' with value: '" .. tostring(assertion.given) .. "'.")
-   end
-   if assertion.should and type(assertion.should) ~= "string" then
-      table.insert(errors, "In assertion table, 'should' should be a 'string'. It appears to be a '" .. type(assertion.should) .. "' with value: " .. tostring(assertion.should) .. "'.")
-   end
-   if #errors ~= 0 then return false, table.concat(errors, "\n") end
-   local expected_type = type(assertion.expected)
-   local actual_type = type(assertion.actual)
-
-   if actual_type ~= expected_type then
-      return false, "Actual: " .. tostring(assertion.actual) .. " (as '" ..
-      actual_type .."'). Expected: " .. tostring(assertion.expected) .. " (as '" .. expected_type .. "')"
-   end
-
-   -- perform table comparison first, so we can explicitly handle __eq
-   -- as opposed to it being handles in the assertion compare below
-   if actual_type == "table" and expected_type == "table" then
-      return assert_table(assertion.expected as table, assertion.actual as table)
-   end
-
-   if assertion.actual == assertion.expected then
-      return true, ""
-   end
-
-   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: " .. tostring(assertion.expected)
-end
-
--- slightly special because of what it is doing. No nil checking nor type checking, so we can skip all the way to this:
-function tested.assert_nil(assertion: types.BaseAssertion): boolean, string
-   assertion.should = assertion.should or "be nil"
-   if assertion.actual == nil then
-      return true, ""
-   end
-
-   return false, "Actual: " .. tostring(assertion.actual) .. "\nExpected: nil"
-end
-
-function tested.assert_truthy(assertion: types.BaseAssertion): boolean, string
-   return tested.assert({given=assertion.given, should=assertion.should or "be truthy", expected=true, actual=(not not (assertion.actual)), debug_var=assertion.debug_var })
-end
-
-function tested.assert_falsy(assertion: types.BaseAssertion): boolean, string
-   return tested.assert({given=assertion.given, should=assertion.should or "be falsy", expected=false, actual=(not not (assertion.actual)), debug_var=assertion.debug_var })
-end
-
-function tested.assert_throws_exception(assertion: types.ExceptionAssertion): boolean, string
-   if assertion.expected then
-      local function wrapped_pcall(): {boolean, string | any}
-         local ok, err: boolean, string | any = pcall(function() assertion.actual() end)
-         if err is string then
-            return {ok, err:match("^.+:%d+: (.+)$") or err}
-         else
-            return {ok, err}
-         end
-      end
-
-      return tested.assert({
-         given=assertion.given,
-         should=assertion.should or "throw exception with error message",
-         expected={false, assertion.expected},
-         actual=wrapped_pcall(),
-         debug_var=assertion.debug_var
-      })
-   else
-      return tested.assert({
-         given=assertion.given,
-         should=assertion.should or "throw exception",
-         expected=false,
-         actual=pcall(function() assertion.actual() end),
-         debug_var=assertion.debug_var
-      })
-   end
+function tested:after_each(fn: function())
+   assert(type(self) == "table", tested_object_call_error)
+   self.after_each_fn = fn
 end
 
 local function fisher_yates_shuffle(t: {any})
@@ -200,13 +224,13 @@ end
 
 local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestOptions): types.TestResult, string
    if run_only and test.kind ~= "only" then
-      return "SKIP", "Only running 'tested.only' tests"
+      return "SKIP", "Only running 'tested:only' tests"
 
    elseif test.kind == "skip" then
-      return "SKIP", "Test marked with 'tested.skip'"
+      return "SKIP", "Test marked with 'tested:skip'"
 
    elseif test.options.run_when ~= nil and test.options.run_when == false then
-      return "SKIP", "Condition in `tested.conditional_skip` returned false. Skipping test."
+      return "SKIP", "Condition in `run_when` returned false. Skipping test."
 
    elseif options and options.filter ~= nil and not string.find(test.name, options.filter) then
       return "FILTERED", "Test name does not match filter pattern '" .. options.filter .. "'"
@@ -237,14 +261,14 @@ local record AssertCounters
 end
 
 local function wrap_assert(self: types.Tested, test_output: types.TestOutput): AssertCounters, function()
-   local original_assert = self.assert
-   local original_assert_nil = self.assert_nil
+   local original_assert = tested_class.assert
+   local original_assert_nil = tested_class.assert_nil
    local counters: AssertCounters = {total = 0, failed = 0}
 
    local function record_result(ok: boolean, err: string, assertion: types.BaseAssertion, line_number: integer)
       counters.total = counters.total + 1
       local assertion_result: types.AssertionResult = {
-         filename = tested.filename,
+         filename = self.filename,
          line_number = line_number,
          given = assertion.given,
          should = assertion.should,
@@ -266,21 +290,21 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
       table.insert(test_output.assertion_results, assertion_result)
    end
 
-   self.assert = function<T>(assertion: types.Assertion<T>): boolean, string
+   tested_class.assert = function<T>(assertion: types.Assertion<T>): boolean, string
       local ok, err = original_assert(assertion)
       record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
-   self.assert_nil = function(assertion: types.BaseAssertion): boolean, string
+   tested_class.assert_nil = function(assertion: types.BaseAssertion): boolean, string
       local ok, err = original_assert_nil(assertion)
       record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
       return ok, err
    end
 
    local function restore()
-      self.assert = original_assert
-      self.assert_nil = original_assert_nil
+      tested_class.assert = original_assert
+      tested_class.assert_nil = original_assert_nil
    end
 
    return counters, restore
@@ -373,7 +397,7 @@ local function add_up_test_results(test_output: types.TestOutput, test_counts: t
 end
 
 local function run_test(self: types.Tested, test: types.Test, test_output: types.TestOutput)
-   if tested.before_each_fn then tested.before_each_fn() end
+   if self.before_each_fn then self.before_each_fn() end
 
    local assertions, restore = wrap_assert(self, test_output)
    local original_os_exit = swap_os_exit(test.fn)
@@ -387,11 +411,12 @@ local function run_test(self: types.Tested, test: types.Test, test_output: types
    -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
    adjust_for_expected(test.options.expected, test_output)
 
-   if tested.after_each_fn then tested.after_each_fn() end
+   if self.after_each_fn then self.after_each_fn() end
 end
 
 
 function tested:run(options?: types.TestOptions, filename?: string): types.TestedOutput
+   assert(type(self) == "table", tested_object_call_error)
    if options then
       if options.random then
          math.randomseed(os.time())
@@ -424,7 +449,7 @@ function tested:run(options?: types.TestOptions, filename?: string): types.Teste
       total_time = 0
    }
 
-   if tested.before_fn then tested.before_fn() end
+   if self.before_fn then self.before_fn() end
 
    for i, test in ipairs(self.tests) do
       -- setup
@@ -478,7 +503,7 @@ function tested:run(options?: types.TestOptions, filename?: string): types.Teste
       test_results.total_time = test_results.total_time + test_result.time
    end
 
-   if tested.after_fn then tested.after_fn() end
+   if self.after_fn then self.after_fn() end
 
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
@@ -487,4 +512,4 @@ function tested:run(options?: types.TestOptions, filename?: string): types.Teste
    return test_results
 end
 
-return tested
+return tested_class

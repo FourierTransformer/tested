@@ -1,8 +1,10 @@
 local tested = require("tested")
 
+local t = tested.new()
+
 -- fails on attempt 1 (actual=1 ≠ 2), passes on attempt 2
 local two_attempt_count = 0
-tested.test("retries: passes on second attempt with retries=1", {retries = 1}, function()
+t:test("retries: passes on second attempt with retries=1", {retries = 1}, function()
    two_attempt_count = two_attempt_count + 1
    tested.assert({
       given = "attempt number",
@@ -14,7 +16,7 @@ end)
 
 -- fails on attempts 1 and 2, passes on attempt 3
 local three_attempt_count = 0
-tested.test("retries: passes on third attempt with retries=2", {retries = 2}, function()
+t:test("retries: passes on third attempt with retries=2", {retries = 2}, function()
    three_attempt_count = three_attempt_count + 1
    tested.assert({
       given = "attempt number",
@@ -26,7 +28,7 @@ end)
 
 -- throws on attempt 1, passes on attempt 2
 local exception_attempt_count = 0
-tested.test("retries: exception retried and then passes", {retries = 1}, function()
+t:test("retries: exception retried and then passes", {retries = 1}, function()
    exception_attempt_count = exception_attempt_count + 1
    if exception_attempt_count == 1 then
       error("first attempt raises an exception")
@@ -41,7 +43,7 @@ end)
 
 -- passes immediately — verify no retry occurs even with retries configured
 local immediate_pass_count = 0
-tested.test("retries: no retry when test passes immediately", {retries = 3}, function()
+t:test("retries: no retry when test passes immediately", {retries = 3}, function()
    immediate_pass_count = immediate_pass_count + 1
    tested.assert({
       given = "immediate pass",
@@ -51,7 +53,7 @@ tested.test("retries: no retry when test passes immediately", {retries = 3}, fun
    })
 end)
 
-tested.test("retries: immediate-pass test ran exactly once", function()
+t:test("retries: immediate-pass test ran exactly once", function()
    tested.assert({
       given = "immediate_pass_count",
       should = "be 1 since no retry was needed",
@@ -62,7 +64,7 @@ end)
 
 local delay_attempt_count = 0
 local delay_start_time: integer = 0
-tested.test("retries: retry_delay waits before retrying", {retries = 1, retry_delay = 1, tags={"slow"}}, function()
+t:test("retries: retry_delay waits before retrying", {retries = 1, retry_delay = 1, tags={"slow"}}, function()
    delay_attempt_count = delay_attempt_count + 1
    if delay_attempt_count == 1 then
       delay_start_time = os.time()
@@ -82,4 +84,4 @@ tested.test("retries: retry_delay waits before retrying", {retries = 1, retry_de
    end
 end)
 
-return tested
+return t
