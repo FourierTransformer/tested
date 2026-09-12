@@ -104,6 +104,8 @@ function test_runner.run_tests(
 
    local tests_output: {types.TestedOutput} = {}
 
+   if test_options.random then shared.fisher_yates_shuffle(test_files) end
+
    for i, test_file in ipairs(test_files) do
       if test_runner_options.coverage then luacov_runner.resume() end
       local test_output = run_with_cleanup(test_file, test_options)

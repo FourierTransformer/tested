@@ -35,6 +35,7 @@ local cli = { CLIOptions = {} }
 
 
 
+
 function cli.parse_args(version)
    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io/tested")
 

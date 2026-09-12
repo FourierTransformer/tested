@@ -697,6 +697,7 @@ local shared = {}
 
 
 
+
 local cli_to_display = {
    ["skip"] = "SKIP",
    ["pass"] = "PASS",
@@ -710,6 +711,13 @@ local cli_to_display = {
 shared.version = "tested v0.5.0"
 
 shared.blocking_sleep = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+
+function shared.fisher_yates_shuffle(t)
+   for i = #t, 2, -1 do
+      local j = math.random(i)
+      t[i], t[j] = t[j], t[i]
+   end
+end
 
 function shared.create_tags_function(tags)
    if tags:match("[^a-zA-Z0-9_ ()]") then
@@ -1324,13 +1332,6 @@ function tested:after_each(fn)
    self.after_each_fn = fn
 end
 
-local function fisher_yates_shuffle(t)
-   for i = #t, 2, -1 do
-      local j = math.random(i)
-      t[i], t[j] = t[j], t[i]
-   end
-end
-
 local function should_skip_test(test, run_only, options)
    if run_only and test.kind ~= "only" then
       return "SKIP", "Only running 'tested:only' tests"
@@ -1545,7 +1546,7 @@ end
 function tested:_run(options, filename)
    if options and options.random then
       math.randomseed(os.time())
-      fisher_yates_shuffle(self.tests)
+      shared.fisher_yates_shuffle(self.tests)
    end
 
    local test_results = {
@@ -1631,6 +1632,7 @@ function tested_class.run_tests(tests, options)
    local test_options = convert_to_test_options(options)
 
    local tests_output = {}
+   if options and options.random then shared.fisher_yates_shuffle(tests) end
    for i, test in ipairs(tests) do
       tests_output[i] = test:_run(test_options)
    end
@@ -1643,6 +1645,7 @@ function tested_class.combine_results(tests_output)
 end
 
 function tested_class.format_results(tested_output, display_format, show)
+   display_format = display_format or "plain"
    local formatter = require("tested.results." .. display_format)
 
 
@@ -1664,22 +1667,6 @@ function tested_class.format_results(tested_output, display_format, show)
 
    table.insert(output, formatter.summary(tested_output))
    return table.concat(output)
-end
-
-function tested_class.format_result(test_result, display_format, show)
-   local formatter = require("tested.results." .. display_format)
-
-
-   if not show then
-      show = { "fail", "exception", "unknown", "unexpected" }
-   end
-   local show_all = false
-   for _, display_option in ipairs(show) do if display_option == "all" then show_all = true; break end end
-   if show_all then show = { "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" } end
-   local to_display = shared.display_types(show)
-
-   return formatter.results(test_result, to_display)
-
 end
 
 return tested_class

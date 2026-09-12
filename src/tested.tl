@@ -4,7 +4,7 @@ local inspect = require("tested.libs.inspect")
 local shared = require("tested.libs.shared")
 
 local tested_class: types.TestedClass = {}
-local tested: types.Tested = {}
+local tested: types.Tested = {} -- may one day split into tested_object?
 
 local options_set: {string: boolean} = {tags = true, expected = true, run_when = true, retries = true, retry_delay = true}
 
@@ -214,13 +214,6 @@ end
 function tested:after_each(fn: function())
    assert(type(self) == "table", tested_object_call_error)
    self.after_each_fn = fn
-end
-
-local function fisher_yates_shuffle(t: {any})
-   for i = #t, 2, -1 do
-      local j = math.random(i)
-      t[i], t[j] = t[j], t[i]
-   end
 end
 
 local function should_skip_test(test: types.Test, run_only: boolean, options: types.TestOptions): types.TestResult, string
@@ -437,7 +430,7 @@ end
 function tested:_run(options?: types.TestOptions, filename?: string): types.TestedOutput
    if options and options.random then
       math.randomseed(os.time())
-      fisher_yates_shuffle(self.tests)
+      shared.fisher_yates_shuffle(self.tests)
    end
 
    local test_results: types.TestedOutput = {
@@ -523,6 +516,7 @@ function tested_class.run_tests(tests: {types.Tested}, options?: types.TestedAPI
    local test_options = convert_to_test_options(options)
 
    local tests_output: {types.TestedOutput} = {}
+   if options and options.random then shared.fisher_yates_shuffle(tests) end
    for i, test in ipairs(tests) do
       tests_output[i] = test:_run(test_options)
    end
@@ -534,7 +528,8 @@ function tested_class.combine_results(tests_output: {types.TestedOutput}): types
    return shared.combine_results(tests_output)
 end
 
-function tested_class.format_results(tested_output: types.TestRunnerOutput, display_format: types.DisplayFormat, show?: {types.DisplayOptions}): string
+function tested_class.format_results(tested_output: types.TestRunnerOutput, display_format?: types.DisplayFormat, show?: {types.DisplayOptions}): string
+   display_format = display_format or "plain"
    local formatter = require("tested.results." .. display_format) as types.ResultFormatter
 
    -- handle the show arg
@@ -556,22 +551,6 @@ function tested_class.format_results(tested_output: types.TestRunnerOutput, disp
 
    table.insert(output, formatter.summary(tested_output))
    return table.concat(output)
-end
-
-function tested_class.format_result(test_result: types.TestedOutput, display_format: types.DisplayFormat, show?: {types.DisplayOptions}): string
-   local formatter = require("tested.results." .. display_format) as types.ResultFormatter
-
-   -- handle the show arg
-   if not show then
-      show = {"fail", "exception", "unknown", "unexpected"}
-   end
-   local show_all = false
-   for _, display_option in ipairs(show) do if display_option == "all" then show_all = true break end end
-   if show_all then show = {"skip", "pass", "fail", "exception", "unknown", "expected", "unexpected"} end
-   local to_display = shared.display_types(show)
-
-   return formatter.results(test_result, to_display)
-
 end
 
 return tested_class

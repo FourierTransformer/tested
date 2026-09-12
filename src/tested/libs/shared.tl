@@ -9,6 +9,7 @@ local record shared
    display_types: function(options: {types.DisplayOptions}): {types.TestResult: boolean}
    blocking_sleep: function(seconds: number)
    combine_results: function(tests_output: {types.TestedOutput}): types.TestRunnerOutput
+   fisher_yates_shuffle: function(t: {any})
 end
 
 local cli_to_display: {types.DisplayOptions:types.TestResult} = {
@@ -24,6 +25,13 @@ local cli_to_display: {types.DisplayOptions:types.TestResult} = {
 shared.version = "tested v0.5.0"
 
 shared.blocking_sleep = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+
+function shared.fisher_yates_shuffle(t: {any})
+   for i = #t, 2, -1 do
+      local j = math.random(i)
+      t[i], t[j] = t[j], t[i]
+   end
+end
 
 function shared.create_tags_function(tags: string): function
    if tags:match("[^a-zA-Z0-9_ ()]") then

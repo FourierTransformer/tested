@@ -20,6 +20,7 @@ local record cli
       debug: logging.level
       instances: integer
       process: boolean
+      show: {types.DisplayOptions}
 
       -- derived from above values
       test_files: {string}

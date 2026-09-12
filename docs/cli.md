@@ -17,7 +17,7 @@ The `-c` flag will enable [luacov](https://github.com/lunarmodules/luacov), and 
 The `-r` will randomize the order of tests _within_ a test file.
 
 ## `tested -F/--filter`
-Will only run tests that match the Lua pattern that applies to the **test name** using `string.find`. Useful for debugging specific tests by name. With `string.find`, so if you pass in `--filter "sum"` it will match _all tests_ with `"sum"` _anywhere_ in the test name. If you want to search for tests that _begin with_ `"sum"`, you should use `"^sum"` (or `"sum$"` to match the _end_ of a test name). It's just Lua [patterns](http://lua-users.org/wiki/PatternsTutorial) at the end of the day!
+Will only run tests that match the Lua pattern that applies to the **test name** using `string.find`. Useful for debugging specific tests by name. For more long term use (ie: in CI), it's recommended to use `--tags` and tag tests instead. With `string.find`, so if you pass in `--filter "sum"` it will match _all tests_ with `"sum"` _anywhere_ in the test name. If you want to search for tests that _begin with_ `"sum"`, you should use `"^sum"` (or `"sum$"` to match the _end_ of a test name). It's just Lua [patterns](http://lua-users.org/wiki/PatternsTutorial) at the end of the day!
 
 ## `tested -t/--tags`
 Tests can also be tagged and then selected to run by tag from the CLI. This can be useful if you have slow running tests, tests where you might want (or not want) code coverage, tests that might need external resources, or just the ability to create a group of selectable tests.
