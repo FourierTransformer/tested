@@ -12,6 +12,14 @@ luarocks install tested
 
 After installing, the `tested` module will be available to your Lua code with `require("tested")` and a CLI tool, also called `tested` will be installed wherever your LuaRocks installs executables.
 
+For embedded use cases or situations where LuaRocks (or a C compiler) is not available, there is also a zero-dependency, pure Lua distribution of tested called `tested_core`. It _does not_ include the `tested` CLI, so tests will have to be executed manually. It can be found on the [Releases page](https://github.com/FourierTransformer/tested/releases) or also installed via LuaRocks:
+
+```bash
+luarocks install tested-core
+```
+
+If using `tested_core`, be sure to [docs page](https://fouriertransformer.github.io/tested/tested-core) on how to use it!
+
 ## A basic test
 
 ```lua

@@ -1646,6 +1646,11 @@ end
 
 function tested_class.format_results(tested_output, display_format, show)
    display_format = display_format or "plain"
+   assert(type(display_format) == "string", "The 'display_format' must be a string. It appears to be '" .. type(display_format) .. "'")
+   assert(display_format == "plain" or display_format == "terminal" or display_format == "tap", "The display_format must be one of 'plain', 'terminal', or 'tap'. It appears to be '" .. display_format .. "'")
+   if show then
+      assert(type(show) == "table", "The 'show' argument must be a table. It currently appears to be a: " .. type(show))
+   end
    local formatter = require("tested.results." .. display_format)
 
 

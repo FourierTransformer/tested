@@ -13,7 +13,7 @@ nav = [
     "index.md",
     "unit-testing.md",
     "teal-support.md",
-    "pure-lua.md"
+    "tested-core.md"
   ] },
   { "Extensions" = [
     "custom-formatter.md",

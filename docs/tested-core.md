@@ -48,11 +48,11 @@ By default the filename is `#!lua debug.getinfo(2, "S").short_src` when `#!lua t
 #### Tested Options
 The options are the same as the ones from the CLI, and include an additional `clock_s` and `sleep_s` for setting timing functions:
 
-- `random: boolean`: randomizes the order of tests before running
-- `filter: string`: filter a set of tests down by name
-- `tags: string`: use test tags with basic primitives to only run specifically tagged tests
-- `clock_s: function(): number`: a function that returns a number of seconds (by default uses `os.clock()`). This is used to determine the amount of time a test has been run. Overridable in situations where you don't want CPU time but rather wall time and/or more precision.
-- `sleep_s: function(seconds: number)`: For [test retries](./unit-testing/#test-retries) with a `retry_delay`, the `sleep_s` method is used. By default it is a blocking sleep method using `os.clock()`.
+- `random: boolean` - randomizes the order of tests and test instances before running
+- `filter: string` - filter a set of tests down by name
+- `tags: string` - use test tags combined with `and`, `or`, and `not` to run specifically tagged tests
+- `clock_s: function(): number` - a function that returns a number of seconds (by default uses `os.clock()`). This is used to determine the amount of time a test has been run. Overridable in situations where you don't want CPU time but rather wall time and/or more precision.
+- `sleep_s: function(seconds: number)` - For [test retries](./unit-testing/#test-retries) with a `retry_delay`, the `sleep_s` method is used. By default it is a blocking sleep method using `os.clock()`.
 
 
 ### Run multiple tests

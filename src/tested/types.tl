@@ -189,7 +189,7 @@ local record types
 
       run_tests: function(tests: {Tested}, options?: TestedAPIOptions): TestRunnerOutput
       combine_results: function(tests_output: {TestedOutput}): TestRunnerOutput
-      format_results: function(output: TestRunnerOutput, display_type?: DisplayFormat, show?: {DisplayOptions}): string
+      format_results: function(output: TestRunnerOutput, display_format?: DisplayFormat, show?: {DisplayOptions}): string
    end
 
    interface Tested
