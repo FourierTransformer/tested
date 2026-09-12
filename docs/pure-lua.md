@@ -4,29 +4,11 @@ For situations where Lua code can be directly executed, the standard `tested` fr
 In theory this allow `tested_core` to work with Neovim, LÖVE, OpenResty, or any other embedded environments! We haven't tried it with any other environment yet, but if you've had success, please [let us know!](https://github.com/FourierTransformer/tested/discussions/categories/show-and-tell). We want to one day add guides on how to set that up!
 
 ## Install
-The latest released version of `tested_core.lua` can be found on the [GitHub Releases](https://github.com/FourierTransformer/tested/releases) page.
+The latest released version of `tested_core.lua` can be found on the [GitHub Releases](https://github.com/FourierTransformer/tested/releases) page. It can also be installed via LuaRocks:
 
-## Feature Comparison
-
-| Feature | tested_core | tested (w/CLI) |
-| ------- | -------- | ------------ |
-| Tests + Asserts | ✅ | ✅ |
-| Lifecycle Managment | ✅ | ✅ |
-| Tags + Filters | ✅ | ✅ |
-| Terminal/Plain/TAP Output | ✅ | ✅ |
-| Custom Formatter | ❌ | ✅ |
-| Custom timers | ✅ | ❌ |
-| Code Coverage | ❌ | ✅ |
-| Text/JSON Output to File | ❌ | ✅ |
-| Additional Language Handlers | ❌ | ✅ |
-| Automatic Test Finding | ❌ | ✅ |
-| Full Test Isolation | ❌ | ⚠️ |
-
-??? "On Test Isolation"
-    Ideally when running tests, each test file should be in its own isolated testing environment. In Lua this can be particularly tricky, since there isn't really a safe way to unload C modules. So, at best, you can unload Lua modules, but have to let C modules persist, which is how the `tested` CLI operates today.
-
-    For using `tested` from the Lua API directly, we currently _do not_ unload any modules between tests. Mostly because even doing that in an unknown environment could cause issues. Unfortunately this is an exercise left to the reader for those who truly need it.
-
+```
+luarocks install tested-core
+```
 ## Using the `tested` API
 Below are examples of using `tested_core`, and at the [bottom of the page](#type-definition-reference), we also have the full Teal type definitions for all of the values that get returned.
 
@@ -122,6 +104,28 @@ local second_test_result = second_test:run()
 local combined_results = tested.combine_results({first_test_result, second_test_result})
 print(tested.format_results(combined_results))
 ```
+
+## Feature Comparison
+
+| Feature | tested_core | tested (w/CLI) |
+| ------- | -------- | ------------ |
+| Tests + Asserts | ✅ | ✅ |
+| Lifecycle Managment | ✅ | ✅ |
+| Tags + Filters | ✅ | ✅ |
+| Terminal/Plain/TAP Output | ✅ | ✅ |
+| Custom Formatter | ❌ | ✅ |
+| Custom timers | ✅ | ❌ |
+| Code Coverage | ❌ | ✅ |
+| Text/JSON Output to File | ❌ | ✅ |
+| Additional Language Handlers | ❌ | ✅ |
+| Automatic Test Finding | ❌ | ✅ |
+| Full Test Isolation | ❌ | ⚠️ |
+
+??? "On Test Isolation"
+    Ideally when running tests, each test file should be in its own isolated testing environment. In Lua this can be particularly tricky, since there isn't really a safe way to unload C modules. So, at best, you can unload Lua modules, but have to let C modules persist, which is how the `tested` CLI operates today.
+
+    For using `tested` from the Lua API directly, we currently _do not_ unload any modules between tests. Mostly because even doing that in an unknown environment could cause issues. Unfortunately this is an exercise left to the reader for those who truly need it.
+
 
 ### Type Definition Reference
 
