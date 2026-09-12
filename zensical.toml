@@ -9,14 +9,24 @@ site_url = "https://fouriertransformer.github.io/tested"
 repo_url = "https://github.com/FourierTransformer/tested"
 
 nav = [
-  "index.md",
-  "unit-testing.md",
-  "teal-support.md",
-  "cli.md",
-  "custom-formatter.md",
-  "language-handlers.md",
-  "roadmap.md",
-  "api-reference.md",
+  { "Getting Started" = [
+    "index.md",
+    "unit-testing.md",
+    "teal-support.md",
+    "pure-lua.md"
+  ] },
+  { "Extensions" = [
+    "custom-formatter.md",
+    "language-handlers.md",
+
+  ]},
+
+  { "Reference" = [
+    "cli.md",
+    "api-reference.md",
+    "roadmap.md",
+  ] }
+
 ]
 
 extra_css = ["stylesheets/extra.css"]
@@ -39,7 +49,6 @@ features = [
     "content.tabs.link",
     "content.tooltips",
     "navigation.footer",
-    "navigation.indexes",
     "navigation.instant",
     "navigation.instant.prefetch",
     "navigation.instant.progress",

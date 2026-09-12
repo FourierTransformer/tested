@@ -9,16 +9,43 @@ local record types
       setups: {string: function}
    end
 
-   enum DisplayType
-      "none"
+   enum DisplayFormat
       "plain"
       "terminal"
       "tap"
    end
 
+   enum DisplayOptions
+      "all"
+      "valid"
+      "invalid"
+      "skip"
+      "pass"
+      "fail"
+      "exception"
+      "unknown"
+      "expected"
+      "unexpected"
+      -- "timeout" -- NYI
+   end
+
+   interface TestedBaseOptions
+      random: boolean
+      show: {DisplayOptions}
+      -- not right now, maybe later...
+      -- custom_formatter: string
+      -- language_handler: {string}
+      filter: string
+      tags: string
+   end
+
+   interface TestedAPIOptions is TestedBaseOptions
+      clock_s: function(): number
+      sleep_s: function(seconds: number)
+   end
+
    -- test running types
    interface TestOptions
-      display: DisplayType
       random: boolean
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
@@ -163,6 +190,11 @@ local record types
 
       -- initializer
       new: function(filename?: string): Tested
+
+      run_tests: function(tests: {Tested}, options?: TestedAPIOptions): TestRunnerOutput
+      combine_results: function(tests_output: {TestedOutput}): TestRunnerOutput
+      format_result: function(test_result: TestedOutput, display_format: DisplayFormat, show?: {DisplayOptions}): string
+      format_results: function(output: TestRunnerOutput, display_type: DisplayFormat, show?: {DisplayOptions}): string
    end
 
    interface Tested
@@ -180,12 +212,16 @@ local record types
       test: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
       skip: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
       only: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      run: function(self: Tested, options?: types.TestOptions, filename?: string): types.TestedOutput
 
+      -- lifecycle
       before: function(self: Tested, fn: function())
       after: function(self: Tested, fn: function())
       before_each: function(self: Tested, fn: function())
       after_each: function(self: Tested, fn: function())
+
+      -- test running
+      run: function(self: Tested, options?: types.TestedAPIOptions, filename?: string): types.TestedOutput
+      _run: function(self: Tested, options?: types.TestOptions, filename?: string): types.TestedOutput
    end
 end
 

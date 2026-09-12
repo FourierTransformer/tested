@@ -1,6 +1,7 @@
 local type types = require("tested.types")
 local assert_table = require("tested.assert_table")
 local inspect = require("tested.libs.inspect")
+local shared = require("tested.libs.shared")
 
 local tested_class: types.TestedClass = {}
 local tested: types.Tested = {}
@@ -414,29 +415,29 @@ local function run_test(self: types.Tested, test: types.Test, test_output: types
    if self.after_each_fn then self.after_each_fn() end
 end
 
-
-function tested:run(options?: types.TestOptions, filename?: string): types.TestedOutput
-   assert(type(self) == "table", tested_object_call_error)
+local function convert_to_test_options(options: types.TestedAPIOptions): types.TestOptions
+   local test_options: types.TestOptions
    if options then
-      if options.random then
-         math.randomseed(os.time())
-         fisher_yates_shuffle(self.tests)
-      end
-      if not options.display then
-         options.display = "plain"
-      end
-      if not options.clock_s then
-         options.clock_s = os.clock
-      end
-      if not options.sleep_s then
-         options.sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
-      end
-   else
-      options = {
-         display = "plain",
-         clock_s = os.clock,
-         sleep_s = function(s: number) local end_time = os.clock() + s; repeat until os.clock() > end_time end
+      test_options = {
+         random = options.random,
+         filter = options.filter,
+         clock_s = options.clock_s or os.clock,
+         sleep_s = options.sleep_s or shared.blocking_sleep
       }
+      if options.tags then test_options.tags_filter = shared.create_tags_function(options.tags) end
+   else
+      test_options = {
+         clock_s = os.clock,
+         sleep_s = shared.blocking_sleep
+      }
+   end
+   return test_options
+end
+
+function tested:_run(options?: types.TestOptions, filename?: string): types.TestedOutput
+   if options and options.random then
+      math.randomseed(os.time())
+      fisher_yates_shuffle(self.tests)
    end
 
    local test_results: types.TestedOutput = {
@@ -446,7 +447,7 @@ function tested:run(options?: types.TestOptions, filename?: string): types.Teste
       -- this will at least allow tests run via test_runner without any tests in them to show up nicely.
       filename = filename or self.filename,
       fully_tested = false,
-      total_time = 0
+      total_time = 0,
    }
 
    if self.before_fn then self.before_fn() end
@@ -510,6 +511,67 @@ function tested:run(options?: types.TestOptions, filename?: string): types.Teste
    end
 
    return test_results
+end
+
+function tested:run(options?: types.TestedAPIOptions, filename?: string): types.TestedOutput
+   assert(type(self) == "table", tested_object_call_error)
+   local test_options = convert_to_test_options(options)
+   return self:_run(test_options, filename)
+end
+
+function tested_class.run_tests(tests: {types.Tested}, options?: types.TestedAPIOptions): types.TestRunnerOutput
+   local test_options = convert_to_test_options(options)
+
+   local tests_output: {types.TestedOutput} = {}
+   for i, test in ipairs(tests) do
+      tests_output[i] = test:_run(test_options)
+   end
+
+   return shared.combine_results(tests_output)
+end
+
+function tested_class.combine_results(tests_output: {types.TestedOutput}): types.TestRunnerOutput
+   return shared.combine_results(tests_output)
+end
+
+function tested_class.format_results(tested_output: types.TestRunnerOutput, display_format: types.DisplayFormat, show?: {types.DisplayOptions}): string
+   local formatter = require("tested.results." .. display_format) as types.ResultFormatter
+
+   -- handle the show arg
+   if not show then
+      show = {"fail", "exception", "unknown", "unexpected"}
+   end
+   local show_all = false
+   for _, display_option in ipairs(show) do if display_option == "all" then show_all = true break end end
+   if show_all then show = {"skip", "pass", "fail", "exception", "unknown", "expected", "unexpected"} end
+   local to_display = shared.display_types(show)
+
+   local output: {string} = {}
+
+   output[1] = formatter.header(shared.version .. " (bundle)", {}, {})
+
+   for i, test_result in ipairs(tested_output.module_results) do
+      output[i+1] = formatter.results(test_result, to_display)
+   end
+
+   table.insert(output, formatter.summary(tested_output))
+   return table.concat(output)
+end
+
+function tested_class.format_result(test_result: types.TestedOutput, display_format: types.DisplayFormat, show?: {types.DisplayOptions}): string
+   local formatter = require("tested.results." .. display_format) as types.ResultFormatter
+
+   -- handle the show arg
+   if not show then
+      show = {"fail", "exception", "unknown", "unexpected"}
+   end
+   local show_all = false
+   for _, display_option in ipairs(show) do if display_option == "all" then show_all = true break end end
+   if show_all then show = {"skip", "pass", "fail", "exception", "unknown", "expected", "unexpected"} end
+   local to_display = shared.display_types(show)
+
+   return formatter.results(test_result, to_display)
+
 end
 
 return tested_class

@@ -3,9 +3,10 @@ local lfs = require("lfs")
 local cli = require("tested.cli")
 local file_loader = require("tested.file_loader")
 local logging = require("tested.libs.logging")
+local shared = require("tested.libs.shared")
 local test_runner = require("tested.test_runner")
 
-local util = require("tested.util")
+local util = require("tested.libs.util")
 
 local logger = logging.get_logger("tested.main")
 
@@ -13,8 +14,6 @@ local logger = logging.get_logger("tested.main")
 
 
 package.path = "./?.lua;./?/init.lua;" .. package.path
-
-local TESTED_VERSION = "tested v0.3.0"
 
 local function load_result_formatter(args)
    if args.custom_formatter then
@@ -89,19 +88,18 @@ end
 
 local function run_tests(formatter, args, test_files)
    local test_options = {
-      display = "none",
       random = args.random,
       filter = args.filter,
       tags_filter = args.tags_filter,
       clock_s = os.clock,
-      sleep_s = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end,
+      sleep_s = shared.blocking_sleep,
    }
    local test_runner_options = {
       coverage = args.coverage,
    }
 
    local display_results = function(test_output)
-      print(formatter.results(test_output, cli.display_types(args.show)))
+      print(formatter.results(test_output, shared.display_types(args.show)))
    end
 
    logger:info("Running tests sequentially")
@@ -115,10 +113,10 @@ local function write_output_files(args, header_comments, runner_output)
       local output_formatter = require("tested.file_output" .. extension)
       local file_to_write, err = io.open(file_output, "w")
       if not file_to_write then error("Unable to open file for writing: " .. err, 0) end
-      file_to_write:write(output_formatter.header(TESTED_VERSION, args.paths, header_comments))
+      file_to_write:write(output_formatter.header(shared.version, args.paths, header_comments))
 
       for _, test_output in ipairs(runner_output.module_results) do
-         file_to_write:write(output_formatter.results(test_output, cli.display_types(args.show)))
+         file_to_write:write(output_formatter.results(test_output, shared.display_types(args.show)))
       end
 
       file_to_write:write(output_formatter.summary(runner_output))
@@ -128,7 +126,7 @@ end
 
 local function main()
 
-   local args = cli.parse_args(TESTED_VERSION)
+   local args = cli.parse_args(shared.version)
    logging.set_level(args.debug)
    cli.set_defaults(args)
    cli.validate_args(args)
@@ -155,11 +153,11 @@ local function main()
       end
 
 
-      print(formatter.header(TESTED_VERSION, args.paths, header_comments))
+      print(formatter.header(shared.version, args.paths, header_comments))
    end
 
    local runner_output = run_tests(formatter, args, test_files)
-   runner_output.tested_version = TESTED_VERSION
+   runner_output.tested_version = shared.version
 
    if not args.process then
       print(formatter.summary(runner_output))
