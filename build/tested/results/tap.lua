@@ -6,11 +6,16 @@ local tap = {}
 tap.supports_show = false
 tap.format = "tap"
 
-function tap.header(_version_info, _filepaths, comments)
+function tap.header(version_info, _filepaths, comments)
    tadd.new("TAP version 14")
+   tadd.add("\n# ", version_info)
+
    for _, comment in ipairs(comments) do
       tadd.add("\n# ", comment)
    end
+
+   tadd.add("\n")
+
    return tadd.tostring()
 end
 

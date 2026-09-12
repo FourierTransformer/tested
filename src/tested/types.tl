@@ -9,16 +9,39 @@ local record types
       setups: {string: function}
    end
 
-   enum DisplayType
-      "none"
+   enum DisplayFormat
       "plain"
       "terminal"
       "tap"
    end
 
+   enum DisplayOptions
+      "all"
+      "valid"
+      "invalid"
+      "skip"
+      "pass"
+      "fail"
+      "exception"
+      "unknown"
+      "expected"
+      "unexpected"
+      -- "timeout" -- NYI
+   end
+
+   interface TestedBaseOptions
+      random: boolean
+      filter: string
+      tags: string
+   end
+
+   interface TestedAPIOptions is TestedBaseOptions
+      clock_s: function(): number
+      sleep_s: function(seconds: number)
+   end
+
    -- test running types
    interface TestOptions
-      display: DisplayType
       random: boolean
       filter: string
       tags_filter: function(tags: {string:boolean}): boolean
@@ -53,7 +76,7 @@ local record types
    interface AssertionResult
       filename: string
       line_number: integer
-      result: types.TestResult
+      result: TestResult
       given: string
       should: string
       error_message: string
@@ -61,7 +84,7 @@ local record types
 
    interface TestOutput
       name: string
-      result: types.TestResult
+      result: TestResult
       message: string
       time: number
       assertion_results: {AssertionResult}
@@ -102,8 +125,8 @@ local record types
       format: string
       supports_show: boolean
       header: function(version: string, filepaths: {string}, comments: {string}): string
-      results: function(tested_result: types.TestedOutput, test_types_to_display: {types.TestResult: boolean}): string
-      summary: function(runner_output: types.TestRunnerOutput): string
+      results: function(tested_result: TestedOutput, test_types_to_display: {TestResult: boolean}): string
+      summary: function(runner_output: TestRunnerOutput): string
    end
 
    -- needed for registering new file types
@@ -163,6 +186,10 @@ local record types
 
       -- initializer
       new: function(filename?: string): Tested
+
+      run_tests: function(tests: {Tested}, options?: TestedAPIOptions): TestRunnerOutput
+      combine_results: function(tests_output: {TestedOutput}): TestRunnerOutput
+      format_results: function(output: TestRunnerOutput, display_type?: DisplayFormat, show?: {DisplayOptions}): string
    end
 
    interface Tested
@@ -180,12 +207,16 @@ local record types
       test: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
       skip: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
       only: function(self: Tested, name: string, fn_or_options: function() | TestedOptions, fn?: function())
-      run: function(self: Tested, options?: types.TestOptions, filename?: string): types.TestedOutput
 
+      -- lifecycle
       before: function(self: Tested, fn: function())
       after: function(self: Tested, fn: function())
       before_each: function(self: Tested, fn: function())
       after_each: function(self: Tested, fn: function())
+
+      -- test running
+      run: function(self: Tested, options?: TestedAPIOptions, filename?: string): TestedOutput
+      _run: function(self: Tested, options?: TestOptions, filename?: string): TestedOutput
    end
 end
 

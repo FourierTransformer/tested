@@ -1,6 +1,7 @@
 local file_loader = require("tested.file_loader")
 local logging = require("tested.libs.logging")
 local type types = require("tested.types")
+local shared = require("tested.libs.shared")
 
 local logger = logging.get_logger("tested.test_runner")
 
@@ -17,19 +18,7 @@ local _coverage_exclude_patterns <const> = {
 
 -- from the indomitable Penlight - MIT
 -- turned into an upvalue so it can be available in Lanes properly
-local _searchpath = package.searchpath or function (name: string, path: string, sep: string, rep: string): string, string    -- luacheck: ignore
-     if type(name) ~= "string" then
-         error(("bad argument #1 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
-     end
-     if type(path) ~= "string" then
-         error(("bad argument #2 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
-     end
-     if sep ~= nil and type(sep) ~= "string" then
-         error(("bad argument #3 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
-     end
-     if rep ~= nil and type(rep) ~= "string" then
-         error(("bad argument #4 to 'searchpath' (string expected, got %s)"):format(type(path)), 2)
-     end
+local _searchpath = package.searchpath or function (name: string, path: string, sep: string, rep: string): string, string
      sep = sep or "."
      rep = rep or _G.package.config:sub(1,1)
      do
@@ -71,7 +60,7 @@ local function run_with_cleanup(test_file: string, options: types.TestOptions): 
       error(test_file ..": does not return a tested object at end of file - unable to run tests", 0)
    end
 
-   local test_results = test_module:run(options, test_file)
+   local test_results = test_module:_run(options, test_file)
 
    logger:info("%s: Clearing out any non-C packages that were loaded", test_file)
    for package_name, _ in pairs(package.loaded) do
@@ -107,19 +96,15 @@ function test_runner.run_tests(
       error("Code coverage requires the luacov module to be installed")
    end
 
-   local output: types.TestRunnerOutput = {
-      total_time = 0,
-      total_tests = 0,
-      all_fully_tested = true,
-      total_counts = {passed=0, failed=0, expected=0, skipped=0, filtered=0, invalid=0},
-      module_results = {},
-   }
-
    if test_runner_options.coverage then
       logger:info("Initializing luacov")
       luacov_runner.init({exclude=_coverage_exclude_patterns})
       luacov_runner.pause()
    end
+
+   local tests_output: {types.TestedOutput} = {}
+
+   if test_options.random then shared.fisher_yates_shuffle(test_files) end
 
    for i, test_file in ipairs(test_files) do
       if test_runner_options.coverage then luacov_runner.resume() end
@@ -127,23 +112,14 @@ function test_runner.run_tests(
       if test_runner_options.coverage then luacov_runner.pause() end
 
       display_func(test_output)
-      output.module_results[i] = test_output
-
-      if test_output.fully_tested == false then output.all_fully_tested = false end
-      output.total_counts.passed = output.total_counts.passed + test_output.counts.passed
-      output.total_counts.failed = output.total_counts.failed + test_output.counts.failed
-      output.total_counts.expected = output.total_counts.expected + test_output.counts.expected
-      output.total_counts.skipped = output.total_counts.skipped + test_output.counts.skipped
-      output.total_counts.filtered = output.total_counts.filtered + test_output.counts.filtered
-      output.total_counts.invalid = output.total_counts.invalid + test_output.counts.invalid
-      output.total_time = output.total_time + test_output.total_time
-      output.total_tests = output.total_tests + #test_output.tests
-
+      tests_output[i] = test_output
    end
 
    if test_runner_options.coverage then
       luacov_runner.save_stats()
    end
+
+   local output: types.TestRunnerOutput = shared.combine_results(tests_output)
 
    return output
 

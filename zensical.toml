@@ -9,14 +9,24 @@ site_url = "https://fouriertransformer.github.io/tested"
 repo_url = "https://github.com/FourierTransformer/tested"
 
 nav = [
-  "index.md",
-  "unit-testing.md",
-  "teal-support.md",
-  "cli.md",
-  "custom-formatter.md",
-  "language-handlers.md",
-  "roadmap.md",
-  "api-reference.md",
+  { "Getting Started" = [
+    "index.md",
+    "unit-testing.md",
+    "teal-support.md",
+    "pure-lua.md"
+  ] },
+  { "Extensions" = [
+    "custom-formatter.md",
+    "language-handlers.md",
+
+  ]},
+
+  { "Reference" = [
+    "cli.md",
+    "api-reference.md",
+    "roadmap.md",
+  ] }
+
 ]
 
 extra_css = ["stylesheets/extra.css"]
@@ -39,7 +49,6 @@ features = [
     "content.tabs.link",
     "content.tooltips",
     "navigation.footer",
-    "navigation.indexes",
     "navigation.instant",
     "navigation.instant.prefetch",
     "navigation.instant.progress",
@@ -48,3 +57,37 @@ features = [
     "navigation.top",
     "navigation.tracking",
 ]
+
+# default markdown extensions...
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.toc]
+permalink = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.betterem]
+smart_enable = "all"
+[project.markdown_extensions.pymdownx.caret]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_generator = "zensical.extensions.emoji.to_svg"
+emoji_index = "zensical.extensions.emoji.twemoji"
+[project.markdown_extensions.pymdownx.highlight]
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.mark]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.tilde]
+
+
+[project.markdown_extensions.pymdownx.snippets]
+

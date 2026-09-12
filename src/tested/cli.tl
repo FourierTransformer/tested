@@ -2,44 +2,25 @@ local argparse = require("argparse")
 local lfs = require("lfs")
 
 local logging = require("tested.libs.logging")
+local shared = require("tested.libs.shared")
+local util = require("tested.libs.util")
+
 local logger = logging.get_logger("tested.cli")
-local util = require("tested.util")
 
 local type types = require("tested.types")
 
 local record cli
-   enum DisplayOptions
-      "all"
-      "valid"
-      "invalid"
-      "skip"
-      "pass"
-      "fail"
-      "exception"
-      "unknown"
-      "expected"
-      "unexpected"
-      -- "timeout" -- NYI
-   end
-
-   enum DisplayFormat
-      "terminal" "plain" "tap"
-   end
-
-   record CLIOptions
+   record CLIOptions is types.TestedBaseOptions
       coverage: boolean
-      random: boolean
-      show: {DisplayOptions}
-      display_format: DisplayFormat
+      display_format: types.DisplayFormat
       output_file: {string}
       custom_formatter: string
       language_handler: {string}
       paths: {string}
       debug: logging.level
       instances: integer
-      filter: string
-      tags: string
       process: boolean
+      show: {types.DisplayOptions}
 
       -- derived from above values
       test_files: {string}
@@ -51,18 +32,9 @@ local record cli
    parse_args: function(string): cli.CLIOptions
    set_defaults: function(cli.CLIOptions)
    validate_args: function(cli.CLIOptions)
-   display_types: function({cli.DisplayOptions}): {types.TestResult: boolean}
 end
 
-local cli_to_display: {cli.DisplayOptions:types.TestResult} = {
-   ["skip"] = "SKIP",
-   ["pass"] = "PASS",
-   ["fail"] = "FAIL",
-   ["exception"] = "EXCEPTION",
-   ["unknown"] = "UNKNOWN",
-   ["unexpected"] = "UNEXPECTED",
-   -- ["timeout"] = "TIMEOUT"
-}
+
 
 function cli.parse_args(version: string): cli.CLIOptions
    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io/tested")
@@ -172,22 +144,7 @@ function cli.validate_args(args: cli.CLIOptions)
       end
    end
    if args.tags then
-      if args.tags:match("[^a-zA-Z0-9_ ()]") then
-         error("Invalid --tags expression: only letters, digits, underscores, spaces, and parentheses are allowed", 0)
-      end
-      local lua_expr = (args.tags:gsub("([a-zA-Z_][a-zA-Z0-9_]*)", function(word: string): string
-         if word == "and" or word == "or" or word == "not" then return word end
-         return 'tags["' .. word .. '"]'
-      end))
-      local tag_filter = "local tags = ... \nreturn " .. lua_expr
-
-      global loadstring: function(string): function(), string
-      local string_loader = loadstring or load
-      local loaded = string_loader(tag_filter)
-      if not loaded then
-         error("Invalid --tags expression '" .. args.tags .. "': Be sure to use boolean expressions ('or', 'and', 'not', etc) when combining tags", 0)
-      end
-      args.tags_filter = loaded
+      args.tags_filter = shared.create_tags_function(args.tags)
    end
 
    if args.custom_formatter then
@@ -203,38 +160,6 @@ function cli.validate_args(args: cli.CLIOptions)
          end
       end
    end
-end
-
-function cli.display_types(options: {cli.DisplayOptions}): {types.TestResult: boolean}
-   local to_display = {}
-   for _, cli_option in ipairs(options) do
-      if cli_to_display[cli_option] then
-         to_display[cli_to_display[cli_option]] = true
-         if cli_option == "skip" then
-            to_display["SKIP"] = true
-         end
-      else
-         if cli_option == "invalid" then
-            to_display["EXCEPTION"] = true
-            to_display["UNKNOWN"] = true
-            to_display["TIMEOUT"] = true
-            to_display["UNEXPECTED"] = true
-         elseif cli_option == "valid" then
-            to_display["PASS"] = true
-            to_display["SKIP"] = true
-            to_display["FILTERED"] = true
-            to_display["FAIL"] = true
-            to_display["EXPECTED_FAIL"] = true
-            to_display["EXPECTED_EXCEPTION"] = true
-            to_display["EXPECTED_UNKNOWN"] = true
-         elseif cli_option == "expected" then
-            to_display["EXPECTED_FAIL"] = true
-            to_display["EXPECTED_EXCEPTION"] = true
-            to_display["EXPECTED_UNKNOWN"] = true
-         end
-      end
-   end
-   return to_display
 end
 
 return cli
