@@ -548,7 +548,7 @@ function tested_class.format_results(tested_output, display_format, show)
 
    local output = {}
 
-   output[1] = formatter.header(shared.version .. " (bundle)", {}, {})
+   output[1] = formatter.header(shared.version .. " (core)", {}, {})
 
    for i, test_result in ipairs(tested_output.module_results) do
       output[i + 1] = formatter.results(test_result, to_display)

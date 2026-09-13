@@ -3,6 +3,7 @@
 Throughout this document `t` is the tested _object_ (per `t = tested.new()`) and `tested` is the tested _class_ (per `tested = require("tested")`)
 
 ## Tests
+- `t = tested.new()` - creates a new tested object that tests can be associated with
 - `t:test(name: string, options?: table, fn: function())`
 - `t:skip(name: string, options?: table, fn: function())` - don't run this test. Useful if something is known-broken and you want to temporarily disable a test.
 - `t:only(name: string, fn: function())` - will only run these tests. Useful if you want to debug a few tests in a large file.
@@ -14,6 +15,7 @@ Options can be specified in a table passed in via the optional second argument:
     - ex: `t:test("fails all the time", {expected="FAIL"}, function())`
 - `run_when: boolean` - a value that can be determined at runtime - useful if the test should only run on LuaJIT, a certain operating system, or even configuration.
     - ex: `t:test("luajit only", {run_when=type(jit) == 'table'}, function())` - will only run when executing via LuaJIT
+- `tags: {string}` - a list of tags that can be used for test run filtering 
 - `retries: integer` - number of times to retry the test if the test result is not a `PASS` or one of the `EXPECTED_*`'s.
 - `retry_delay: number` - number of seconds to wait before attempting a retry
 

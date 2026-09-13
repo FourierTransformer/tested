@@ -195,6 +195,18 @@ end)
 
 NOTE: If running tests sequentially (`-n 0`), the sleep function will block and consume CPU resources.
 
+### Test Tags
+
+`tested` supports tagging tests with custom tags and then filtering while running the test suite. Tests are allowed to have multiple tags. This can be used to separate integration or long-running tests that you may only want to run in CI/CD pipelines but not on a regular basis.
+
+```lua
+-- the `run_when` option takes in a boolean where true runs the test, false will skip it
+t:test("luajit only test", {tags={"arithmetic"}}, function()
+    tested.assert({expected = 8, actual = sum(5, 3) })
+end)
+```
+
+These can then be filtered using the CLI option `--tags` or when calling `t:run` or `tested.run_tests` from the API. The tag filtering also allows boolean operators, so you can pass them stuff like `integration or slow` and only tests with both tags will run.
 
 ## Assertions
 
