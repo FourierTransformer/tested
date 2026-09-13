@@ -215,8 +215,8 @@ local record types
       after_each: function(self: Tested, fn: function())
 
       -- test running
-      run: function(self: Tested, options?: TestedAPIOptions, filename?: string): TestedOutput
-      _run: function(self: Tested, options?: TestOptions, filename?: string): TestedOutput
+      run: function(self: Tested, options?: TestedAPIOptions): TestedOutput
+      _run: function(self: Tested, options?: TestOptions): TestedOutput
    end
 end
 

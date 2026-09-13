@@ -1,13 +1,21 @@
 # `tested`
 
-`tested` is a new Lua (and [Teal](https://teal-language.org)!) unit testing framework! It's designed to be simple to use, fast, provide enough information to make results actionable, and one day run everywhere Lua does. It's still early days, and things are still changing, but I excited to share it and see what people think!
+`tested` is a new Lua (and [Teal](https://teal-language.org)!) unit testing framework! It's designed to be simple to use, fast, provide enough information to make results actionable, and run everywhere Lua does. It's still early days, and things are still changing, but I excited to share it and see what people think!
 
 ## Installation
 ```bash
 luarocks install tested
 ```
 
-After installing, the `tested` module will be available to your Lua code with `require("tested")` and a CLI tool, also called `tested` will be installed wherever your LuaRocks installs executables (be sure LuaRocks `bin` folder is on your path!).
+After installing, the `tested` module will be available to your Lua code with `require("tested")` and a CLI tool, also called `tested` will be installed wherever your LuaRocks installs executables.
+
+For embedded use cases or situations where LuaRocks (or a C compiler) is not available, there is also a zero-dependency, pure Lua distribution of tested called `tested_core`. It _does not_ include the `tested` CLI, so tests will have to be executed manually. It can be found on the [Releases page](https://github.com/FourierTransformer/tested/releases) or installed via LuaRocks:
+
+```bash
+luarocks install tested-core
+```
+
+The tests are always written the same way regardless of which version is being used. The only thing that changes is the way that they are run. For instructions on how to run tests via the API (instead of the CLI), be sure to check out the [docs page](https://fouriertransformer.github.io/tested/tested-core)!
 
 ## Example Test
 

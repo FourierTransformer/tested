@@ -3,7 +3,7 @@
 Throughout this document `t` is the tested _object_ (per `t = tested.new()`) and `tested` is the tested _class_ (per `tested = require("tested")`)
 
 ## Tests
-- `t = tested.new()` - creates a new tested object that tests can be associated with
+- `t = tested.new(filename?: string)` - creates a new tested object that tests can be associated with.
 - `t:test(name: string, options?: table, fn: function())`
 - `t:skip(name: string, options?: table, fn: function())` - don't run this test. Useful if something is known-broken and you want to temporarily disable a test.
 - `t:only(name: string, fn: function())` - will only run these tests. Useful if you want to debug a few tests in a large file.
@@ -42,7 +42,7 @@ All the lifecycle methods take in a function that will be executed at the corres
 ## Test Running
 These are only needed for running your own tests, as you would have to do with [`tested_core`](./tested-core.md). While the methods are available, the CLI handles these things for you.
 
-- `t:run(options?: TestedAPIOptions, filename?: string): TestedOutput)` - runs an individual test
+- `t:run(options?: TestedAPIOptions): TestedOutput)` - runs an individual test
 - `tested.run_tests(tests: {Tested}, options?: TestedAPIOptions): TestRunnerOutput` - runs a series of tests
 - `tested.combine_results(tests_output: {TestedOutput}): TestRunnerOutput` - combine individual test results
 - `tested.format_results(output: TestRunnerOutput, display_format?: DisplayFormat, show?: {DisplayOptions}): string` - format the results from either `combine_results` or `format_results`.

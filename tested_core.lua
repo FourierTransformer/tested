@@ -919,6 +919,9 @@ function tap.results(tested_result, _test_types_to_display)
                if assertion.should then
                   tadd.add("  Should: ", assertion.should)
                end
+               if assertion.result == "FAIL" and assertion.error_message then
+                  tadd.add("\n", "    # ", (assertion.error_message:gsub("\n", "\n    # ")))
+               end
                tadd.add("\n")
             end
             tadd.add("    1..", tostring(#test.assertion_results), "\n")
@@ -1543,7 +1546,7 @@ local function convert_to_test_options(options)
    return test_options
 end
 
-function tested:_run(options, filename)
+function tested:_run(options)
    if options and options.random then
       math.randomseed(os.time())
       shared.fisher_yates_shuffle(self.tests)
@@ -1554,7 +1557,7 @@ function tested:_run(options, filename)
       tests = {},
 
 
-      filename = filename or self.filename,
+      filename = self.filename,
       fully_tested = false,
       total_time = 0,
    }
@@ -1622,10 +1625,10 @@ function tested:_run(options, filename)
    return test_results
 end
 
-function tested:run(options, filename)
+function tested:run(options)
    assert(type(self) == "table", tested_object_call_error)
    local test_options = convert_to_test_options(options)
-   return self:_run(test_options, filename)
+   return self:_run(test_options)
 end
 
 function tested_class.run_tests(tests, options)

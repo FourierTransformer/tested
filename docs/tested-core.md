@@ -40,12 +40,11 @@ end)
 local results = t:run()
 ```
 
-`t:run` can take two optional parameters: `options` and  `filename`:
+`t:run` can takes an optional parameter `options`:
 ```lua
 local test_options = {random=true} -- will randomize order of tests
-local results = t:run(test_options, "custom-filename.lua")
+local results = t:run(test_options)
 ```
-By default the filename is `#!lua debug.getinfo(2, "S").short_src` when `#!lua tested.new()` is called, but depending on your setup, you may want to override that value.
 
 #### Tested Options
 The options are the same as the ones from the CLI, and include an additional `clock_s` and `sleep_s` for setting timing functions:
@@ -141,7 +140,7 @@ interface TestedClass
 end
 
 interface TestedObject
-  run: function(self: Tested, options?: TestedAPIOptions, filename?: string): TestedOutput
+  run: function(self: Tested, options?: TestedAPIOptions): TestedOutput
 end
 ```
 

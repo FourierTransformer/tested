@@ -18,7 +18,7 @@ For embedded use cases or situations where LuaRocks (or a C compiler) is not ava
 luarocks install tested-core
 ```
 
-If using `tested_core`, be sure to [docs page](https://fouriertransformer.github.io/tested/tested-core) on how to use it!
+The tests are always written the same way regardless of which version is being used. The only thing that changes is the way that they are run. For instructions on how to run tests via the API (instead of the CLI), be sure to check out the [docs page](https://fouriertransformer.github.io/tested/tested-core)!
 
 ## A basic test
 

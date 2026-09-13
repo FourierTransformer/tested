@@ -427,7 +427,7 @@ local function convert_to_test_options(options: types.TestedAPIOptions): types.T
    return test_options
 end
 
-function tested:_run(options?: types.TestOptions, filename?: string): types.TestedOutput
+function tested:_run(options?: types.TestOptions): types.TestedOutput
    if options and options.random then
       math.randomseed(os.time())
       shared.fisher_yates_shuffle(self.tests)
@@ -438,7 +438,7 @@ function tested:_run(options?: types.TestOptions, filename?: string): types.Test
       tests = {},
       -- test_runner passes the filename in, if no tests are declared in a file the filename will not be surmised
       -- this will at least allow tests run via test_runner without any tests in them to show up nicely.
-      filename = filename or self.filename,
+      filename = self.filename,
       fully_tested = false,
       total_time = 0,
    }
@@ -506,10 +506,10 @@ function tested:_run(options?: types.TestOptions, filename?: string): types.Test
    return test_results
 end
 
-function tested:run(options?: types.TestedAPIOptions, filename?: string): types.TestedOutput
+function tested:run(options?: types.TestedAPIOptions): types.TestedOutput
    assert(type(self) == "table", tested_object_call_error)
    local test_options = convert_to_test_options(options)
-   return self:_run(test_options, filename)
+   return self:_run(test_options)
 end
 
 function tested_class.run_tests(tests: {types.Tested}, options?: types.TestedAPIOptions): types.TestRunnerOutput
