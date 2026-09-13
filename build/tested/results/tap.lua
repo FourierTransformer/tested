@@ -48,6 +48,9 @@ function tap.results(tested_result, _test_types_to_display)
                if assertion.should then
                   tadd.add("  Should: ", assertion.should)
                end
+               if assertion.result == "FAIL" and assertion.error_message then
+                  tadd.add("\n", "    # ", (assertion.error_message:gsub("\n", "\n    # ")))
+               end
                tadd.add("\n")
             end
             tadd.add("    1..", tostring(#test.assertion_results), "\n")
