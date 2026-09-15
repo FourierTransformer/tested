@@ -53,6 +53,10 @@ jobs:
         run: |
           luarocks test
 
+      - name: Run test suite in tested_core
+        run: |
+          lua scripts/tested_core_test.lua
+
       - name: Run demo tests (parallel)
         continue-on-error: true
         run: |
@@ -117,6 +121,10 @@ jobs:
       - name: Run luarocks test
         run: |
           luarocks test
+
+      - name: Run test suite in tested_core
+        run: |
+          lua scripts/tested_core_test.lua
 
       - name: Run demo tests (parallel)
         continue-on-error: true

@@ -6,11 +6,16 @@ local record tap is types.ResultFormatter where self.format == "tap" end
 tap.supports_show = false
 tap.format = "tap"
 
-function tap.header(_version_info: string, _filepaths: {string}, comments: {string}): string
+function tap.header(version_info: string, _filepaths: {string}, comments: {string}): string
    tadd.new("TAP version 14")
+   tadd.add("\n# ", version_info)
+
    for _, comment in ipairs(comments) do
       tadd.add("\n# ", comment)
    end
+
+   tadd.add("\n")
+
    return tadd.tostring()
 end
 
@@ -42,6 +47,9 @@ function tap.results(tested_result: types.TestedOutput, _test_types_to_display: 
                end
                if assertion.should then
                   tadd.add("  Should: ", assertion.should)
+               end
+               if assertion.result == "FAIL" and assertion.error_message then
+                  tadd.add("\n", "    # ", (assertion.error_message:gsub("\n", "\n    # ")))
                end
                tadd.add("\n")
             end
