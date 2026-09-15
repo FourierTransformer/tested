@@ -40,7 +40,7 @@ All the lifecycle methods take in a function that will be executed at the corres
 - `t:after_each(fn: function())` - executes after each test
 
 ## Test Running
-These are only needed for running your own tests, as you would have to do with [`tested_core`](./tested-core.md). While the methods are available, the CLI handles these things for you.
+These are only needed for running your own tests, as you would have to do with [`tested_core`](../tested-core.md). While the methods are available, the CLI handles these things for you.
 
 - `t:run(options?: TestedAPIOptions): TestedOutput)` - runs an individual test
 - `tested.run_tests(tests: {Tested}, options?: TestedAPIOptions): TestRunnerOutput` - runs a series of tests

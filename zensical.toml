@@ -15,16 +15,19 @@ nav = [
     "teal-support.md",
     "tested-core.md"
   ] },
+  { "Integrations" = [
+    "integrations/luarocks.md"
+  ]},
   { "Extensions" = [
-    "custom-formatter.md",
-    "language-handlers.md",
+    "extensions/custom-formatter.md",
+    "extensions/language-handlers.md",
 
   ]},
 
   { "Reference" = [
-    "cli.md",
-    "api-reference.md",
-    "roadmap.md",
+    "reference/cli.md",
+    "reference/api-reference.md",
+    "reference/roadmap.md",
   ] }
 
 ]
@@ -54,6 +57,7 @@ features = [
     "navigation.instant.progress",
     "navigation.path",
     "navigation.sections",
+    "navigation.tabs",
     "navigation.top",
     "navigation.tracking",
 ]
