@@ -17,7 +17,7 @@ The `-c` flag will enable [luacov](https://github.com/lunarmodules/luacov), and 
 The `-r` will randomize the order of tests _within_ a test file.
 
 ## `tested -F/--filter`
-Will only run tests that match the Lua pattern that applies to the **test name** using `string.find`. Useful for debugging specific tests by name. With `string.find`, so if you pass in `--filter "sum"` it will match _all tests_ with `"sum"` _anywhere_ in the test name. If you want to search for tests that _begin with_ `"sum"`, you should use `"^sum"` (or `"sum$"` to match the _end_ of a test name). It's just Lua [patterns](http://lua-users.org/wiki/PatternsTutorial) at the end of the day!
+Will only run tests that match the Lua pattern that applies to the **test name** using `string.find`. Useful for debugging specific tests by name. For more long term use (ie: in CI), it's recommended to use `--tags` and tag tests instead. With `string.find`, so if you pass in `--filter "sum"` it will match _all tests_ with `"sum"` _anywhere_ in the test name. If you want to search for tests that _begin with_ `"sum"`, you should use `"^sum"` (or `"sum$"` to match the _end_ of a test name). It's just Lua [patterns](http://lua-users.org/wiki/PatternsTutorial) at the end of the day!
 
 ## `tested -t/--tags`
 Tests can also be tagged and then selected to run by tag from the CLI. This can be useful if you have slow running tests, tests where you might want (or not want) code coverage, tests that might need external resources, or just the ability to create a group of selectable tests.
@@ -74,13 +74,13 @@ Currently, `tested` has a couple display formats:
 Prior versions of `tested` included support for running tests in a threaded manner using Lua Lanes, however we eventually ran into deadlock issues in tests where a test file forked and decided to remove threaded tests for now. The `-n` flag is now a noop and will just run tests sequentially. We hope to one day bring back safely running tests in parallel.
 
 ## `tested -z/--custom-formatter`
-`tested` supports loading a [custom result formatter](./custom-formatter.md) from the commandline. It tries to load what's passed in initially as a Lua module, and then as filepath, doing some basic checks to ensure the object returned appears to be a formatter. Only one custom formatter can be loaded and will be used to display results.
+`tested` supports loading a [custom result formatter](../extensions/custom-formatter.md) from the commandline. It tries to load what's passed in initially as a Lua module, and then as filepath, doing some basic checks to ensure the object returned appears to be a formatter. Only one custom formatter can be loaded and will be used to display results.
 
 ## `tested -o/--output-file`
 Output file to save results to a specified file. It loads a formatter based on the file extension of the file that's passed in. The currently supported extensions are:
 
 - `.txt` - Outputs _exactly_ what is shown in the terminal (includes any of the `--show` display options)
-- `.json` - Outputs the full [TestRunnerOutput](./custom-formatter.md#testrunneroutput). Everything - the `--show` option does not affect it. We're still pre v1, so the output here _could_ change.
+- `.json` - Outputs the full [TestRunnerOutput](../extensions/custom-formatter.md#testrunneroutput). Everything - the `--show` option does not affect it. We're still pre v1, so the output here _could_ change.
 
 Multiple files (and file types) can be specified and will all be written to at the end of the test run:
 
@@ -89,7 +89,7 @@ tested -o ./terminal_output.txt -o ./full_output.json
 ```
 
 ## `tested -x/--language-handler`
-`tested` also supports loading [custom languages](./language-handlers.md) that can run using Lua. Similar to custom output formatters, the language handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support their custom language. Multiple language handlers can be loaded, and afterward can be used for custom formatters or the tests themselves. The language handler for [Teal](https://teal-language.org/) is [built-in](./teal-support.md).
+`tested` also supports loading [custom languages](../extensions/language-handlers.md) that can run using Lua. Similar to custom output formatters, the language handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support their custom language. Multiple language handlers can be loaded, and afterward can be used for custom formatters or the tests themselves. The language handler for [Teal](https://teal-language.org/) is [built-in](../teal-support.md).
 
 ## `tested -h` - Reference
 

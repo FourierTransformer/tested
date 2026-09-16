@@ -195,6 +195,18 @@ end)
 
 NOTE: If running tests sequentially (`-n 0`), the sleep function will block and consume CPU resources.
 
+### Test Tags
+
+`tested` supports tagging tests with custom tags and then filtering while running the test suite. Tests are allowed to have multiple tags. This can be used to separate integration or long-running tests that you may only want to run in CI/CD pipelines but not on a regular basis.
+
+```lua
+-- the `run_when` option takes in a boolean where true runs the test, false will skip it
+t:test("luajit only test", {tags={"arithmetic"}}, function()
+    tested.assert({expected = 8, actual = sum(5, 3) })
+end)
+```
+
+These can then be filtered using the CLI option `--tags` or when calling `t:run` or `tested.run_tests` from the API. The tag filtering also allows boolean operators, so you can pass them stuff like `integration or slow` and only tests with both tags will run.
 
 ## Assertions
 
@@ -276,51 +288,66 @@ end)
 ```
 
 ### Debugging Assertions
-To help make debugging assertions easier, an optional field `debug_var` can be added to any of the assertions that gets displayed when a test fails.
+To help make debugging assertions easier, an optional field `debug_var` can be added to any of the assertions that gets displayed when a test fails. This can be used when checking substring existence by printing out the entire string, looking for a value in a table by printing the whole table, or even printing out an entire stacktrace! `debug_var` offers a lot of flexibility without having to provide additional assertions.
 
-```lua
-t:test("normalize whitespace in user input", function()
-   -- Imagine processing user-submitted text
-   local user_input = "  Hello   World  \n"
+=== "Basic Usage"
 
-   -- Normalize: trim and collapse internal whitespace
-   local normalized = user_input:match("^%s*(%S.-)%s*$"):gsub("%s+", " ")
+    ```lua
+    t:test("normalize whitespace in user input", function()
+       -- Imagine processing user-submitted text
+       local user_input = "  Hello   World  \n"
 
-   -- Test the result
-   tested.assert({
-      given = "user input with extra whitespace",
-      should = "normalize to single spaces",
-      expected = "Hello World",
-      actual = normalized,
-      debug_var = user_input
-   })
-end)
-```
+       -- Normalize: trim and collapse internal whitespace
+       local normalized = user_input:match("^%s*(%S.-)%s*$"):gsub("%s+", " ")
 
-It can also take in a whole table of values (which get nicely pretty-printed) that could be useful when debugging a test:
-```lua
-t:test("extract email domain from message", function()
-   -- Imagine processing incoming messages
-   local message = "Contact us at support@example.com for help"
+       -- Test the result
+       tested.assert({
+          given = "user input with extra whitespace",
+          should = "normalize to single spaces",
+          expected = "Hello World",
+          actual = normalized,
+          debug_var = user_input
+       })
+    end)
+    ```
 
-   -- Extract domain from email
-   local email = message:match("[%w%._%%-]+@[%w%._%%-]+")
-   local domain = email:match("@(.+)")
+=== "With tables!"
 
-   tested.assert({
-      given = "email embedded in message",
-      should = "extract correct domain",
-      expected = "example.com",
-      actual = domain,
-      debug_var = {
-         original_message = message,
-         extracted_email = email,
-      }
-   })
-end)
-```
+    It can also take in a whole table of values (which get nicely pretty-printed) that could be useful when debugging a test:
+    ```lua
+    t:test("extract email domain from message", function()
+       -- Imagine processing incoming messages
+       local message = "Contact us at support@example.com for help"
 
-and this could also be used in an `assert_truthy` when checking substring existence, value in a table, and plenty of other situations - offering flexibility without having to provide numerous custom assertions.
+       -- Extract domain from email
+       local email = message:match("[%w%._%%-]+@[%w%._%%-]+")
+       local domain = email:match("@(.+)")
+
+       tested.assert({
+          given = "email embedded in message",
+          should = "extract correct domain",
+          expected = "example.com",
+          actual = domain,
+          debug_var = {
+             original_message = message,
+             extracted_email = email,
+          }
+       })
+    end)
+    ```
+
+=== "Stacktrace"
+
+    for printing out a stacktrace:
+    ```lua
+    tested.assert({
+        given = "something that will fail",
+        should = "actually_fail",
+        expected = 5,
+        actual = 4,
+        debug_var = debug.traceback("Assertion has failed...") -- entire stack trace will be printed out
+    })
+    ```
 
 ## Test Lifecycle
 `tested` has support for a couple of test lifecycle methods. They allow you to register a function to run `before` any tests within the file have run, `after` all tests have run, `before_each` test, and `after_each` test. If a test is skipped for any reason (`test.skip`, `run_when` is `false`, filtering, etc) the `before_each` and `after_each` will **not** be run. Test lifecycle hooks can be useful if you want to setup/teardown connections/services/configs, create or clean up temporary files, or even one day setup stubs and mocks!

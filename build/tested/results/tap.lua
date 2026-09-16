@@ -6,11 +6,16 @@ local tap = {}
 tap.supports_show = false
 tap.format = "tap"
 
-function tap.header(_version_info, _filepaths, comments)
+function tap.header(version_info, _filepaths, comments)
    tadd.new("TAP version 14")
+   tadd.add("\n# ", version_info)
+
    for _, comment in ipairs(comments) do
       tadd.add("\n# ", comment)
    end
+
+   tadd.add("\n")
+
    return tadd.tostring()
 end
 
@@ -42,6 +47,9 @@ function tap.results(tested_result, _test_types_to_display)
                end
                if assertion.should then
                   tadd.add("  Should: ", assertion.should)
+               end
+               if assertion.result == "FAIL" and assertion.error_message then
+                  tadd.add("\n", "    # ", (assertion.error_message:gsub("\n", "\n    # ")))
                end
                tadd.add("\n")
             end

@@ -1,12 +1,12 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "0.4.0-1"
+version = "0.5.0-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
    branch = "main",
-   tag = "0.4.0"
+   tag = "0.5.0"
 }
 
 description = {
@@ -44,7 +44,6 @@ build = {
       ["tested.main"] = "build/tested/main.lua",
       ["tested.test_runner"] = "build/tested/test_runner.lua",
       ["tested.types"] = "build/tested/types.lua",
-      ["tested.util"] = "build/tested/util.lua",
 
       ["tested.languages.teal"] = "build/tested/languages/teal.lua",
 
@@ -52,7 +51,9 @@ build = {
       ["tested.libs.dkjson"] = "src/tested/libs/dkjson.lua",
       ["tested.libs.inspect"] = "build/tested/libs/inspect.lua",
       ["tested.libs.logging"] = "build/tested/libs/logging.lua",
+      ["tested.libs.shared"] = "build/tested/libs/shared.lua",
       ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
+      ["tested.libs.util"] = "build/tested/libs/util.lua",
 
       ["tested.file_output.txt"] = "build/tested/file_output/txt.lua",
       ["tested.file_output.json"] = "build/tested/file_output/json.lua",
