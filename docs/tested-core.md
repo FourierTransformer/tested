@@ -5,7 +5,7 @@ The actual tests themselves are written the same whether running via `tested_cor
 
 In theory all of this allows `tested_core` to work with Neovim, LÖVE, OpenResty, and many other embedded environments! We haven't fully explored all the oppurtunities yet, but if you've had success, please [let us know!](https://github.com/FourierTransformer/tested/discussions/categories/show-and-tell). We want to one day add guides on how to set tested up for various use cases!
 
-All of the Lua API methods are fairly new, if you need help with something or feels like something is missing, feel free to open up an [issue!](https://github.com/FourierTransformer/tested/issues).
+All of the Lua API methods are fairly new and _could change_, if you need help with something or feels like something is missing, feel free to open up an [issue!](https://github.com/FourierTransformer/tested/issues).
 
 ## Install
 The latest released version of `tested_core.lua` can be found on the [GitHub Releases](https://github.com/FourierTransformer/tested/releases) page. It can also be installed via LuaRocks:

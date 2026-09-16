@@ -1530,6 +1530,12 @@ end
 local function convert_to_test_options(options)
    local test_options
    if options then
+      assert(type(options) == "table", "The tested options should be a 'table', you have passed in a '" .. type(options) .. "'")
+      if options.random then assert(type(options.random) == "boolean", "The tested option 'random' should be a 'boolean', but you passed in a '" .. type(options.random) .. "'") end
+      if options.filter then assert(type(options.filter) == "string", "The tested option 'filter' should be a 'string', but you passed in a '" .. type(options.filter) .. "'") end
+      if options.tags then assert(type(options.tags) == "string", "The tested option 'tags' should be a 'string', but you passed in a '" .. type(options.tags) .. "'") end
+      if options.clock_s then assert(type(options.clock_s) == "function", "The tested option 'clock_s' should be a 'function', but you passed in a '" .. type(options.clock_s) .. "'") end
+      if options.sleep_s then assert(type(options.sleep_s) == "function", "The tested option 'sleep_s' should be a 'function', but you passed in a '" .. type(options.sleep_s) .. "'") end
       test_options = {
          random = options.random,
          filter = options.filter,
