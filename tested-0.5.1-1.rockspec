@@ -71,7 +71,7 @@ build = {
       },
       lua = {
          -- swapping to a .d.tl to avoid tested.tl compilation on test run
-         ["types/tested/tested.d.tl"] = "./types/tested.d.tl",
+         "types/tested.d.tl"
       }
    }
 }
