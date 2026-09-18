@@ -1,0 +1,9 @@
+scratch/
+.DS_Store
+*.rock
+*.out
+.cache/
+.venv/
+site/
+# included here to ensure git porcelain ignores it in the CI
+lua_install/

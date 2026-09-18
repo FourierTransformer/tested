@@ -1,0 +1,49 @@
+name: Ensure ./build.sh has been run
+
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  clean_build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install libreadline
+        run: |
+          sudo apt-get install -y libreadline-dev
+
+      - name: Cache Restore
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            lua_install
+          key: clean_build
+
+      - name: Install Lua 5.4
+        run: |
+          pip install git+https://github.com/luarocks/hererocks
+          hererocks lua_install -r^ --lua 5.4
+          echo "$GITHUB_WORKSPACE/lua_install/bin" >> $GITHUB_PATH
+
+      - name: Setup cyan
+        run: |
+          luarocks install cyan
+          luarocks install amalg
+
+      - name: Clean and build
+        run: |
+          rm -rf build
+          ./build.sh
+
+      - name: Check for untracked or modified files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Error: Untracked or modified files found."
+            git status
+            exit 1
+          else
+            echo "No untracked or modified files."
+          fi

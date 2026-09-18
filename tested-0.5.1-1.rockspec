@@ -1,12 +1,12 @@
 rockspec_format = "3.0"
 
 package = "tested"
-version = "0.5.0-1"
+version = "0.5.1-1"
 
 source = {
    url = "git+https://github.com/FourierTransformer/tested.git",
    branch = "main",
-   tag = "0.5.0"
+   tag = "0.5.1"
 }
 
 description = {
@@ -71,7 +71,7 @@ build = {
       },
       lua = {
          -- swapping to a .d.tl to avoid tested.tl compilation on test run
-         ["types/tested/tested.tl"] = "./types/tested.d.tl",
+         "types/tested.d.tl"
       }
    }
 }

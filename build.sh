@@ -11,6 +11,7 @@ luarocks make
 
 echo "Running amalg.lua..."
 cd build
+rm ../tested_core.lua
 amalg.lua -a -o ../tested_core.lua -s tested.lua \
 tested.assert_table \
 tested.libs.ansicolors \
