@@ -27,6 +27,7 @@ jobs:
           pip install git+https://github.com/luarocks/hererocks
           hererocks lua_install -r^ --lua 5.4
           echo "$GITHUB_WORKSPACE/lua_install/bin" >> $GITHUB_PATH
+          echo lua_install > .gitignore
 
       - name: Setup cyan
         run: |
