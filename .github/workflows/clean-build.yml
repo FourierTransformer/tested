@@ -31,6 +31,7 @@ jobs:
       - name: Setup cyan
         run: |
           luarocks install cyan
+          luarocks install amalg
 
       - name: Clean and build
         run: |
