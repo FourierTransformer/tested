@@ -1,6 +1,7 @@
 local lfs = require("lfs")
 
 local cli = require("tested.cli")
+local config = require("tested.config")
 local file_loader = require("tested.file_loader")
 local logging = require("tested.libs.logging")
 local shared = require("tested.libs.shared")
@@ -128,6 +129,7 @@ local function main()
    -- setting up defaults and registering things...
    local args = cli.parse_args(shared.version)
    logging.set_level(args.debug)
+   config.load_config()
    cli.set_defaults(args)
    cli.validate_args(args)
    local formatter = load_result_formatter(args)

@@ -9,7 +9,7 @@ local logger = logging.get_logger("tested.cli")
 
 
 
-local cli = { CLIOptions = {} }
+local cli = {}
 
 
 

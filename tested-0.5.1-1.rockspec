@@ -40,6 +40,7 @@ build = {
 
       ["tested.assert_table"] = "build/tested/assert_table.lua",
       ["tested.cli"] = "build/tested/cli.lua",
+      ["tested.config"] = "build/tested/config.lua",
       ["tested.file_loader"] = "build/tested/file_loader.lua",
       ["tested.main"] = "build/tested/main.lua",
       ["tested.test_runner"] = "build/tested/test_runner.lua",

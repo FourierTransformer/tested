@@ -10,7 +10,7 @@ local logger = logging.get_logger("tested.cli")
 local type types = require("tested.types")
 
 local record cli
-   record CLIOptions is types.TestedBaseOptions
+   interface CLIOptions is types.TestedBaseOptions
       coverage: boolean
       display_format: types.DisplayFormat
       output_file: {string}
