@@ -2,6 +2,9 @@ local type types = require("tested.types")
 local assert_table = require("tested.assert_table")
 local inspect = require("tested.libs.inspect")
 local shared = require("tested.libs.shared")
+local logging = require("tested.libs.logging")
+
+local logger = logging.get_logger("tested")
 
 local tested_class: types.TestedClass = {}
 local tested: types.Tested = {} -- may one day split into tested_object?
@@ -285,14 +288,18 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
    end
 
    tested_class.assert = function<T>(assertion: types.Assertion<T>): boolean, string
+      local line_number = debug.getinfo(2, "l").currentline
+      logger:info("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
       local ok, err = original_assert(assertion)
-      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
+      record_result(ok, err, assertion, line_number)
       return ok, err
    end
 
    tested_class.assert_nil = function(assertion: types.BaseAssertion): boolean, string
+      local line_number = debug.getinfo(2, "l").currentline
+      logger:info("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
       local ok, err = original_assert_nil(assertion)
-      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
+      record_result(ok, err, assertion, line_number)
       return ok, err
    end
 
@@ -391,13 +398,14 @@ local function add_up_test_results(test_output: types.TestOutput, test_counts: t
 end
 
 local function run_test(self: types.Tested, test: types.Test, test_output: types.TestOutput)
-   if self.before_each_fn then self.before_each_fn() end
+   if self.before_each_fn then logger:debug("%s: Running before_each function", self.filename) self.before_each_fn() end
 
    local assertions, restore = wrap_assert(self, test_output)
    local original_os_exit = swap_os_exit(test.fn)
 
    local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
    set_result(ok, err, assertions.total, assertions.failed, test_output)
+   logger:info("%s (%s): Current Test Result: %s", self.filename, test.name, test_output.result)
 
    restore_os_exit(test.fn, original_os_exit)
    restore()
@@ -405,7 +413,7 @@ local function run_test(self: types.Tested, test: types.Test, test_output: types
    -- only adjust for tests that are run. Otherwise the skips when filtering or tested.skip will trigger
    adjust_for_expected(test.options.expected, test_output)
 
-   if self.after_each_fn then self.after_each_fn() end
+   if self.after_each_fn then logger:debug("%s: Running after_each function", self.filename) self.after_each_fn() end
 end
 
 local function convert_to_test_options(options: types.TestedAPIOptions): types.TestOptions
@@ -449,7 +457,7 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
       total_time = 0,
    }
 
-   if self.before_fn then self.before_fn() end
+   if self.before_fn then logger:debug("%s: Running before function", self.filename) self.before_fn() end
 
    for i, test in ipairs(self.tests) do
       -- setup
@@ -462,12 +470,13 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
       local start = options.clock_s()
 
       if skip_result then
+         logger:debug("%s (%s): Determined test should be skipped", self.filename, test.name)
          test_result.result = skip_result
          test_result.message = skip_message
 
       else
+         logger:info("%s (%s): Running test", self.filename, test.name)
          run_test(self, test, test_result)
-
       end
 
       test_result.time = options.clock_s() - start
@@ -479,6 +488,7 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
       local retry_count = 0
       if test.options.retries and not skip_result and not is_passing and test.options.retries > 0 then -- retry_count < max_retries then
          while retry_count < test.options.retries do
+            logger:info("%s (%s): Retrying test %d/%d", self.filename, test.name, retry_count + 1, test.options.retries)
             table.insert(retry_attempts, test_result)
             retry_count = retry_count + 1
             if test.options.retry_delay and options.sleep_s then
@@ -494,6 +504,8 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
          test_result.time = (options.clock_s() - start)
       end
 
+      logger:info("%s (%s): Final Test Result: %s", self.filename, test.name, test_result.result)
+
       -- always add up at the end!
       add_up_test_results(test_result, test_results.counts)
 
@@ -503,7 +515,7 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
       test_results.total_time = test_results.total_time + test_result.time
    end
 
-   if self.after_fn then self.after_fn() end
+   if self.after_fn then logger:debug("%s: Running after function", self.filename) self.after_fn() end
 
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true

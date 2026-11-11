@@ -15,6 +15,7 @@ rm ../tested_core.lua
 amalg.lua -a -o ../tested_core.lua -s tested.lua \
 tested.assert_table \
 tested.libs.ansicolors \
+tested.libs.logging \
 tested.libs.inspect \
 tested.libs.shared \
 tested.libs.tadd \

@@ -28,6 +28,7 @@ local logging = {}
 
 
 
+
 local LoggerBase = {}
 function LoggerBase:set_level(log_level)
    self.current_level = logging.log_levels[log_level]
@@ -53,7 +54,23 @@ function LoggerBase:critical(message, ...)
    logging._logger_handler("CRITICAL", message, self.name, self.current_level, ...)
 end
 
+local function eprint(message)
+   io.stderr:write(message)
+   io.stderr:write("\n")
+end
+
+local function determine_logger_func()
+   if io.type(io.stderr) == "file" then
+      local ok = io.stderr:write("")
+      if ok then
+         return eprint
+      end
+   end
+   return print
+end
+
 logging.loggers = {}
+logging.logger_func = determine_logger_func()
 logging.current_level = 30
 logging.log_levels = {
    ["DEBUG"] = 10,
@@ -93,7 +110,7 @@ end
 
 function logging.handler(log_level, logger_name, message)
    local current_time = os.date("%Y-%m-%d %H:%M:%S")
-   print(colors(string.format("%%{green}%s%%{reset} %%{%s}%s%%{reset} [%s] %s", current_time, logging.colors[log_level], log_level, logger_name, message)))
+   logging.logger_func(colors(string.format("%%{green}%s%%{reset} %%{%s}%s%%{reset} [%s] %s", current_time, logging.colors[log_level], log_level, logger_name, message)))
 end
 
 return logging
