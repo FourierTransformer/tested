@@ -18,6 +18,7 @@ local record cli
       language_handler: {string}
       paths: {string}
       debug: logging.level
+      verbose: boolean
       instances: integer
       process: boolean
       show: {types.DisplayOptions}
@@ -85,6 +86,10 @@ function cli.parse_args(version: string): cli.CLIOptions
       :choices({"DEBUG", "INFO", "WARNING"})
       :default("WARNING")
 
+   parser:flag("-v --verbose")
+      :description("Sets '--debug DEBUG' and '--show all'. Can be useful when investigating crashes. Overrides any other set value for 'debug' and 'show'")
+      :default(false)
+
    parser:flag("--version")
       :description("Show version information")
       :action(function() print(version) os.exit(0) end)
@@ -100,6 +105,9 @@ function cli.parse_args(version: string): cli.CLIOptions
    logger:info("Parsing Arguments...")
 
    local args: cli.CLIOptions = parser:parse() as cli.CLIOptions
+
+   -- the one default that needs to be set here...
+   if args.verbose == true then args.debug = "DEBUG" end
    return args
 end
 
@@ -116,6 +124,7 @@ function cli.set_defaults(args: cli.CLIOptions)
    args.test_directories = {}
 
    local show_all = false
+   if args.verbose == true then show_all = true end
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true break end end
    if show_all then args.show = {"skip", "pass", "fail", "exception", "unknown", "expected", "unexpected"} end -- NYI: timeout
 

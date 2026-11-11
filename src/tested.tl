@@ -289,7 +289,7 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
 
    tested_class.assert = function<T>(assertion: types.Assertion<T>): boolean, string
       local line_number = debug.getinfo(2, "l").currentline
-      logger:info("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
+      logger:debug("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
       local ok, err = original_assert(assertion)
       record_result(ok, err, assertion, line_number)
       return ok, err
@@ -297,7 +297,7 @@ local function wrap_assert(self: types.Tested, test_output: types.TestOutput): A
 
    tested_class.assert_nil = function(assertion: types.BaseAssertion): boolean, string
       local line_number = debug.getinfo(2, "l").currentline
-      logger:info("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
+      logger:debug("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
       local ok, err = original_assert_nil(assertion)
       record_result(ok, err, assertion, line_number)
       return ok, err
@@ -405,7 +405,7 @@ local function run_test(self: types.Tested, test: types.Test, test_output: types
 
    local ok, err = xpcall(test.fn, xpcall_handler) as (boolean, string)
    set_result(ok, err, assertions.total, assertions.failed, test_output)
-   logger:info("%s (%s): Current Test Result: %s", self.filename, test.name, test_output.result)
+   logger:debug("%s (%s): Current Test Result: %s", self.filename, test.name, test_output.result)
 
    restore_os_exit(test.fn, original_os_exit)
    restore()
@@ -475,7 +475,7 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
          test_result.message = skip_message
 
       else
-         logger:info("%s (%s): Running test", self.filename, test.name)
+         logger:debug("%s (%s): Running test", self.filename, test.name)
          run_test(self, test, test_result)
       end
 
@@ -488,7 +488,7 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
       local retry_count = 0
       if test.options.retries and not skip_result and not is_passing and test.options.retries > 0 then -- retry_count < max_retries then
          while retry_count < test.options.retries do
-            logger:info("%s (%s): Retrying test %d/%d", self.filename, test.name, retry_count + 1, test.options.retries)
+            logger:debug("%s (%s): Retrying test %d/%d", self.filename, test.name, retry_count + 1, test.options.retries)
             table.insert(retry_attempts, test_result)
             retry_count = retry_count + 1
             if test.options.retry_delay and options.sleep_s then
@@ -504,7 +504,7 @@ function tested:_run(options?: types.TestOptions): types.TestedOutput
          test_result.time = (options.clock_s() - start)
       end
 
-      logger:info("%s (%s): Final Test Result: %s", self.filename, test.name, test_result.result)
+      logger:debug("%s (%s): Final Test Result: %s", self.filename, test.name, test_result.result)
 
       -- always add up at the end!
       add_up_test_results(test_result, test_results.counts)
