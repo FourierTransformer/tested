@@ -91,6 +91,12 @@ tested -o ./terminal_output.txt -o ./full_output.json
 ## `tested -x/--language-handler`
 `tested` also supports loading [custom languages](../extensions/language-handlers.md) that can run using Lua. Similar to custom output formatters, the language handler will first try and load from a Lua module and then from a filepath. This allows flexibility in distribution in how folks may want to support their custom language. Multiple language handlers can be loaded, and afterward can be used for custom formatters or the tests themselves. The language handler for [Teal](https://teal-language.org/) is [built-in](../teal-support.md).
 
+## `tested -d/--debug`
+`tested` has a full logger that shows _what_ exactly is happening during test running and execution. If you are debugging a test file that is crashing during a test, setting `--debug DEBUG` can be helpful as the `DEBUG` messages print _as tested executes_, whereas the regular test output prints _after_ a test file has been run. If set to `-d DEBUG` it will show all log messages that are of `DEBUG` value or higher. By default it is set to `WARNING`. It prints to `stderr` if available, otherwise via `print`.
+
+## `tested -v/--verbose`
+This is a quick toggle that enables `--debug DEBUG` and `--show all` so all logging and testing output will be displayed. It will override any other values set for `--debug` or `--show`.
+
 ## `tested -h` - Reference
 
 ```
@@ -134,5 +140,6 @@ Options:
         -d {DEBUG,INFO,WARNING},
    --debug {DEBUG,INFO,WARNING}
                          Set the log level - mostly for debugging issues with tested (default: 'WARNING') (default: WARNING)
+   -v, --verbose         Sets '--debug DEBUG' and '--show all'. Can be useful when investigating crashes. Overrides any other set value for 'debug' and 'show'
    --version             Show version information
 ```

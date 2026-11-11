@@ -36,6 +36,7 @@ local cli = { CLIOptions = {} }
 
 
 
+
 function cli.parse_args(version)
    local parser = argparse("tested", "A Lua/Teal Unit Testing Framework", "For more info see https://fouriertransformer.github.io/tested")
 
@@ -85,6 +86,10 @@ function cli.parse_args(version)
    choices({ "DEBUG", "INFO", "WARNING" }):
    default("WARNING")
 
+   parser:flag("-v --verbose"):
+   description("Sets '--debug DEBUG' and '--show all'. Can be useful when investigating crashes. Overrides any other set value for 'debug' and 'show'"):
+   default(false)
+
    parser:flag("--version"):
    description("Show version information"):
    action(function() print(version); os.exit(0) end)
@@ -100,6 +105,9 @@ function cli.parse_args(version)
    logger:info("Parsing Arguments...")
 
    local args = parser:parse()
+
+
+   if args.verbose == true then args.debug = "DEBUG" end
    return args
 end
 
@@ -116,6 +124,7 @@ function cli.set_defaults(args)
    args.test_directories = {}
 
    local show_all = false
+   if args.verbose == true then show_all = true end
    for _, display_option in ipairs(args.show) do if display_option == "all" then show_all = true; break end end
    if show_all then args.show = { "skip", "pass", "fail", "exception", "unknown", "expected", "unexpected" } end
 

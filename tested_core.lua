@@ -683,6 +683,128 @@ end
 
 do
 local _ENV = _ENV
+package.preload[ "tested.libs.logging" ] = function( ... ) _ENV = _ENV;
+local colors = require("tested.libs.ansicolors")
+
+
+
+local logging = {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local LoggerBase = {}
+function LoggerBase:set_level(log_level)
+   self.current_level = logging.log_levels[log_level]
+end
+
+function LoggerBase:debug(message, ...)
+   logging._logger_handler("DEBUG", message, self.name, self.current_level, ...)
+end
+
+function LoggerBase:info(message, ...)
+   logging._logger_handler("INFO", message, self.name, self.current_level, ...)
+end
+
+function LoggerBase:warning(message, ...)
+   logging._logger_handler("WARNING", message, self.name, self.current_level, ...)
+end
+
+function LoggerBase:error(message, ...)
+   logging._logger_handler("ERROR", message, self.name, self.current_level, ...)
+end
+
+function LoggerBase:critical(message, ...)
+   logging._logger_handler("CRITICAL", message, self.name, self.current_level, ...)
+end
+
+local function eprint(message)
+   io.stderr:write(message)
+   io.stderr:write("\n")
+end
+
+local function determine_logger_func()
+   if io.type(io.stderr) == "file" then
+      local ok = io.stderr:write("")
+      if ok then
+         return eprint
+      end
+   end
+   return print
+end
+
+logging.loggers = {}
+logging.logger_func = determine_logger_func()
+logging.current_level = 30
+logging.log_levels = {
+   ["DEBUG"] = 10,
+   ["INFO"] = 20,
+   ["WARNING"] = 30,
+   ["ERROR"] = 40,
+   ["CRITICAL"] = 50,
+}
+logging.colors = {
+   ["DEBUG"] = "dim",
+   ["INFO"] = "cyan",
+   ["WARNING"] = "yellow",
+   ["ERROR"] = "red",
+   ["CRITICAL"] = "bright red",
+}
+
+function logging.get_logger(name)
+   if logging.loggers[name] then
+      return logging.loggers[name]
+   end
+
+   logging.loggers[name] = setmetatable({}, { __index = LoggerBase })
+   logging.loggers[name].name = name
+
+   return logging.loggers[name]
+end
+
+function logging.set_level(log_level)
+   logging.current_level = logging.log_levels[log_level]
+end
+
+function logging._logger_handler(message_level, message, logger_name, logger_log_level, ...)
+   if logging.log_levels[message_level] >= (logger_log_level or logging.current_level) then
+      logging.handler(message_level, logger_name, string.format(message, ...))
+   end
+end
+
+function logging.handler(log_level, logger_name, message)
+   local current_time = os.date("%Y-%m-%d %H:%M:%S")
+   logging.logger_func(colors(string.format("%%{green}%s%%{reset} %%{%s}%s%%{reset} [%s] %s", current_time, logging.colors[log_level], log_level, logger_name, message)))
+end
+
+return logging
+end
+end
+
+do
+local _ENV = _ENV
 package.preload[ "tested.libs.shared" ] = function( ... ) _ENV = _ENV;
 
 
@@ -708,7 +830,7 @@ local cli_to_display = {
 
 }
 
-shared.version = "tested v0.5.0"
+shared.version = "tested v0.6.0"
 
 shared.blocking_sleep = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end
 
@@ -1121,6 +1243,9 @@ end
 local assert_table = require("tested.assert_table")
 local inspect = require("tested.libs.inspect")
 local shared = require("tested.libs.shared")
+local logging = require("tested.libs.logging")
+
+local logger = logging.get_logger("tested")
 
 local tested_class = {}
 local tested = {}
@@ -1404,14 +1529,18 @@ local function wrap_assert(self, test_output)
    end
 
    tested_class.assert = function(assertion)
+      local line_number = debug.getinfo(2, "l").currentline
+      logger:debug("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
       local ok, err = original_assert(assertion)
-      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
+      record_result(ok, err, assertion, line_number)
       return ok, err
    end
 
    tested_class.assert_nil = function(assertion)
+      local line_number = debug.getinfo(2, "l").currentline
+      logger:debug("%s (%s): Running assertion on line: %d", self.filename, test_output.name, line_number)
       local ok, err = original_assert_nil(assertion)
-      record_result(ok, err, assertion, debug.getinfo(2, "l").currentline)
+      record_result(ok, err, assertion, line_number)
       return ok, err
    end
 
@@ -1510,13 +1639,14 @@ local function add_up_test_results(test_output, test_counts)
 end
 
 local function run_test(self, test, test_output)
-   if self.before_each_fn then self.before_each_fn() end
+   if self.before_each_fn then logger:debug("%s: Running before_each function", self.filename); self.before_each_fn() end
 
    local assertions, restore = wrap_assert(self, test_output)
    local original_os_exit = swap_os_exit(test.fn)
 
    local ok, err = xpcall(test.fn, xpcall_handler)
    set_result(ok, err, assertions.total, assertions.failed, test_output)
+   logger:debug("%s (%s): Current Test Result: %s", self.filename, test.name, test_output.result)
 
    restore_os_exit(test.fn, original_os_exit)
    restore()
@@ -1524,7 +1654,7 @@ local function run_test(self, test, test_output)
 
    adjust_for_expected(test.options.expected, test_output)
 
-   if self.after_each_fn then self.after_each_fn() end
+   if self.after_each_fn then logger:debug("%s: Running after_each function", self.filename); self.after_each_fn() end
 end
 
 local function convert_to_test_options(options)
@@ -1568,7 +1698,7 @@ function tested:_run(options)
       total_time = 0,
    }
 
-   if self.before_fn then self.before_fn() end
+   if self.before_fn then logger:debug("%s: Running before function", self.filename); self.before_fn() end
 
    for i, test in ipairs(self.tests) do
 
@@ -1581,12 +1711,13 @@ function tested:_run(options)
       local start = options.clock_s()
 
       if skip_result then
+         logger:debug("%s (%s): Determined test should be skipped", self.filename, test.name)
          test_result.result = skip_result
          test_result.message = skip_message
 
       else
+         logger:debug("%s (%s): Running test", self.filename, test.name)
          run_test(self, test, test_result)
-
       end
 
       test_result.time = options.clock_s() - start
@@ -1598,6 +1729,7 @@ function tested:_run(options)
       local retry_count = 0
       if test.options.retries and not skip_result and not is_passing and test.options.retries > 0 then
          while retry_count < test.options.retries do
+            logger:debug("%s (%s): Retrying test %d/%d", self.filename, test.name, retry_count + 1, test.options.retries)
             table.insert(retry_attempts, test_result)
             retry_count = retry_count + 1
             if test.options.retry_delay and options.sleep_s then
@@ -1613,6 +1745,8 @@ function tested:_run(options)
          test_result.time = (options.clock_s() - start)
       end
 
+      logger:debug("%s (%s): Final Test Result: %s", self.filename, test.name, test_result.result)
+
 
       add_up_test_results(test_result, test_results.counts)
 
@@ -1622,7 +1756,7 @@ function tested:_run(options)
       test_results.total_time = test_results.total_time + test_result.time
    end
 
-   if self.after_fn then self.after_fn() end
+   if self.after_fn then logger:debug("%s: Running after function", self.filename); self.after_fn() end
 
    if test_results.counts.failed == 0 and test_results.counts.invalid == 0 then
       test_results.fully_tested = true
