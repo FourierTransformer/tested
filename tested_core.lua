@@ -830,7 +830,7 @@ local cli_to_display = {
 
 }
 
-shared.version = "tested v0.5.0"
+shared.version = "tested v0.6.0"
 
 shared.blocking_sleep = function(s) local end_time = os.clock() + s; repeat until os.clock() > end_time end
 
