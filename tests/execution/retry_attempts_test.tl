@@ -32,7 +32,7 @@ local function run_and_capture_json(test_file: string): {any:any}
 end
 
 local function find_test(module_result: {any:any}, name: string): {any:any}
-   for _, test in ipairs(module_result.tests as {any:any}) do
+   for _, test in ipairs(module_result.tests as {any}) do
       local test_table = test as {any:any}
       if test_table.name == name then return test_table end
    end
