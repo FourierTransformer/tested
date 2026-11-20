@@ -47,3 +47,9 @@ jobs:
           else
             echo "No untracked or modified files."
           fi
+
+      - name: Ensure tested.d.tl is typed correctly via tests
+        run: |
+          luarocks install lua-cjson-tl-type
+          cd tests
+          cyan check */*_test.tl

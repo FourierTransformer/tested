@@ -64,12 +64,12 @@ local record tested
    end
 
    interface Tested
-      test: function(name: string, fn: function())
-      test: function(name: string, options: TestedOptions, fn: function())
-      skip: function(name: string, fn: function())
-      skip: function(name: string, options: TestedOptions, fn: function())
-      only: function(name: string, fn: function())
-      only: function(name: string, options: TestedOptions, fn: function())
+      test: function(self: Tested, name: string, fn: function())
+      test: function(self: Tested, name: string, options: TestedOptions, fn: function())
+      skip: function(self: Tested, name: string, fn: function())
+      skip: function(self: Tested, name: string, options: TestedOptions, fn: function())
+      only: function(self: Tested, name: string, fn: function())
+      only: function(self: Tested, name: string, options: TestedOptions, fn: function())
 
       -- lifecycle
       before: function(self: Tested, fn: function())
