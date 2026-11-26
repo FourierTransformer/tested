@@ -1,5 +1,5 @@
-local argparse = require("argparse")
-local lfs = require("lfs")
+local argparse = require("tested.vendor.argparse")
+local lfs = require("tested.vendor.lfs")
 
 local logging = require("tested.libs.logging")
 local shared = require("tested.libs.shared")

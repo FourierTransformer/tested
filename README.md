@@ -73,5 +73,9 @@ Apart from dependencies specified in the rockspec, parts of the following are in
 - Bundles a polyfill for `package.searchpath` for Lua 5.1 from [Penlight](https://lunarmodules.github.io/Penlight/) - MIT
 - Uses a modified LuaRocks test loader to support `luarocks test` - MIT
 
+**Vendored Dependencies**
+With test doubles (coming soon!), to avoid collisions the following dependencies have been vendored in to `tested` (notably, _only_ the full install with the CLI, `tested_core` does not use these):
+- [argparse](https://github.com/luarocks/argparse) - MIT
+- [lfs](https://github.com/lunarmodules/luafilesystem) - MIT
 
 Major thanks to hishamhm, kikito, and benoit-germain for their work in the Lua space. Without them, `tested` wouldn't be possible.
