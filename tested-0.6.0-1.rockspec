@@ -15,9 +15,9 @@ description = {
    license = "MIT"
 }
 
+-- I'm going to assume very few folks would want/need to create a test double on luacov/datafile
+-- if I'm wrong, feel free to put in an issue!
 dependencies = {
-   "luafilesystem",
-   "argparse",
    "luacov",
 }
 
@@ -54,6 +54,13 @@ build = {
       ["tested.libs.shared"] = "build/tested/libs/shared.lua",
       ["tested.libs.tadd"] = "build/tested/libs/tadd.lua",
       ["tested.libs.util"] = "build/tested/libs/util.lua",
+
+      -- these are the exact sources with no modifications whatsoever
+      ["tested.vendor.argparse"] = "src/tested/vendor/argparse.lua",
+      ["tested.vendor.lfs"] = {
+         sources = "src/tested/vendor/lfs/lfs.c",
+         defines = { "luaopen_lfs=luaopen_tested_vendor_lfs" },
+      },
 
       ["tested.file_output.txt"] = "build/tested/file_output/txt.lua",
       ["tested.file_output.json"] = "build/tested/file_output/json.lua",

@@ -1,5 +1,5 @@
 local tested = require("tested")
-local lfs = require("lfs")
+local lfs = require("tested.vendor.lfs")
 
 local is_windows <const> = package.config:sub(1, 1) == "\\"
 local null_device <const> = is_windows and "NUL" or "/dev/null"

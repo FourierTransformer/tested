@@ -7,3 +7,5 @@ scratch/
 site/
 # included here to ensure git porcelain ignores it in the CI
 lua_install/
+*.o
+*.so

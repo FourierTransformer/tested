@@ -1,4 +1,4 @@
-local lfs = require("lfs")
+local lfs = require("tested.vendor.lfs")
 
 local cli = require("tested.cli")
 local file_loader = require("tested.file_loader")
