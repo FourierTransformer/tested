@@ -260,7 +260,7 @@ end)
 ```
 
 ### Testing exceptions
-When writing assertions that check that an exception has been thrown, the `actual` should be a function taking no arguments, that when run raises an exception. `tested` also has the ability to capture an error (using `pcall` under the hood) and check if that returns as expected as well.
+When writing assertions that check that an exception has been thrown, the `actual` should be a function taking no arguments, that when run raises an exception. `tested` also has the ability to capture an error (using `pcall` under the hood) and check if that returns as expected as well. When comparing an error message, `tested` currently requires an _exact string match_. 
 
 ```lua
 -- simple check that exception will be raised
